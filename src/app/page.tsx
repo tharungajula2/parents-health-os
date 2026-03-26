@@ -166,10 +166,18 @@ function DashboardShell() {
           <div className="w-10"></div>
         </div>
 
+        {/* Sidebar Backdrop (Mobile) */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
         <aside className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-white/5 bg-slate-950/50 backdrop-blur-2xl transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:inset-auto`}>
-          <div className="flex h-20 items-center px-6 mb-4">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveView("dashboard")}>
+          <div className="flex h-20 items-center justify-between px-6 mb-4">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setActiveView("dashboard"); setIsMobileMenuOpen(false); }}>
               <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-cyan-500/20">
                 Y
               </div>
@@ -178,15 +186,22 @@ function DashboardShell() {
                 <span className="text-[9px] font-bold text-cyan-400/60 uppercase tracking-widest">Concept</span>
               </div>
             </div>
+            
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="md:hidden p-2 text-slate-500 hover:text-white"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
           </div>
 
           <nav className="p-4 space-y-1">
-            <NavItem icon={<Stethoscope size={18} />} label="Health Assessment" active={activeView === "clinical"} onClick={() => setActiveView("clinical")} />
-            <NavItem icon={<FileText size={18} />} label="Diagnostics & Trends" isNew active={activeView === "smart-reports"} onClick={() => setActiveView("smart-reports")} />
-            <NavItem icon={<BookOpen size={18} />} label="Wellness Hub" active={activeView === "medicines"} onClick={() => setActiveView("medicines")} />
-            <NavItem icon={<Users size={18} />} label="Care Team" active={activeView === "care-team"} onClick={() => setActiveView("care-team")} />
-            <NavItem icon={<Calendar size={18} />} label="Clinic Hub" isNew active={activeView === "clinic-hub"} onClick={() => setActiveView("clinic-hub")} />
-            <NavItem icon={<MessageCircle size={18} />} label="WhatsApp Bot" isNew active={activeView === "whatsapp"} onClick={() => setActiveView("whatsapp")} />
+            <NavItem icon={<Stethoscope size={18} />} label="Health Assessment" active={activeView === "clinical"} onClick={() => { setActiveView("clinical"); setIsMobileMenuOpen(false); }} />
+            <NavItem icon={<FileText size={18} />} label="Diagnostics & Trends" isNew active={activeView === "smart-reports"} onClick={() => { setActiveView("smart-reports"); setIsMobileMenuOpen(false); }} />
+            <NavItem icon={<BookOpen size={18} />} label="Wellness Hub" active={activeView === "medicines"} onClick={() => { setActiveView("medicines"); setIsMobileMenuOpen(false); }} />
+            <NavItem icon={<Users size={18} />} label="Care Team" active={activeView === "care-team"} onClick={() => { setActiveView("care-team"); setIsMobileMenuOpen(false); }} />
+            <NavItem icon={<Calendar size={18} />} label="Clinic Hub" isNew active={activeView === "clinic-hub"} onClick={() => { setActiveView("clinic-hub"); setIsMobileMenuOpen(false); }} />
+            <NavItem icon={<MessageCircle size={18} />} label="WhatsApp Bot" isNew active={activeView === "whatsapp"} onClick={() => { setActiveView("whatsapp"); setIsMobileMenuOpen(false); }} />
 
             <div className="pt-12 px-2">
               <div className="h-px bg-white/5 mb-6" />
