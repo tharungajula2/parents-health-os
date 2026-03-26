@@ -20,36 +20,41 @@ export function HealthTrendChart() {
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm mb-8"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-card rounded-[2.5rem] border-white/5 p-10 bg-slate-950/40 backdrop-blur-3xl shadow-2xl overflow-hidden relative"
         >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+            
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12 relative z-10">
                 <div>
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        Diabetic Control Trajectory (HbA1c)
-                        <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wide font-bold">
-                            Target Reached! 🎉
+                    <h3 className="text-xl font-black text-white flex items-center gap-3 tracking-tighter uppercase mb-2">
+                        Glycemic Control Trajectory (HbA1c)
+                        <span className="bg-cyan-500/10 text-cyan-400 text-[10px] px-3 py-1 rounded-full border border-cyan-500/20 font-black tracking-widest uppercase">
+                            Target Threshold Achieved
                         </span>
                     </h3>
-                    <p className="text-slate-500 text-sm mt-1">
-                        Great job, Chaaya! Your blood sugar has dropped by <span className="text-emerald-600 font-bold">3.5 points</span> in 3 months.
+                    <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                        Bio-marker synchronization complete. Longitudinal HbA1c has dropped by <span className="text-cyan-400 font-black">3.5%</span> over {data.length} months.
                     </p>
                 </div>
-                <div className="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+                <div className="bg-cyan-500/10 text-cyan-400 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 border border-cyan-500/20 shadow-lg shadow-cyan-500/5">
                     <TrendingDown size={18} />
-                    -32% Improvement
+                    -32.4% Net Improvement
                 </div>
             </div>
 
             {/* CHART AREA */}
-            <div className="relative h-64 w-full bg-slate-50/50 rounded-2xl border border-slate-100 p-6 flex items-end justify-between px-12 md:px-24">
+            <div className="relative h-64 w-full bg-slate-950/40 rounded-3xl border border-white/5 p-8 flex items-end justify-between px-16 md:px-32 relative group/chart">
+                
+                {/* Visual Glow */}
+                <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/5 to-transparent opacity-50" />
 
                 {/* Background Grid Lines */}
-                <div className="absolute inset-0 p-6 pointer-events-none flex flex-col justify-between">
+                <div className="absolute inset-0 p-8 pointer-events-none flex flex-col justify-between z-0">
                     {[12, 10, 8, 6].map((line, i) => (
-                        <div key={i} className="w-full border-t border-slate-200/60 h-0 relative">
-                            <span className="absolute -left-6 -top-2 text-[10px] text-slate-400 font-mono">{line}%</span>
+                        <div key={i} className="w-full border-t border-white/5 h-0 relative">
+                            <span className="absolute -left-10 -top-2 text-[9px] text-slate-600 font-black tracking-tighter uppercase">{line}%</span>
                         </div>
                     ))}
                 </div>
@@ -57,51 +62,50 @@ export function HealthTrendChart() {
                 {/* Data Points */}
                 {data.map((item, idx) => {
                     const heightPercent = getHeight(item.value);
-                    const colorClass = idx === 0 ? "bg-red-500 shadow-red-200" : idx === 1 ? "bg-amber-400 shadow-amber-200" : "bg-emerald-500 shadow-emerald-200";
-                    const textClass = idx === 0 ? "text-red-600" : idx === 1 ? "text-amber-600" : "text-emerald-600";
+                    const isOptimal = item.value < 7.5;
+                    const isCritical = item.value > 10;
+                    
+                    const colorClass = isCritical ? "bg-red-500 shadow-red-500/40" : !isOptimal ? "bg-amber-400 shadow-amber-400/40" : "bg-cyan-500 shadow-cyan-500/40";
+                    const textClass = isCritical ? "text-red-400" : !isOptimal ? "text-amber-400" : "text-cyan-400";
 
                     return (
-                        <div key={idx} className="relative flex flex-col items-center justify-end h-full z-10 group w-12">
-                            {/* Connector Line (SVG would be ideal, but absolute positioning works for simple 3 points) */}
-
-                            {/* Bar/Point */}
+                        <div key={idx} className="relative flex flex-col items-center justify-end h-full z-10 group w-16">
+                            {/* Vertical Support Line */}
+                            <div className="absolute bottom-0 w-[1px] bg-white/5 h-full left-1/2 -translate-x-1/2 -z-10" />
+                            
+                            {/* Bar segment */}
                             <motion.div
                                 initial={{ height: 0 }}
                                 animate={{ height: `${heightPercent}%` }}
-                                transition={{ duration: 1, delay: idx * 0.3 }}
-                                className="w-2 bg-slate-200 rounded-t-full relative flex items-start justify-center"
+                                transition={{ duration: 1.5, delay: idx * 0.2, ease: "circOut" }}
+                                className="w-[2px] bg-gradient-to-t from-transparent via-white/10 to-white/20 relative flex items-start justify-center group-hover:bg-cyan-500/20 transition-colors"
                             >
-                                {/* Dot */}
-                                <div className={`absolute -top-3 w-6 h-6 rounded-full border-4 border-white shadow-lg ${colorClass} transition-transform group-hover:scale-125`} />
+                                {/* Active Point / Pulse */}
+                                <div className="absolute -top-3 flex items-center justify-center">
+                                    <div className={`absolute w-10 h-10 rounded-full ${colorClass.split(' ')[0]} opacity-20 blur-xl group-hover:opacity-40 transition-opacity animate-pulse`} />
+                                    <div className={`w-6 h-6 rounded-full border-4 border-slate-950 shadow-2xl ${colorClass} transition-all duration-500 group-hover:scale-125 group-hover:shadow-[0_0_20px_rgba(34,211,238,0.5)]`} />
+                                </div>
 
                                 {/* Tooltip */}
-                                <div className="absolute -top-12 bg-white px-2 py-1 rounded shadow-md border border-slate-100 text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {item.value}%
+                                <div className="absolute -top-16 bg-slate-900 border border-white/10 px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all transform scale-95 group-hover:scale-100 shadow-2xl pointer-events-none">
+                                    {item.value}% // {item.status}
                                 </div>
                             </motion.div>
 
                             {/* Label */}
-                            <div className="absolute -bottom-8 text-center">
-                                <span className={`text-lg font-bold block ${textClass}`}>{item.value}%</span>
-                                <span className="text-[10px] uppercase font-bold text-slate-400">{item.month}</span>
+                            <div className="absolute -bottom-10 text-center">
+                                <span className={`text-lg font-black block tracking-tighter ${textClass} mb-0.5`}>{item.value}%</span>
+                                <span className="text-[9px] uppercase font-black text-slate-600 tracking-widest">{item.month}</span>
                             </div>
                         </div>
                     )
                 })}
-
-                {/* SVG Line Overlay (simplified for these fixed points) */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none p-6 px-12 md:px-24" style={{ overflow: 'visible' }}>
-                    {/* We won't draw a perfect line dynamically without exact pixel widths, but the dots convey the trend enough for this demo. */}
-                    {/* If needed we can add a simple path if we knew container width, but CSS flex spacing is variable. */}
-                    {/* Visualizing specific trend line via CSS gradients or just the dots is often enough for "Clean UI" */}
-                </svg>
-
             </div>
 
-            <div className="mt-8 flex gap-4 text-xs text-slate-400 justify-center">
-                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Target Range (Below 7.5%)</span>
-                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-400"></div> Pre-Diabetic</span>
-                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Diabetic Risk</span>
+            <div className="mt-14 flex flex-wrap gap-8 text-[9px] font-black uppercase tracking-[0.2em] justify-center opacity-60">
+                <span className="flex items-center gap-2 text-cyan-400"><div className="h-1.5 w-1.5 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div> Target Optimization</span>
+                <span className="flex items-center gap-2 text-amber-400"><div className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></div> Pre-Clinical Elevation</span>
+                <span className="flex items-center gap-2 text-red-500"><div className="h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div> High-Critical Risk</span>
             </div>
         </motion.div>
     );

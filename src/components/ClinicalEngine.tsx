@@ -107,40 +107,40 @@ export function ClinicalEngine() {
     };
 
     return (
-        <div className="flex flex-col md:flex-row h-full md:h-[calc(100vh-8rem)] gap-8 overflow-y-auto md:overflow-hidden pb-20 md:pb-0">
+        <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-14rem)] gap-8 overflow-y-auto lg:overflow-hidden pb-32 lg:pb-0">
             {/* Left Panel: Questions */}
-            <div className="w-full md:w-1/2 flex-1 overflow-y-auto pr-1 md:pr-4 custom-scrollbar pb-32 md:pb-20">
-                <div className="mb-6 flex items-start justify-between">
-                    <div>
-                        <h2 className="text-xl md:text-2xl font-bold text-slate-900">Health Assessment</h2>
-                        <p className="text-sm text-slate-600">Complete this 15-point check for a holistic health profile.</p>
+            <div className="w-full lg:flex-1 overflow-y-auto pr-1 lg:pr-6 custom-scrollbar">
+                <div className="mb-10 flex items-start justify-between">
+                    <div className="mb-10 px-2">
+                        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase mb-2">Health Assessment</h2>
+                        <p className="text-sm text-slate-400 font-medium tracking-tight">Complete the 15-point clinical protocol for deep phenotyping.</p>
                     </div>
                     <button
                         onClick={handleReset}
-                        className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-red-600 transition-colors px-3 py-2 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-100"
+                        className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-red-400 transition-all px-4 py-2 rounded-xl bg-white/5 border border-white/5 hover:border-red-500/20"
                     >
-                        <RotateCcw size={14} />
+                        <RotateCcw size={12} className="group-hover:rotate-180 transition-transform duration-500" />
                         Reset Profile
                     </button>
                 </div>
 
                 <div className="space-y-6">
                     {QUESTIONS.map((q, idx) => (
-                        <div key={q.id} className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 backdrop-blur-sm transition-all hover:bg-white/80">
-                            <div className="mb-4 flex items-center gap-3">
-                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-sm font-bold text-orange-600">
+                        <div key={q.id} className="glass-card p-8 rounded-[2rem] border-white/5 bg-slate-900/40 hover:border-white/10 transition-all group">
+                            <div className="mb-6 flex items-center gap-4">
+                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 text-sm font-black text-white shadow-lg shadow-cyan-500/20">
                                     {idx + 1}
                                 </span>
-                                <h3 className="text-lg font-medium text-slate-900">{q.text}</h3>
+                                <h3 className="text-lg font-bold text-white tracking-tight group-hover:text-cyan-400 transition-colors">{q.text}</h3>
                             </div>
                             <div className="flex flex-wrap gap-3">
                                 {q.options.map((opt) => (
                                     <button
                                         key={opt.label}
                                         onClick={() => handleSelect(q.id, opt.label)}
-                                        className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${answers[q.id] === opt.label
-                                            ? "bg-orange-600 text-white shadow-lg"
-                                            : "bg-white border border-slate-200 text-slate-600 hover:border-orange-300 hover:bg-orange-50"
+                                        className={`rounded-2xl px-6 py-3 text-xs font-black uppercase tracking-widest transition-all ${answers[q.id] === opt.label
+                                            ? "bg-cyan-500 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.4)] scale-[1.02]"
+                                            : "bg-white/5 border border-white/5 text-slate-400 hover:border-cyan-500/30 hover:text-white"
                                             }`}
                                     >
                                         {opt.label}
@@ -153,42 +153,48 @@ export function ClinicalEngine() {
             </div>
 
             {/* Right Panel: Live Report Dashboard */}
-            <div className="w-full md:w-1/2 md:max-w-md shrink-0">
-                <div className="sticky top-0 h-auto md:h-full overflow-y-auto rounded-3xl bg-white/80 p-6 shadow-xl backdrop-blur-md border border-slate-200/60 custom-scrollbar flex flex-col">
-                    <div className="mb-6 text-center">
-                        <p className="text-sm font-medium uppercase tracking-wide text-slate-400">Health Assessment Score</p>
-                        <div className="flex items-center justify-center gap-2 mt-2">
-                            <span className="text-6xl font-bold text-slate-900">{scores.total}</span>
-                            <span className="text-xl text-slate-400 font-medium self-end mb-2">/ 175</span>
+            <div className="w-full lg:w-96 shrink-0">
+                <div className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-slate-950/60 backdrop-blur-3xl h-full flex flex-col shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-30" />
+                    
+                    <div className="mb-10 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Clinical Risk Composite</p>
+                        <div className="flex items-center justify-center gap-2 mt-4">
+                            <span className="text-7xl font-black text-white tracking-tighter shadow-sm">{scores.total}</span>
+                            <span className="text-xl text-slate-600 font-bold self-end mb-3">/ 175</span>
                         </div>
                     </div>
 
                     {/* Risk Banner */}
-                    <div className={`mb-6 rounded-xl border p-4 flex items-start gap-3 ${scores.riskColor}`}>
+                    <div className={`mb-10 rounded-2xl border p-5 flex items-start gap-4 transition-all ${
+                        scores.total > 40 ? "border-red-500/20 bg-red-500/5 text-red-400" :
+                        scores.total > 20 ? "border-amber-500/20 bg-amber-500/5 text-amber-400" :
+                        "border-cyan-500/20 bg-cyan-500/5 text-cyan-400"
+                    }`}>
                         <scores.RiskIcon size={24} className="shrink-0 mt-0.5" />
                         <div>
-                            <h4 className="font-bold text-sm uppercase tracking-wide">{scores.riskLevel}</h4>
-                            <p className="text-sm mt-1 opacity-90">Based on the 15-point clinical protocol.</p>
+                            <h4 className="font-black text-[10px] uppercase tracking-widest leading-tight mb-1">{scores.riskLevel}</h4>
+                            <p className="text-[11px] font-bold opacity-70">Protocol-driven health insight.</p>
                         </div>
                     </div>
 
-                    <div className="space-y-3 flex-1">
+                    <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {scores.categories.map((cat) => (
-                            <div key={cat.name} className="flex items-center gap-4">
-                                <div className={`flex h-8 w-8 min-w-[2rem] items-center justify-center rounded-lg ${cat.color}`}>
-                                    <cat.icon size={16} />
+                            <div key={cat.name} className="flex items-center gap-4 group">
+                                <div className={`flex h-9 w-9 min-w-[2.25rem] items-center justify-center rounded-xl bg-white/5 border border-white/5 text-cyan-400 transition-transform group-hover:scale-110 shadow-inner`}>
+                                    <cat.icon size={18} />
                                 </div>
                                 <div className="flex-1">
-                                    <div className="mb-1 flex justify-between text-xs">
-                                        <span className="font-medium text-slate-700">{cat.name}</span>
-                                        <span className="text-slate-500">{cat.score}</span>
+                                    <div className="mb-1.5 flex justify-between text-[10px] font-black uppercase tracking-widest">
+                                        <span className="text-slate-400">{cat.name}</span>
+                                        <span className="text-white">{cat.score}</span>
                                     </div>
-                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
                                         <motion.div
                                             initial={{ width: 0 }}
                                             animate={{ width: `${Math.min((cat.score / cat.max) * 100, 100)}%` }}
-                                            transition={{ duration: 0.5 }}
-                                            className={`h-full rounded-full ${cat.score > 0 ? "bg-orange-500" : "bg-slate-300"}`}
+                                            transition={{ duration: 0.8, ease: "easeOut" }}
+                                            className={`h-full rounded-full ${cat.score > (cat.max * 0.7) ? "bg-red-500" : cat.score > (cat.max * 0.4) ? "bg-amber-400" : "bg-cyan-500"} shadow-[0_0_8px_rgba(34,211,238,0.4)]`}
                                         />
                                     </div>
                                 </div>
@@ -196,12 +202,10 @@ export function ClinicalEngine() {
                         ))}
                     </div>
 
-                    <div className="mt-8 space-y-4 pt-6 border-t border-slate-200">
-
-
-                        <div className="bg-slate-900 rounded-xl p-4 text-white">
-                            <h4 className="font-semibold text-sm uppercase tracking-wide text-slate-400 mb-1">Recommended Plan</h4>
-                            <p className="font-medium">Specialist-Supervised, Multidisciplinary Care</p>
+                    <div className="mt-8 pt-6 border-t border-white/5">
+                        <div className="glass-card bg-white/5 rounded-2xl p-5 border-white/5 group hover:border-cyan-500/20 transition-all">
+                            <h4 className="font-black text-[9px] uppercase tracking-[0.2em] text-cyan-400 mb-2">Protocol Recommendation</h4>
+                            <p className="font-bold text-sm text-white leading-tight">Comprehensive Longevity Strategy Indicated</p>
                         </div>
                     </div>
                 </div>

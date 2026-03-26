@@ -46,24 +46,24 @@ export function HeaderIcons() {
     const notifications = [
         {
             id: 1,
-            icon: <Pill size={16} className="text-blue-600" />,
-            bg: "bg-blue-50",
+            icon: <Pill size={16} className="text-cyan-400" />,
+            bg: "bg-cyan-500/10",
             title: "Medicine Reminder",
             desc: "Levolin Rotacaps due at 9:00 PM.",
             time: "10m ago"
         },
         {
             id: 2,
-            icon: <Activity size={16} className="text-red-600" />,
-            bg: "bg-red-50",
+            icon: <Activity size={16} className="text-red-400" />,
+            bg: "bg-red-500/10",
             title: "Health Alert",
             desc: "Assessment indicates High Metabolic Risk.",
             time: "2h ago"
         },
         {
             id: 3,
-            icon: <User size={16} className="text-emerald-600" />,
-            bg: "bg-emerald-50",
+            icon: <User size={16} className="text-cyan-400" />,
+            bg: "bg-cyan-500/10",
             title: "Dr. Aruna",
             desc: "Updated your Care Plan.",
             time: "1d ago"
@@ -77,11 +77,11 @@ export function HeaderIcons() {
             <div className="relative" ref={notifRef}>
                 <button
                     onClick={() => { setShowNotifications(!showNotifications); setShowProfile(false); }}
-                    className="h-10 w-10 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors relative"
+                    className="h-10 w-10 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all relative"
                 >
                     <Bell size={20} />
                     {hasUnread && (
-                        <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+                        <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
                     )}
                 </button>
 
@@ -91,14 +91,14 @@ export function HeaderIcons() {
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-2 w-80 bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden origin-top-right"
+                            className="absolute right-0 mt-4 w-85 bg-slate-900/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem] border border-white/10 overflow-hidden origin-top-right z-[60]"
                         >
-                            <div className="p-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-                                <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
+                            <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5">
+                                <h3 className="font-black text-white text-xs uppercase tracking-widest">Neural Notifications</h3>
                                 {hasUnread && (
                                     <button
                                         onClick={() => setHasUnread(false)}
-                                        className="text-xs text-orange-600 font-medium hover:text-orange-700 flex items-center gap-1"
+                                        className="text-[10px] text-cyan-400 font-black uppercase tracking-widest hover:text-cyan-300 flex items-center gap-1 transition-colors"
                                     >
                                         <CheckCheck size={12} /> Mark read
                                     </button>
@@ -106,20 +106,20 @@ export function HeaderIcons() {
                             </div>
                             <div className="max-h-[300px] overflow-y-auto">
                                 {notifications.map((n) => (
-                                    <div key={n.id} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors flex gap-3">
-                                        <div className={`h-8 w-8 rounded-full ${n.bg} flex items-center justify-center shrink-0`}>
+                                    <div key={n.id} className="p-5 border-b border-white/5 hover:bg-white/5 transition-colors flex gap-4 cursor-pointer group">
+                                        <div className={`h-10 w-10 rounded-xl ${n.bg} border border-white/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
                                             {n.icon}
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-semibold text-slate-800">{n.title}</h4>
-                                            <p className="text-xs text-slate-500 leading-snug mt-0.5">{n.desc}</p>
-                                            <p className="text-[10px] text-slate-400 mt-1">{n.time}</p>
+                                            <h4 className="text-sm font-bold text-white tracking-tight">{n.title}</h4>
+                                            <p className="text-xs text-slate-400 leading-snug mt-1">{n.desc}</p>
+                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mt-2">{n.time}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="p-2 text-center bg-slate-50">
-                                <button className="text-xs font-semibold text-slate-500 hover:text-slate-800">View All</button>
+                            <div className="p-3 text-center bg-white/5">
+                                <button className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-white transition-colors">View All Neural Logs</button>
                             </div>
                         </motion.div>
                     )}
@@ -130,9 +130,9 @@ export function HeaderIcons() {
             <div className="relative" ref={profileRef}>
                 <button
                     onClick={() => { setShowProfile(!showProfile); setShowNotifications(false); }}
-                    className="h-10 w-10 overflow-hidden rounded-full bg-orange-100 border border-orange-200 hover:ring-2 hover:ring-orange-100 transition-all flex items-center justify-center"
+                    className="h-10 w-10 overflow-hidden rounded-full bg-cyan-500/10 border border-cyan-500/30 hover:ring-2 hover:ring-cyan-500/20 transition-all flex items-center justify-center"
                 >
-                    <span className="text-orange-700 font-bold">{userName.charAt(0).toUpperCase()}</span>
+                    <span className="text-cyan-400 font-black">{userName.charAt(0).toUpperCase()}</span>
                 </button>
 
                 <AnimatePresence>
@@ -141,37 +141,37 @@ export function HeaderIcons() {
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-2 w-64 bg-white shadow-xl rounded-2xl border border-slate-200 overflow-hidden origin-top-right"
+                            className="absolute right-0 mt-4 w-72 bg-slate-900/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem] border border-white/10 overflow-hidden origin-top-right z-[60]"
                         >
-                            <div className="p-5 bg-gradient-to-br from-orange-50 to-white border-b border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-12 w-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xl font-bold shadow-inner">
+                            <div className="p-6 bg-white/5 border-b border-white/5">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-cyan-500/20">
                                         {userName.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-slate-900">{userName}</h3>
-                                        <p className="text-xs text-slate-500 font-medium">
-                                            {localStorage.getItem('yukti_user_age') ? `${localStorage.getItem('yukti_user_age')} • ${localStorage.getItem('yukti_user_gender')}` : 'Patient Account'}
+                                        <h3 className="font-black text-white tracking-tight">{userName}</h3>
+                                        <p className="text-[10px] text-cyan-400 font-black uppercase tracking-widest mt-1">
+                                            {localStorage.getItem('yukti_user_age') ? `${localStorage.getItem('yukti_user_age')} • ${localStorage.getItem('yukti_user_gender')}` : 'Clinical Context'}
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-2 space-y-1">
+                            <div className="p-3 space-y-1">
                                 <button
                                     onClick={() => alert("Settings are locked in this Demo.")}
-                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors"
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/5 hover:text-white rounded-xl transition-all"
                                 >
-                                    <Settings size={16} /> Settings
+                                    <Settings size={16} /> System Settings
                                 </button>
 
-                                <div className="h-px bg-slate-100 my-1 mx-2"></div>
+                                <div className="h-px bg-white/5 my-2 mx-2"></div>
 
                                 <button
                                     onClick={handleSignOut}
-                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors"
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-all"
                                 >
-                                    <LogOut size={16} /> Sign Out
+                                    <LogOut size={16} /> Atomic Sign Out
                                 </button>
                             </div>
                         </motion.div>

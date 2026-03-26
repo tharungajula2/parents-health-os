@@ -261,7 +261,7 @@ export function MedicationTracker({ onTriggerCall }: MedicationTrackerProps) {
             const isToday = dateStr === todayKey;
             const isSelected = dateStr === viewingDate;
 
-            let statusParams = "bg-slate-50 text-slate-400";
+            let statusParams = "bg-slate-900 text-slate-500 border-white/5";
             let dotColor = null;
 
             if (new Date(dateStr) <= new Date()) {
@@ -273,13 +273,13 @@ export function MedicationTracker({ onTriggerCall }: MedicationTrackerProps) {
                     const takenCount = log.meds.length;
                     const hasVitals = Object.keys(log.vitals || {}).length > 0;
                     if (takenCount >= activeMedsCount) {
-                        statusParams = "bg-emerald-100 text-emerald-700 font-bold border-emerald-200";
+                        statusParams = "bg-cyan-500/20 text-cyan-400 font-black border-cyan-500/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]";
                     } else if (takenCount > 0) {
-                        statusParams = "bg-orange-100 text-orange-700 font-bold border-orange-200";
+                        statusParams = "bg-amber-500/20 text-amber-400 font-black border-amber-500/30";
                     } else {
-                        statusParams = "bg-red-50 text-red-400 border-red-100";
+                        statusParams = "bg-red-500/10 text-red-500 border-red-500/20 opacity-60";
                     }
-                    if (hasVitals) dotColor = "bg-blue-500";
+                    if (hasVitals) dotColor = "bg-blue-400";
                 }
             }
 
@@ -287,26 +287,28 @@ export function MedicationTracker({ onTriggerCall }: MedicationTrackerProps) {
                 <button
                     key={d}
                     onClick={() => { setViewingDate(dateStr); setActiveTab("daily"); }} // Go to daily view on click
-                    className={`h-10 w-10 md:h-12 md:w-12 rounded-xl flex items-center justify-center relative text-sm transition-all border ${isSelected ? "ring-2 ring-slate-900 z-10 scale-110" : ""
+                    className={`h-11 w-11 md:h-14 md:w-14 rounded-2xl flex items-center justify-center relative text-xs font-black transition-all border ${isSelected ? "ring-2 ring-cyan-500 z-10 scale-110 shadow-[0_0_20px_rgba(34,211,238,0.3)]" : "hover:border-white/20"
                         } ${statusParams}`}
                 >
                     {d}
-                    {dotColor && <div className={`absolute bottom-1 h-1.5 w-1.5 rounded-full ${dotColor}`} />}
+                    {dotColor && <div className={`absolute bottom-2 h-1.5 w-1.5 rounded-full ${dotColor} shadow-[0_0_8px_rgba(96,165,250,0.8)]`} />}
                 </button>
             );
         }
 
         return (
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                    <button onClick={() => setCurrentMonth(new Date(year, month - 1))} className="p-1 hover:bg-slate-100 rounded"><ChevronLeft size={20} /></button>
-                    <h3 className="font-bold text-slate-900">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
-                    <button onClick={() => setCurrentMonth(new Date(year, month + 1))} className="p-1 hover:bg-slate-100 rounded"><ChevronRight size={20} /></button>
+            <div className="glass-card p-8 rounded-[2rem] border-white/5 bg-slate-950/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+                
+                <div className="flex justify-between items-center mb-8">
+                    <button onClick={() => setCurrentMonth(new Date(year, month - 1))} className="p-3 hover:bg-white/5 rounded-xl text-slate-500 hover:text-cyan-400 transition-all active:scale-90"><ChevronLeft size={20} strokeWidth={3} /></button>
+                    <h3 className="font-black text-white uppercase tracking-widest text-sm">{currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+                    <button onClick={() => setCurrentMonth(new Date(year, month + 1))} className="p-3 hover:bg-white/5 rounded-xl text-slate-500 hover:text-cyan-400 transition-all active:scale-90"><ChevronRight size={20} strokeWidth={3} /></button>
                 </div>
-                <div className="grid grid-cols-7 gap-2 text-center mb-2">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i} className="text-xs font-bold text-slate-400">{d}</span>)}
+                <div className="grid grid-cols-7 gap-3 text-center mb-4">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i} className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{d}</span>)}
                 </div>
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-3">
                     {days}
                 </div>
             </div>
@@ -317,95 +319,131 @@ export function MedicationTracker({ onTriggerCall }: MedicationTrackerProps) {
     const activeMeds = meds.filter(m => !m.status || m.status === 'Active');
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-10">
+            {/* --- HEADER --- */}
+            <div className="px-2">
+                <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase mb-1">Wellness Hub</h2>
+                <p className="text-sm text-slate-400 font-medium tracking-tight">Manage daily protocols, medications, and vitals telemetry.</p>
+            </div>
 
             {/* TABS HEADER */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-100/50 p-1.5 rounded-2xl">
-                <div className="flex gap-1 w-full md:w-auto">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-slate-900/40 backdrop-blur-xl p-2 rounded-[2rem] border border-white/5 shadow-2xl">
+                <div className="flex gap-2 w-full md:w-auto">
                     {[
-                        { id: "daily", label: "Daily Care", icon: Check },
-                        { id: "calendar", label: "History", icon: CalendarIcon },
-                        { id: "manage", label: "Manage Meds", icon: pillIcon(meds.length) }
+                        { id: "daily", label: "Daily Protocol", icon: Check },
+                        { id: "calendar", label: "Bio-History", icon: CalendarIcon },
+                        { id: "manage", label: "Inventory", icon: pillIcon(meds.length) }
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === tab.id
-                                ? "bg-white text-slate-900 shadow-sm ring-1 ring-black/5"
-                                : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-8 py-3.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${activeTab === tab.id
+                                ? "bg-cyan-500 text-slate-950 shadow-[0_0_30px_rgba(34,211,238,0.4)] scale-105"
+                                : "text-slate-500 hover:text-cyan-400 hover:bg-white/5"
                                 }`}
                         >
-                            <tab.icon size={16} />
+                            <tab.icon size={14} strokeWidth={3} />
                             {tab.label}
                         </button>
                     ))}
                 </div>
 
                 {/* Test Call */}
-                <button onClick={onTriggerCall} className="flex text-xs text-slate-400 hover:text-orange-600 gap-1 items-center px-3 border border-slate-200/50 rounded-lg py-1 md:border-none md:p-0">
-                    <Clock size={12} /> <span className="hidden md:inline">Test Reminder</span><span className="md:hidden">Test Call</span>
+                <button 
+                    onClick={onTriggerCall} 
+                    className="flex text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-cyan-400 gap-2 items-center px-6 py-2 border border-white/5 rounded-full transition-all hover:bg-white/5"
+                >
+                    <Clock size={12} strokeWidth={3} /> 
+                    <span>Trigger Reminder System</span>
                 </button>
             </div>
 
             {/* --- TAB 1: DAILY CARE (Dynamic Date) --- */}
             {activeTab === "daily" && (
-                <div className="space-y-6">
+                <div className="space-y-8">
                     {/* DATE NAVIGATOR */}
-                    <div className="bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm flex items-center justify-between">
-                        <button onClick={() => changeDate(-1)} className="p-2 hover:bg-slate-50 rounded-lg text-slate-500"><ChevronLeft size={20} /></button>
+                    <div className="glass-card p-6 rounded-[2rem] border-white/5 bg-slate-950/40 backdrop-blur-3xl shadow-2xl flex items-center justify-between relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+                        
+                        <button onClick={() => changeDate(-1)} className="p-4 hover:bg-white/5 rounded-[1.5rem] text-slate-500 hover:text-cyan-400 transition-all active:scale-90 border border-transparent hover:border-white/5">
+                            <ChevronLeft size={24} strokeWidth={3} />
+                        </button>
+                        
                         <div className="text-center">
-                            <h3 className="text-lg font-bold text-slate-900">
-                                {viewingDate === todayKey ? "Today, " : ""}{new Date(viewingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                            <h3 className="text-2xl font-black text-white tracking-tighter uppercase flex items-center gap-3 justify-center">
+                                {viewingDate === todayKey ? (
+                                    <span className="bg-cyan-500/10 text-cyan-400 text-[10px] px-3 py-1 rounded-full border border-cyan-500/20 font-black tracking-widest leading-none">TODAY</span>
+                                ) : null}
+                                {new Date(viewingDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                             </h3>
                             {viewingDate !== todayKey && (
-                                <button onClick={() => setViewingDate(todayKey)} className="text-xs font-bold text-orange-600 uppercase tracking-wide mt-1 hover:underline">
-                                    Return to Today
+                                <button onClick={() => setViewingDate(todayKey)} className="text-[9px] font-black text-cyan-500 uppercase tracking-[0.2em] mt-2 hover:text-cyan-400 transition-all hover:underline">
+                                    Synchronization Reset
                                 </button>
                             )}
                         </div>
-                        <button onClick={() => changeDate(1)} className="p-2 hover:bg-slate-50 rounded-lg text-slate-500"><ChevronRight size={20} /></button>
+                        
+                        <button onClick={() => changeDate(1)} className="p-4 hover:bg-white/5 rounded-[1.5rem] text-slate-500 hover:text-cyan-400 transition-all active:scale-90 border border-transparent hover:border-white/5">
+                            <ChevronRight size={24} strokeWidth={3} />
+                        </button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                         {/* LEFT: Meds Checklist (7 cols) */}
-                        <div className="md:col-span-7 space-y-4">
-                            <div className="flex justify-between items-center px-1">
-                                <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                                    <Pill size={18} className="text-orange-500" /> Daily Medicines
-                                </h3>
-                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">
-                                    {activeLog.meds.length} / {activeMeds.length} Taken
+                        <div className="md:col-span-7 space-y-6">
+                            <div className="flex justify-between items-end px-2">
+                                <div>
+                                    <h3 className="text-xl font-black text-white flex items-center gap-3 tracking-tighter uppercase mb-1">
+                                        Active Protocol
+                                    </h3>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Therapeutic Adherence Tracking</p>
+                                </div>
+                                <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-3 py-1 rounded-full font-black tracking-widest uppercase">
+                                    {activeLog.meds.length} / {activeMeds.length} Synchronized
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 {activeMeds.map((med, idx) => {
                                     const isTaken = activeLog.meds.includes(med.name);
                                     return (
                                         <motion.div
                                             key={idx}
                                             layout
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: idx * 0.05 }}
                                             onClick={() => toggleMed(med.name)}
-                                            className={`group cursor-pointer p-4 rounded-2xl border flex items-center justify-between transition-all ${isTaken
-                                                ? "bg-emerald-50/60 border-emerald-100"
-                                                : "bg-white border-slate-200 hover:border-orange-300 shadow-sm hover:shadow-md"
+                                            className={`group cursor-pointer p-6 rounded-[2rem] border transition-all duration-500 relative overflow-hidden ${isTaken
+                                                ? "bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_20px_rgba(34,211,238,0.1)]"
+                                                : "bg-slate-900 border-white/5 hover:border-cyan-500/40 hover:bg-slate-800/50 shadow-xl"
                                                 }`}
                                         >
-                                            <div className="flex items-center gap-4">
-                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center transition-colors ${isTaken ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-300 group-hover:bg-orange-100 group-hover:text-orange-500"
+                                            {isTaken && (
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-3xl rounded-full -mr-16 -mt-16 pointer-events-none" />
+                                            )}
+                                            
+                                            <div className="flex items-center gap-5 relative z-10">
+                                                <div className={`h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${isTaken 
+                                                    ? "bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(34,211,238,0.5)] scale-110" 
+                                                    : "bg-slate-800 text-slate-500 group-hover:text-cyan-400 group-hover:bg-cyan-500/10 border border-white/5"
                                                     }`}>
-                                                    <Check size={20} strokeWidth={3} />
+                                                    <Check size={24} strokeWidth={4} />
                                                 </div>
                                                 <div>
-                                                    <h4 className={`font-bold ${isTaken ? "text-emerald-900 line-through opacity-70" : "text-slate-900"}`}>{med.name}</h4>
-                                                    <div className="text-xs text-slate-500 flex flex-wrap items-center gap-2 mt-1">
-                                                        <span className="font-semibold">{med.dosage}</span>
+                                                    <h4 className={`font-black tracking-tight text-lg ${isTaken ? "text-cyan-400 opacity-50 line-through" : "text-white"}`}>{med.name}</h4>
+                                                    <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                                                        <span className={`text-[10px] font-black uppercase tracking-widest ${isTaken ? "text-cyan-500/50" : "text-slate-400 opacity-60"}`}>{med.dosage}</span>
                                                         {med.slots && med.slots.length > 0 ? (
-                                                            <div className="flex gap-1">
-                                                                {med.slots.map(s => <span key={s} className="bg-slate-100 px-1.5 rounded text-[10px]">{s}</span>)}
+                                                            <div className="flex gap-1.5">
+                                                                {med.slots.map(s => (
+                                                                    <span key={s} className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border ${
+                                                                        isTaken ? "bg-cyan-500/5 border-cyan-500/20 text-cyan-400/50" : "bg-white/5 border-white/5 text-slate-500"
+                                                                    }`}>{s}</span>
+                                                                ))}
                                                             </div>
                                                         ) : (
-                                                            <span>• {med.timing}</span>
+                                                            <span className={`text-[9px] font-black uppercase tracking-widest ${isTaken ? "text-cyan-500/30" : "text-slate-600"}`}>• {med.timing}</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -417,159 +455,163 @@ export function MedicationTracker({ onTriggerCall }: MedicationTrackerProps) {
                         </div>
 
                         {/* RIGHT: Vitals & Habits (5 cols) */}
-                        <div className="md:col-span-5 space-y-6">
+                        <div className="md:col-span-5 space-y-8">
                             {/* 1. VITALS CARD */}
-                            <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100 relative">
-                                <h3 className="font-bold text-blue-900 flex items-center gap-2 mb-4">
-                                    <Activity size={18} className="text-blue-600" /> Vitals for {new Date(viewingDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            <div className="glass-card p-8 rounded-[2rem] border-white/5 bg-slate-950/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full -mr-16 -mt-16" />
+                                
+                                <h3 className="text-[10px] font-black text-blue-400 flex items-center gap-3 tracking-[0.2em] uppercase mb-6">
+                                    <Activity size={14} strokeWidth={3} /> Biometric Telemetry
                                 </h3>
 
-                                <div className="space-y-4">
+                                <div className="space-y-6">
                                     <div>
-                                        <label className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-1 block">Blood Pressure (Sys/Dia)</label>
-                                        <div className="flex gap-2">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Blood Pressure (Sys/Dia)</label>
+                                        <div className="flex items-center gap-3">
                                             <div className="relative flex-1">
                                                 <input
                                                     type="number"
                                                     placeholder="120"
                                                     value={statsInput.bpSys || ""}
                                                     onChange={e => setStatsInput({ ...statsInput, bpSys: Number(e.target.value) })}
-                                                    className="w-full px-3 py-2 rounded-xl border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-semibold text-slate-700"
+                                                    className="w-full bg-slate-900 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-lg focus:border-blue-500/50 outline-none transition-all placeholder:text-slate-700"
                                                 />
                                             </div>
-                                            <span className="text-slate-300 text-xl font-light">/</span>
+                                            <span className="text-slate-800 text-2xl font-black">/</span>
                                             <div className="relative flex-1">
                                                 <input
                                                     type="number"
                                                     placeholder="80"
                                                     value={statsInput.bpDia || ""}
                                                     onChange={e => setStatsInput({ ...statsInput, bpDia: Number(e.target.value) })}
-                                                    className="w-full px-3 py-2 rounded-xl border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-semibold text-slate-700"
+                                                    className="w-full bg-slate-900 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-lg focus:border-blue-500/50 outline-none transition-all placeholder:text-slate-700"
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-1 block">Sugar</label>
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Glucose (mg/dL)</label>
                                             <input
                                                 type="number"
                                                 placeholder="100"
                                                 value={statsInput.sugar || ""}
                                                 onChange={e => setStatsInput({ ...statsInput, sugar: Number(e.target.value) })}
-                                                className="w-full px-3 py-2 rounded-xl border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-semibold text-slate-700"
+                                                className="w-full bg-slate-900 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-lg focus:border-blue-500/50 outline-none transition-all placeholder:text-slate-700"
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-1 block">Weight</label>
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Weight (kg)</label>
                                             <input
                                                 type="number"
                                                 placeholder="65"
                                                 value={statsInput.weight || ""}
                                                 onChange={e => setStatsInput({ ...statsInput, weight: Number(e.target.value) })}
-                                                className="w-full px-3 py-2 rounded-xl border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-semibold text-slate-700"
+                                                className="w-full bg-slate-900 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-lg focus:border-blue-500/50 outline-none transition-all placeholder:text-slate-700"
                                             />
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* 2. DEVICE SYNC (Moved Up & Compacted) */}
-                            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-5">
-                                    <Activity size={80} />
+                            {/* 2. DEVICE SYNC */}
+                            <div className="glass-card p-8 rounded-[2rem] border-white/5 bg-slate-950/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-6 opacity-5">
+                                    <Bluetooth size={100} strokeWidth={1} />
                                 </div>
-                                <div className="relative z-10 mb-4">
-                                    <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                                        <Bluetooth size={18} className="text-blue-600" /> Connected Devices
-                                    </h3>
-                                </div>
+                                
+                                <h3 className="text-[10px] font-black text-cyan-400 flex items-center gap-3 tracking-[0.2em] uppercase mb-6">
+                                    <Bluetooth size={14} strokeWidth={3} /> IoT synchronization
+                                </h3>
 
-                                <div className="flex flex-col gap-3 relative z-10">
+                                <div className="flex flex-col gap-4 relative z-10">
                                     {/* Card 1: CGM */}
-                                    <div className="bg-white p-3 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                                                <Activity size={16} />
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex items-center justify-between hover:bg-slate-800/50 transition-all group/item">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-cyan-500/10 text-cyan-400 rounded-xl group-hover/item:bg-cyan-500 group-hover/item:text-slate-950 transition-colors">
+                                                <Activity size={18} strokeWidth={3} />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-900 text-xs">FreeStyle Libre</h4>
-                                                <p className="text-[10px] text-slate-500 font-medium">110 mg/dL (Now)</p>
+                                                <h4 className="font-black text-white text-xs tracking-tight">FreeStyle Libre 3</h4>
+                                                <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5">Continuous Monitoring</p>
                                             </div>
                                         </div>
-                                        <button onClick={() => simulateDeviceSync('cgm')} className="text-[10px] font-bold text-white bg-emerald-500 px-2 py-1 rounded-full shadow-sm hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-1">
+                                        <button onClick={() => simulateDeviceSync('cgm')} className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1.5 rounded-full hover:bg-cyan-500 hover:text-slate-950 transition-all uppercase tracking-widest">
                                             Sync
                                         </button>
                                     </div>
 
                                     {/* Card 2: Smart Watch */}
-                                    <div className="bg-white p-3 rounded-2xl border border-blue-100 shadow-sm flex items-center justify-between hover:shadow-md transition-all">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                                <Watch size={16} />
+                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex items-center justify-between hover:bg-slate-800/50 transition-all group/item">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl group-hover/item:bg-blue-500 group-hover/item:text-slate-950 transition-colors">
+                                                <Watch size={18} strokeWidth={3} />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-900 text-xs">Apple Watch</h4>
-                                                <p className="text-[10px] text-slate-500 font-medium">Steps, HR, Wgt</p>
+                                                <h4 className="font-black text-white text-xs tracking-tight">Watch Ultra 2</h4>
+                                                <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5">Activity & Vitals</p>
                                             </div>
                                         </div>
-                                        <button onClick={() => simulateDeviceSync('watch')} className="text-[10px] font-bold text-white bg-blue-500 px-2 py-1 rounded-full shadow-sm hover:bg-blue-600 active:scale-95 transition-all flex items-center gap-1">
+                                        <button onClick={() => simulateDeviceSync('watch')} className="text-[9px] font-black text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-full hover:bg-blue-500 hover:text-slate-950 transition-all uppercase tracking-widest">
                                             Sync
                                         </button>
                                     </div>
 
                                     {/* Card 3: BP Monitor (Disconnected) */}
-                                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 border-dashed flex items-center justify-between opacity-70 hover:opacity-100 transition-all cursor-pointer">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-slate-200 text-slate-500 rounded-lg">
-                                                <Heart size={16} />
+                                    <div className="bg-slate-950/40 p-4 rounded-2xl border border-white/5 border-dashed flex items-center justify-between opacity-40 hover:opacity-100 transition-all cursor-pointer group/item">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-slate-800 text-slate-600 rounded-xl group-hover/item:bg-slate-700 transition-colors">
+                                                <Heart size={18} strokeWidth={3} />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-700 text-xs">Omron BP</h4>
-                                                <p className="text-[10px] text-slate-400 font-medium">Disconnected</p>
+                                                <h4 className="font-black text-slate-500 text-xs tracking-tight">Omron X7 Smart</h4>
+                                                <p className="text-[9px] text-slate-700 font-black uppercase tracking-widest mt-0.5">Not Connected</p>
                                             </div>
                                         </div>
-                                        <span className="text-[10px] font-bold text-orange-400">Pair</span>
-                                    </div>
+                                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover/item:text-cyan-400">Pair Device</span>
+                                            </div>
                                 </div>
                             </div>
 
-                            {/* 3. HABITS CARD (Moved Down) */}
-                            <div className="bg-emerald-50/50 p-6 rounded-3xl border border-emerald-100 relative">
-                                <h3 className="font-bold text-emerald-900 flex items-center gap-2 mb-4">
-                                    <Activity size={18} className="text-emerald-600" /> Lifestyle & Habits
+                            {/* 3. HABITS CARD */}
+                            <div className="glass-card p-10 rounded-[2rem] border-white/5 bg-slate-950/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full -mr-16 -mt-16" />
+                                
+                                <h3 className="text-[10px] font-black text-emerald-400 flex items-center gap-3 tracking-[0.2em] uppercase mb-8">
+                                    <Activity size={14} strokeWidth={3} /> Lifestyle optimization
                                 </h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-emerald-100/50">
-                                        <label className="text-sm font-semibold text-slate-700">Followed Meal Plan?</label>
+                                
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between bg-slate-900/50 p-5 rounded-2xl border border-white/5 group-hover:bg-slate-800/50 transition-all">
+                                        <label className="text-xs font-black text-white uppercase tracking-tight">Therapeutic Nutrition Protocol</label>
                                         <button
                                             onClick={() => setHabitsInput({ ...habitsInput, mealPlan: !habitsInput.mealPlan })}
-                                            className={`w-12 h-7 rounded-full transition-colors relative ${habitsInput.mealPlan ? "bg-emerald-500" : "bg-slate-200"}`}
+                                            className={`w-14 h-8 rounded-full transition-all duration-500 relative ${habitsInput.mealPlan ? "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-slate-800"}`}
                                         >
-                                            <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${habitsInput.mealPlan ? "translate-x-5" : "translate-x-0"}`} />
+                                            <div className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-500 ${habitsInput.mealPlan ? "translate-x-6" : "translate-x-0"}`} />
                                         </button>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-xs font-bold text-emerald-600 uppercase tracking-wide mb-1 block">Activity (Mins)</label>
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Physical Activity (Min)</label>
                                             <input
                                                 type="number"
                                                 placeholder="30"
                                                 value={habitsInput.activity}
                                                 onChange={e => setHabitsInput({ ...habitsInput, activity: e.target.value })}
-                                                className="w-full px-3 py-2 rounded-xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-semibold text-slate-700"
+                                                className="w-full bg-slate-900 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-lg focus:border-emerald-500/50 outline-none transition-all placeholder:text-slate-700"
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-bold text-emerald-600 uppercase tracking-wide mb-1 block">Water (Glasses)</label>
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Hydration (Liters/Gl)</label>
                                             <input
                                                 type="number"
                                                 placeholder="8"
                                                 value={habitsInput.hydration}
                                                 onChange={e => setHabitsInput({ ...habitsInput, hydration: e.target.value })}
-                                                className="w-full px-3 py-2 rounded-xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-semibold text-slate-700"
+                                                className="w-full bg-slate-900 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-lg focus:border-emerald-500/50 outline-none transition-all placeholder:text-slate-700"
                                             />
                                         </div>
                                     </div>
@@ -578,9 +620,10 @@ export function MedicationTracker({ onTriggerCall }: MedicationTrackerProps) {
 
                             <button
                                 onClick={saveVitalsAndHabits}
-                                className="w-full py-3 bg-slate-900 hover:bg-black text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-[0.98]"
+                                className="w-full py-6 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-[0_0_40px_rgba(34,211,238,0.2)] transition-all active:scale-[0.98] group flex items-center justify-center gap-3"
                             >
-                                Save Log for {new Date(viewingDate).toLocaleDateString()}
+                                <Check size={18} strokeWidth={4} />
+                                Synchronize Log for {new Date(viewingDate).toLocaleDateString()}
                             </button>
                         </div>
                     </div>
@@ -589,18 +632,30 @@ export function MedicationTracker({ onTriggerCall }: MedicationTrackerProps) {
 
             {/* --- TAB 2: CALENDAR --- */}
             {activeTab === "calendar" && (
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                    <div className="md:col-span-7">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+                    <div className="md:col-span-8">
                         {renderCalendar()}
                     </div>
-                    <div className="md:col-span-5">
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-lg h-full flex flex-col justify-center items-center text-center">
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">History Mode</h3>
-                            <p className="text-slate-500 mb-6">Select a date on the calendar to view or edit its detailed log.</p>
-                            <div className="flex gap-2 text-sm text-slate-400">
-                                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-400" /> Perfect</span>
-                                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-orange-400" /> Partial</span>
-                                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-400" /> Missed</span>
+                    <div className="md:col-span-4">
+                        <div className="glass-card p-10 rounded-[2.5rem] border-white/5 bg-slate-950/40 backdrop-blur-3xl shadow-2xl h-full flex flex-col justify-center items-center text-center relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-3xl rounded-full -mr-16 -mt-16" />
+                            
+                            <h3 className="text-xl font-black text-white mb-4 uppercase tracking-tighter">Protocol Archives</h3>
+                            <p className="text-slate-500 text-xs font-medium leading-relaxed mb-8">Select a temporal coordinate on the matrix to audit historical biometric synchronization and adherence logs.</p>
+                            
+                            <div className="flex flex-col gap-4 w-full">
+                                <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                    <div className="w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Target Synchronized</span>
+                                </div>
+                                <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                    <div className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Partial Adherence</span>
+                                </div>
+                                <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                                    <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Missed Protocol</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -609,143 +664,76 @@ export function MedicationTracker({ onTriggerCall }: MedicationTrackerProps) {
 
             {/* --- TAB 3: MANAGE MEDS --- */}
             {activeTab === "manage" && (
-                <div className="space-y-6">
-                    <div className="flex items-center justify-between">
+                <div className="space-y-10">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
                         <div>
-                            <h3 className="text-xl font-bold text-slate-900">Manage Inventory</h3>
-                            <p className="text-sm text-slate-500">Edit dosages or add manual supplements.</p>
+                            <h3 className="text-2xl font-black text-white tracking-tighter uppercase mb-2">Inventory Management</h3>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed max-w-md">Edit therapeutic dosages, configuration parameters or integrate supplementary manual formulations into the active stack.</p>
                         </div>
                         <button
                             onClick={() => setIsAddingMed(true)}
-                            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all shadow-sm"
+                            className="flex items-center gap-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-8 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-[0_0_30px_rgba(34,211,238,0.2)] active:scale-95 group"
                         >
-                            <PlusCircle size={16} /> Add New
+                            <PlusCircle size={14} strokeWidth={4} /> 
+                            Add Formulation
                         </button>
                     </div>
 
-                    <div className="grid gap-4">
+                    <div className="grid gap-6">
                         {/* ADD NEW FORM */}
                         {isAddingMed && (
-                            <motion.div layout initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl border-2 border-orange-200 shadow-md">
-                                <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2"><PlusCircle size={18} className="text-orange-600" /> Add Custom Medicine</h4>
-                                <form onSubmit={addMed} className="space-y-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase">Medicine Name</label>
-                                        <input
-                                            placeholder="e.g. Coconut Oil / Vitamin D"
-                                            value={newMed.name}
-                                            onChange={e => setNewMed({ ...newMed, name: e.target.value })}
-                                            className="w-full mt-1 p-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-200 outline-none"
-                                            required
-                                        />
-                                    </div>
-
-                                    {/* Structured Slots */}
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Time of Day</label>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {["Morning", "Afternoon", "Evening", "Night"].map((slot) => (
-                                                <button
-                                                    key={slot}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const current = newMed.slots || [];
-                                                        const updated = current.includes(slot as any)
-                                                            ? current.filter(s => s !== slot)
-                                                            : [...current, slot];
-                                                        setNewMed({ ...newMed, slots: updated as any });
-                                                    }}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${(newMed.slots || []).includes(slot as any)
-                                                        ? "bg-blue-600 text-white border-blue-600"
-                                                        : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
-                                                        }`}
-                                                >
-                                                    {slot}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Food Relation */}
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Relation to Food</label>
-                                        <div className="flex gap-4">
-                                            {["Before Food", "After Food"].map((opt) => (
-                                                <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name="foodRel"
-                                                        checked={newMed.relationToFood === opt}
-                                                        onChange={() => setNewMed({ ...newMed, relationToFood: opt as any })}
-                                                        className="text-orange-600 focus:ring-orange-500"
-                                                    />
-                                                    <span className="text-sm text-slate-700">{opt}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase">Dosage</label>
-                                        <input
-                                            placeholder="e.g. 1 Tablet / 1 tsp"
-                                            value={newMed.dosage}
-                                            onChange={e => setNewMed({ ...newMed, dosage: e.target.value })}
-                                            className="w-full mt-1 p-2 border rounded-lg text-sm"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase">Remarks (Optional)</label>
-                                        <input
-                                            placeholder="e.g. Use warm water"
-                                            value={newMed.remarks || ""}
-                                            onChange={e => setNewMed({ ...newMed, remarks: e.target.value })}
-                                            className="w-full mt-1 p-2 border rounded-lg text-sm"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase">Type</label>
-                                        <select value={newMed.type} onChange={e => setNewMed({ ...newMed, type: e.target.value as any })} className="w-full mt-1 p-2 border rounded-lg text-sm">
-                                            <option value="Chronic">Chronic (Daily/Long-term)</option>
-                                            <option value="Acute">Acute (Short-term)</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex gap-2 justify-end pt-2">
-                                        <button type="button" onClick={() => setIsAddingMed(false)} className="px-4 py-2 text-slate-500 text-sm">Cancel</button>
-                                        <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium">Add to List</button>
-                                    </div>
-                                </form>
-                            </motion.div>
-                        )}
-                        {meds.map((med, idx) => {
-                            // EDIT MODE (Inline)
-                            if (editingMed?.name === med.name) {
-                                return (
-                                    <motion.div key={idx} layout className="bg-white p-6 rounded-2xl border-2 border-orange-100 shadow-md">
-                                        <h4 className="font-bold text-slate-900 mb-4">Edit {med.name}</h4>
-                                        <form onSubmit={updateMed} className="space-y-4">
-
-                                            {/* Structured Slots */}
+                            <motion.div layout initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-10 rounded-[2.5rem] border-cyan-500/20 bg-slate-950/60 backdrop-blur-3xl shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/10 blur-3xl rounded-full -mr-20 -mt-20" />
+                                
+                                <h4 className="text-[10px] font-black text-cyan-400 mb-8 flex items-center gap-3 tracking-[0.2em] uppercase">
+                                    <PlusCircle size={14} strokeWidth={3} /> Register New Formulation
+                                </h4>
+                                
+                                <form onSubmit={addMed} className="space-y-8">
+                                    <div className="grid md:grid-cols-2 gap-8">
+                                        <div className="space-y-6">
                                             <div>
-                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Time of Day</label>
+                                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Formulation Identity</label>
+                                                <input
+                                                    placeholder="e.g. Coconut Oil / Vitamin D"
+                                                    value={newMed.name}
+                                                    onChange={e => setNewMed({ ...newMed, name: e.target.value })}
+                                                    className="w-full bg-slate-900/50 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-sm focus:border-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Dosage metric</label>
+                                                <input
+                                                    placeholder="e.g. 1 Tablet / 1 tsp"
+                                                    value={newMed.dosage}
+                                                    onChange={e => setNewMed({ ...newMed, dosage: e.target.value })}
+                                                    className="w-full bg-slate-900/50 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-sm focus:border-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Chronobiology protocol</label>
                                                 <div className="flex gap-2 flex-wrap">
                                                     {["Morning", "Afternoon", "Evening", "Night"].map((slot) => (
                                                         <button
                                                             key={slot}
                                                             type="button"
                                                             onClick={() => {
-                                                                const current = editingMed.slots || [];
+                                                                const current = newMed.slots || [];
                                                                 const updated = current.includes(slot as any)
                                                                     ? current.filter(s => s !== slot)
                                                                     : [...current, slot];
-                                                                setEditingMed({ ...editingMed, slots: updated as any });
+                                                                setNewMed({ ...newMed, slots: updated as any });
                                                             }}
-                                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${(editingMed.slots || []).includes(slot as any)
-                                                                ? "bg-blue-600 text-white border-blue-600"
-                                                                : "bg-white text-slate-500 border-slate-200 hover:border-blue-300"
-                                                                }`}
+                                                            className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all border uppercase tracking-widest ${
+                                                                (newMed.slots || []).includes(slot as any)
+                                                                    ? "bg-cyan-500 text-slate-950 border-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+                                                                    : "bg-slate-900/50 text-slate-500 border-white/5 hover:border-white/20"
+                                                            }`}
                                                         >
                                                             {slot}
                                                         </button>
@@ -753,79 +741,183 @@ export function MedicationTracker({ onTriggerCall }: MedicationTrackerProps) {
                                                 </div>
                                             </div>
 
-                                            {/* Food Relation */}
                                             <div>
-                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Relation to Food</label>
-                                                <div className="flex gap-4">
+                                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Physiological correlation</label>
+                                                <div className="flex gap-6">
                                                     {["Before Food", "After Food"].map((opt) => (
-                                                        <label key={opt} className="flex items-center gap-2 cursor-pointer">
-                                                            <input
-                                                                type="radio"
-                                                                name={`foodRel-${idx}`} // Unique name per item
-                                                                checked={editingMed.relationToFood === opt}
-                                                                onChange={() => setEditingMed({ ...editingMed, relationToFood: opt as any })}
-                                                                className="text-orange-600 focus:ring-orange-500"
-                                                            />
-                                                            <span className="text-sm text-slate-700">{opt}</span>
+                                                        <label key={opt} className="flex items-center gap-3 cursor-pointer group/radio">
+                                                            <div className="relative flex items-center justify-center">
+                                                                <input
+                                                                    type="radio"
+                                                                    name="foodRel"
+                                                                    checked={newMed.relationToFood === opt}
+                                                                    onChange={() => setNewMed({ ...newMed, relationToFood: opt as any })}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-5 h-5 rounded-full border-2 transition-all ${newMed.relationToFood === opt ? "border-cyan-500 bg-cyan-500/20" : "border-slate-700 bg-transparent group-hover/radio:border-slate-500"}`} />
+                                                                {newMed.relationToFood === opt && <div className="absolute w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />}
+                                                            </div>
+                                                            <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${newMed.relationToFood === opt ? "text-white" : "text-slate-500"}`}>{opt}</span>
                                                         </label>
                                                     ))}
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
 
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="text-xs font-bold text-slate-500 uppercase">Dosage</label>
-                                                    <input value={editingMed.dosage} onChange={e => setEditingMed({ ...editingMed, dosage: e.target.value })} className="w-full mt-1 p-2 border rounded-lg text-sm" />
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-bold text-slate-500 uppercase">Type</label>
-                                                    <select value={editingMed.type} onChange={e => setEditingMed({ ...editingMed, type: e.target.value as any })} className="w-full mt-1 p-2 border rounded-lg text-sm">
-                                                        <option value="Chronic">Chronic</option>
-                                                        <option value="Acute">Acute</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="text-xs font-bold text-slate-500 uppercase">Remarks</label>
-                                                <input value={editingMed.remarks || ""} onChange={e => setEditingMed({ ...editingMed, remarks: e.target.value })} className="w-full mt-1 p-2 border rounded-lg text-sm" />
-                                            </div>
-                                            <div className="flex gap-2 justify-end pt-2">
-                                                <button type="button" onClick={() => setEditingMed(null)} className="px-4 py-2 text-slate-500 text-sm">Cancel</button>
-                                                <button type="submit" className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium">Save Changes</button>
-                                            </div>
-                                        </form>
-                                    </motion.div>
-                                );
-                            }
-
-                            // DISPLAY CARD
-                            return (
-                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between group hover:border-orange-200 transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-10 w-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
-                                            <Pill size={20} />
+                                    <div className="grid md:grid-cols-2 gap-8">
+                                        <div>
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Categorization</label>
+                                            <select 
+                                                value={newMed.type} 
+                                                onChange={e => setNewMed({ ...newMed, type: e.target.value as any })} 
+                                                className="w-full bg-slate-900/50 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-sm focus:border-cyan-500/50 outline-none transition-all appearance-none cursor-pointer"
+                                            >
+                                                <option value="Chronic" className="bg-slate-950">Chronic Protocol (Long-term)</option>
+                                                <option value="Acute" className="bg-slate-950">Acute Protocol (Intervention)</option>
+                                            </select>
                                         </div>
                                         <div>
-                                            <h4 className="font-bold text-slate-900">{med.name}</h4>
-                                            <p className="text-xs text-slate-500">{med.dosage} • {med.timing}</p>
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Clinical Remarks</label>
+                                            <input
+                                                placeholder="e.g. Ingest with alkaline water"
+                                                value={newMed.remarks || ""}
+                                                onChange={e => setNewMed({ ...newMed, remarks: e.target.value })}
+                                                className="w-full bg-slate-900/50 border border-white/5 px-4 py-3 rounded-xl text-white font-black text-sm focus:border-cyan-500/50 outline-none transition-all placeholder:text-slate-700"
+                                            />
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => setEditingMed(med)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
-                                            <Edit3 size={16} />
+
+                                    <div className="flex gap-4 justify-end pt-4 border-t border-white/5">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setIsAddingMed(false)} 
+                                            className="px-8 py-4 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+                                        >
+                                            Abort
                                         </button>
-                                        <button onClick={() => {
-                                            if (confirm("Stop taking this medicine? It will be moved to history.")) {
-                                                const updated = meds.map(m => m.name === med.name ? { ...m, status: "Archived" as const } : m);
-                                                saveMedsList(updated);
-                                            }
-                                        }} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
-                                            <Trash2 size={16} />
+                                        <button 
+                                            type="submit" 
+                                            className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95"
+                                        >
+                                            Deploy Formulation
                                         </button>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                </form>
+                            </motion.div>
+                        )}
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {meds.map((med, idx) => {
+                                // EDIT MODE (Inline)
+                                if (editingMed?.name === med.name) {
+                                    return (
+                                        <motion.div key={idx} layout className="glass-card p-8 rounded-[2rem] border-amber-500/20 bg-slate-950/60 backdrop-blur-3xl shadow-xl relative overflow-hidden">
+                                            <h4 className="text-[10px] font-black text-amber-400 mb-6 flex items-center gap-3 tracking-[0.2em] uppercase">
+                                                <Edit3 size={14} strokeWidth={3} /> Reconfigure formulation
+                                            </h4>
+                                            
+                                            <form onSubmit={updateMed} className="space-y-6">
+                                                <div>
+                                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Protocol Chronology</label>
+                                                    <div className="flex gap-2 flex-wrap">
+                                                        {["Morning", "Afternoon", "Evening", "Night"].map((slot) => (
+                                                            <button
+                                                                key={slot}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const current = editingMed.slots || [];
+                                                                    const updated = current.includes(slot as any)
+                                                                        ? current.filter(s => s !== slot)
+                                                                        : [...current, slot];
+                                                                    setEditingMed({ ...editingMed, slots: updated as any });
+                                                                }}
+                                                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black transition-all border uppercase tracking-widest ${
+                                                                    (editingMed.slots || []).includes(slot as any)
+                                                                        ? "bg-amber-500 text-slate-950 border-amber-500"
+                                                                        : "bg-slate-900/50 text-slate-600 border-white/5 hover:border-white/10"
+                                                                }`}
+                                                            >
+                                                                {slot}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Dosage</label>
+                                                        <input 
+                                                            value={editingMed.dosage} 
+                                                            onChange={e => setEditingMed({ ...editingMed, dosage: e.target.value })} 
+                                                            className="w-full bg-slate-900 border border-white/5 px-3 py-2.5 rounded-xl text-white font-black text-xs focus:border-amber-500/50 outline-none" 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Type</label>
+                                                        <select 
+                                                            value={editingMed.type} 
+                                                            onChange={e => setEditingMed({ ...editingMed, type: e.target.value as any })} 
+                                                            className="w-full bg-slate-900 border border-white/5 px-3 py-2.5 rounded-xl text-white font-black text-xs focus:border-amber-500/50 outline-none appearance-none"
+                                                        >
+                                                            <option value="Chronic">Chronic</option>
+                                                            <option value="Acute">Acute</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-2 justify-end pt-2">
+                                                    <button type="button" onClick={() => setEditingMed(null)} className="px-4 py-2 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors">Abort</button>
+                                                    <button type="submit" className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg active:scale-95">Update</button>
+                                                </div>
+                                            </form>
+                                        </motion.div>
+                                    );
+                                }
+
+                                // DISPLAY CARD
+                                return (
+                                    <div key={idx} className="glass-card p-6 rounded-[1.5rem] border-white/5 bg-slate-900/40 hover:bg-slate-900/60 backdrop-blur-xl transition-all group relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-20 h-20 bg-cyan-500/5 blur-2xl rounded-full -mr-10 -mt-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        
+                                        <div className="flex items-center justify-between relative z-10">
+                                            <div className="flex items-center gap-5">
+                                                <div className="h-12 w-12 rounded-2xl bg-slate-950 border border-white/5 text-cyan-400 flex items-center justify-center shadow-inner group-hover:border-cyan-500/30 transition-all">
+                                                    <Pill size={22} strokeWidth={2.5} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-white text-sm tracking-tight mb-1 group-hover:text-cyan-400 transition-colors uppercase">{med.name}</h4>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest bg-slate-950 px-2 py-0.5 rounded-md border border-white/5">{med.dosage}</span>
+                                                        <span className="text-[9px] font-black text-cyan-500 uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{med.timing}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                                                <button 
+                                                    onClick={() => setEditingMed(med)} 
+                                                    className="p-2.5 bg-slate-950 text-slate-400 hover:text-amber-400 border border-white/5 hover:border-amber-500/30 rounded-xl transition-all active:scale-90"
+                                                >
+                                                    <Edit3 size={14} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        if (confirm(`Deprioritize ${med.name}? It will be moved to archived memory.`)) {
+                                                            const updated = meds.map(m => m.name === med.name ? { ...m, status: "Archived" as const } : m);
+                                                            saveMedsList(updated);
+                                                        }
+                                                    }} 
+                                                    className="p-2.5 bg-slate-950 text-slate-400 hover:text-red-500 border border-white/5 hover:border-red-500/30 rounded-xl transition-all active:scale-90"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             )}

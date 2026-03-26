@@ -88,122 +88,141 @@ export function WhatsAppDemo() {
     };
 
     return (
-        <div className="flex items-center justify-center h-full bg-slate-50 p-4">
+        <div className="flex flex-col items-center justify-center min-h-full bg-slate-950 p-4 relative overflow-hidden space-y-10">
+            {/* --- HEADER --- */}
+            <div className="w-full max-w-4xl px-2 text-center md:text-left">
+                <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase mb-1">WhatsApp Bot</h2>
+                <p className="text-sm text-slate-400 font-medium tracking-tight">Conversational clinical support on your familiar messaging channel.</p>
+            </div>
+            {/* Ambient Background Glows */}
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/5 blur-[120px] rounded-full animate-pulse" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full animate-pulse delay-700" />
+
             {/* PHONE FRAME */}
-            <div className="w-[380px] h-[680px] bg-black rounded-[45px] p-3 shadow-2xl relative border-4 border-slate-800 ring-4 ring-slate-200">
+            <div className="w-[380px] h-[720px] bg-slate-900 rounded-[3.5rem] p-3 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative border-[6px] border-slate-800 ring-1 ring-white/10">
 
                 {/* Dynamic island / Notch */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-7 bg-black rounded-b-2xl z-20"></div>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-7 bg-black rounded-b-2xl z-30 shadow-inner"></div>
 
                 {/* SCREEN */}
-                <div className="w-full h-full bg-[#E5DDD5] rounded-[38px] overflow-hidden flex flex-col relative">
-                    {/* WALLPAPER PATTERN */}
-                    <div className="absolute inset-0 opacity-[0.06] bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] pointer-events-none"></div>
+                <div className="w-full h-full bg-slate-950 rounded-[2.8rem] overflow-hidden flex flex-col relative border border-white/5">
+                    {/* BLUEPRINT PATTERN */}
+                    <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
 
                     {/* HEADER */}
-                    <div className="bg-[#075E54] text-white p-4 pt-10 flex items-center justify-between shadow-sm z-10 shrink-0">
-                        <div className="flex items-center gap-3">
-                            <ArrowLeft size={20} className="cursor-pointer" />
+                    <div className="bg-slate-900/80 backdrop-blur-xl text-white p-5 pt-12 flex items-center justify-between border-b border-white/5 shadow-lg z-20 shrink-0">
+                        <div className="flex items-center gap-4">
+                            <ArrowLeft size={18} className="cursor-pointer text-slate-400 hover:text-white transition-colors" />
                             <div className="relative">
-                                <div className="h-9 w-9 bg-white rounded-full flex items-center justify-center overflow-hidden">
-                                    <span className="text-[#075E54] font-bold text-lg">Y</span>
+                                <div className="h-10 w-10 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center overflow-hidden shadow-[0_0_15px_rgba(34,211,238,0.1)]">
+                                    <span className="text-cyan-400 font-black text-lg">Y</span>
                                 </div>
-                                <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-400 rounded-full border-2 border-[#075E54]"></div>
+                                <div className="absolute bottom-0 right-0 h-3 w-3 bg-cyan-400 rounded-full border-2 border-slate-900 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
                             </div>
                             <div>
-                                <h3 className="font-bold text-base leading-tight">Yukti Care</h3>
-                                <p className="text-[10px] opacity-80">Online</p>
+                                <h3 className="font-black text-xs uppercase tracking-widest leading-tight">Yukti Neural</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse"></span>
+                                    <p className="text-[9px] font-black text-cyan-400/60 uppercase tracking-tighter">Synchronized</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex gap-4">
-                            <Video size={20} />
-                            <Phone size={20} />
-                            <MoreVertical size={20} />
+                        <div className="flex gap-4 text-slate-400">
+                            <Video size={18} className="hover:text-cyan-400 transition-colors cursor-pointer" />
+                            <Phone size={18} className="hover:text-cyan-400 transition-colors cursor-pointer" />
+                            <MoreVertical size={18} className="hover:text-cyan-400 transition-colors cursor-pointer" />
                         </div>
                     </div>
 
                     {/* CHAT AREA */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+                    <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-24 scrollbar-hide">
                         {messages.map((msg) => (
-                            <div
+                            <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
                                 key={msg.id}
                                 className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
                             >
                                 {/* Message Bubble */}
                                 <div
-                                    className={`max-w-[80%] px-3 py-2 rounded-lg text-sm shadow-sm relative ${msg.sender === "user"
-                                        ? "bg-[#D9FDD3] text-slate-900 rounded-tr-none"
-                                        : "bg-white text-slate-900 rounded-tl-none"
+                                    className={`max-w-[85%] px-5 py-4 rounded-[1.5rem] shadow-xl relative border ${msg.sender === "user"
+                                        ? "bg-cyan-500 border-cyan-400 text-slate-950 rounded-tr-none font-bold text-sm shadow-[0_0_30px_rgba(34,211,238,0.1)]"
+                                        : "glass-card bg-white/5 border-white/10 text-slate-200 rounded-tl-none font-medium text-sm"
                                         }`}
                                 >
-                                    <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
-                                    <div className="flex items-center justify-end gap-1 mt-1">
-                                        <span className="text-[9px] text-slate-500/80">{msg.timestamp}</span>
-                                        {msg.sender === "user" && <CheckCheck size={12} className="text-blue-500" />}
+                                    <p className="whitespace-pre-line leading-relaxed tracking-tight">{msg.text}</p>
+                                    <div className="flex items-center justify-end gap-2 mt-2 opacity-50">
+                                        <span className="text-[8px] font-black uppercase tracking-tighter">[{msg.timestamp}]</span>
+                                        {msg.sender === "user" && <CheckCheck size={12} className="text-slate-900" />}
                                     </div>
                                 </div>
 
                                 {/* Quick Replies (Bot only) */}
                                 {msg.sender === 'bot' && msg.options && (
-                                    <div className="flex flex-wrap gap-2 mt-2">
+                                    <div className="flex flex-wrap gap-2 mt-4 px-2">
                                         {msg.options.map((opt) => (
                                             <button
                                                 key={opt}
                                                 onClick={() => handleSendMessage(opt)}
-                                                className="bg-white border border-[#075E54] text-[#075E54] px-3 py-1.5 rounded-full text-xs font-bold shadow-sm hover:bg-[#075E54] hover:text-white transition-colors"
+                                                className="bg-slate-900/60 border border-cyan-500/20 text-cyan-400 px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-cyan-500 hover:text-slate-950 hover:border-cyan-500 transition-all active:scale-95"
                                             >
                                                 {opt}
                                             </button>
                                         ))}
                                     </div>
                                 )}
-                            </div>
+                            </motion.div>
                         ))}
 
                         {isTyping && (
-                            <div className="flex items-center gap-2 text-slate-500 text-xs ml-2">
-                                <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce delay-75"></div>
-                                <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce delay-150"></div>
-                                <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce delay-300"></div>
+                            <div className="flex items-center gap-1.5 p-3 rounded-2xl bg-white/5 border border-white/5 w-fit ml-2">
+                                <div className="h-1.5 w-1.5 bg-cyan-400/60 rounded-full animate-bounce delay-75"></div>
+                                <div className="h-1.5 w-1.5 bg-cyan-400/80 rounded-full animate-bounce delay-150"></div>
+                                <div className="h-1.5 w-1.5 bg-cyan-400 rounded-full animate-bounce delay-300"></div>
                             </div>
                         )}
                         <div ref={messagesEndRef} />
                     </div>
 
                     {/* INPUT AREA */}
-                    <div className="absolute bottom-0 w-full bg-[#F0F2F5] p-2 px-3 flex items-center gap-2 z-20">
-                        <div className="p-2 text-slate-500 hover:bg-slate-200 rounded-full cursor-pointer">
-                            <Smile size={24} />
+                    <div className="absolute bottom-6 w-[92%] left-[4%] bg-slate-900/90 backdrop-blur-2xl p-2 px-3 flex items-center gap-3 z-30 rounded-[2rem] border border-white/10 shadow-2xl">
+                        <div className="p-2 text-slate-500 hover:text-cyan-400 transition-colors pointer-events-none">
+                            <Smile size={22} />
                         </div>
-                        <div className="p-2 text-slate-500 hover:bg-slate-200 rounded-full cursor-pointer">
-                            <Paperclip size={20} />
-                        </div>
-
-                        <div className="flex-1 bg-white rounded-lg px-4 py-2 shadow-sm flex items-center">
+                        
+                        <div className="flex-1 px-1">
                             <input
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
-                                placeholder="Type a message"
-                                className="w-full bg-transparent text-sm outline-none text-slate-900 placeholder:text-slate-400"
+                                placeholder="Quantum interface..."
+                                className="w-full bg-transparent text-[11px] font-black uppercase tracking-widest outline-none text-white placeholder:text-slate-600"
                             />
                         </div>
 
-                        {inputValue.trim() ? (
-                            <button onClick={() => handleSendMessage(inputValue)} className="p-2.5 bg-[#075E54] text-white rounded-full shadow-md hover:scale-105 transition-transform">
-                                <Send size={18} className="translate-x-0.5" />
-                            </button>
-                        ) : (
-                            <div className="p-2.5 bg-[#075E54] text-white rounded-full shadow-md cursor-pointer hover:scale-105 transition-transform">
-                                <Mic size={18} />
+                        <div className="flex gap-1">
+                            <div className="p-2 text-slate-500 hover:text-cyan-400 transition-colors pointer-events-none">
+                                <Paperclip size={18} />
                             </div>
-                        )}
+                            
+                            {inputValue.trim() ? (
+                                <button onClick={() => handleSendMessage(inputValue)} className="p-2.5 bg-cyan-500 text-slate-950 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:scale-110 active:scale-90 transition-all">
+                                    <Send size={16} strokeWidth={3} className="translate-x-0.5" />
+                                </button>
+                            ) : (
+                                <div className="p-2.5 bg-slate-800 text-slate-400 rounded-full shadow-md cursor-pointer hover:text-cyan-400 transition-colors">
+                                    <Mic size={16} />
+                                </div>
+                            )}
+                        </div>
                     </div>
 
+                    {/* Screen reflection effect */}
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-white/5 to-transparent opacity-20" />
                 </div>
 
                 {/* Home Indicator */}
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-white/20 rounded-full"></div>
+                <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-white/10 rounded-full"></div>
             </div>
         </div>
     );

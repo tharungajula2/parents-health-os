@@ -1,32 +1,59 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #fcf7f1;
-  --color-orange-600: #ea580c;
-  --color-orange-300: #fdba74;
-  --color-orange-100: #ffedd5;
-  --color-emerald-500: #10b981;
-  --color-amber-500: #f59e0b;
+  --color-slate-950: #020617;
   --color-slate-900: #0f172a;
-  --color-slate-600: #475569;
+  --color-cyan-400: #22d3ee;
+  --color-cyan-500: #06b6d4;
+  --color-blue-500: #3b82f6;
 }
 
 :root {
-  --background: var(--color-cream);
-  --foreground: var(--color-slate-900);
+  --background: #020617;
+  --foreground: #f8fafc;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  
-  /* Living Gradient */
-  background-image: 
-    radial-gradient(at 0% 0%, var(--color-orange-100) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, var(--color-orange-100) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, var(--color-orange-100) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, var(--color-orange-100) 0px, transparent 50%);
-  background-attachment: fixed;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* THEME: Grid Background with Radial Glow */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: 
+    linear-gradient(to right, rgba(34, 211, 238, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 80%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+}
+
+/* Glassmorphism Utilities */
+.glass-card {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #22d3ee, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

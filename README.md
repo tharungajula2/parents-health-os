@@ -1,95 +1,89 @@
 # Yukti OS: The Context-Aware Health OS for the Elderly
-**Current Version:** 2.1 (Interactive Build)
+**Current Version:** 2.2+ (Premium Dark Glassmorphism & Neural Typography Edition)
 
-![Yukti OS Dashboard](https://via.placeholder.com/1200x600?text=Yukti+OS+Health+Assessment+Dashboard)
+![Yukti OS Dashboard](https://via.placeholder.com/1200x600?text=Yukti+OS+Dark+Glassmorphism+Interface)
 
 ---
 
 ## 🚀 The Core Innovation: "Context-Awareness"
 
-Most health apps see a blood sugar level of `160 mg/dL` and flag it as "High".
-**Yukti OS** checks its **Health Assessment Engine** first. It sees:
+Most health apps see medical data in isolation. If a patient has blood sugar of `160 mg/dL`, a standard app flags it as "High".
+**Yukti OS** interprets data through its **Clinical Engine** first. It sees:
 > *"Patient is 75 years old + has a history of hypoglycemia (low sugar falls)."*
 
 It then intelligently decides:
 > *"For this specific patient, 160 is actually a SAFE target to prevent fatal falls. Do not alarm."*
 
-This **System Context** is what separates Yukti from generic LLM wrappers.
+This **System Context** is what separates Yukti from generic AI wrappers. It builds a digital twin of the patient to provide personalized, clinical-grade insights, now presented through a world-class **Dark Glassmorphism UI** with high-contrast **Neural Typography**.
 
 ---
 
-## 🌟 Key Features (v2.1)
+## 🌟 Key Features (v2.2+)
 
-### 1. 🩺 Health Assessment (Risk Engine)
-*   **Purpose:** Establishes the clinical baseline.
-*   **Logic:** A 15-question geriatric assessment (Sleep, Mobility, Frailty) calculates a **Risk Score (0-175)** to calibrate the AI's sensitivity.
-*   *New:* renamed from "Clinical Engine" for friendlier UX.
+### 1. 🩺 Health Assessment (Clinical Engine)
+*   **Establish Baseline:** A 15-question geriatric assessment calculates a personalized **Risk Score (0-175)**.
+*   **AI Calibration:** The system's AI sensitivity and alert thresholds are calibrated based on this clinical profile.
 
-### 2. 🏥 Clinic Hub (Interactive)
-*   **Appointments:** Book specialists (Dr. Aruna, Coach Vikram) with a streamlined modal interface.
-*   **Yukti Senior Shield:** Integrated wallet system with simulated "Top Up" payment gateways for handling insurance copays.
+### 2. 🏥 Clinic Hub (Clinical Operations)
+*   **Protocol Schedule:** Streamlined glassmorphic interface for booking geriatric specialists and care team nodes.
+*   **Yukti Senior Shield:** Integrated insurance wallet system with real-time operational credit management.
 
-### 3. 📄 Smart Reports (Gemini 2.5)
-*   **Upload & Analyze:** Reads PDFs, handwritten prescriptions, and lab reports.
-*   **Holistic Summary:** Synthesizes 6 months of reports into a 5-line narrative for the family.
+### 3. 📄 Diagnostics & Trends (Smart Reports)
+*   **Gemini AI Engine:** Deep neural analysis of PDFs, lab reports, and medical artifacts.
+*   **Holistic Summaries:** Synthesizes months of medical history into a single, "dots-connected" narrative for family and clinicians.
 
-### 4. 💊 Daily Wellness & Device Sync
-*   **Adherence Tracker:** Simple "Tick to Take" interaction for daily meds.
-*   **Device Hub:** Simulates syncing with **FreeStyle Libre (CGM)** and **Apple Watch** to auto-populate vitals like Sugar and Weight.
+### 4. 💊 Wellness Hub (Daily Protocol)
+*   **Adherence Tracking:** Proactive medication management with premium "Tick to Take" logging.
+*   **IoT Synchronization:** Real-time dual-sync with **FreeStyle Libre (CGM)** and **Apple Watch** for vitals automation.
 
-### 5. 💬 WhatsApp Companion (Vision Demo)
-*   A 'Nani-Bot' interface demonstrating how we meet seniors where they are (WhatsApp), reducing the need to learn a new UI.
+### 5. 💬 WhatsApp Bot (Neural Companion)
+*   A zero-learning-curve interface demonstrating how seniors can interact with Yukti OS using familiar tools (WhatsApp), re-imagined with a premium dark frame.
+
+---
+
+## 🎨 Design System: "Neural Glass"
+*   **Aesthetic:** Deep slate backgrounds (`slate-950`) with translucent `backdrop-blur-xl` layers.
+*   **Typography:** High-contrast **Clean White** headers (`font-black`) for maximum legibility in geriatric contexts.
+*   **Accents:** Cyan and Blue glowing blueprint grids to represent clinical precision.
 
 ---
 
 ## 🛠 Tech Stack
-
-*   **Framework:** Next.js 15 (App Router)
-*   **Styling:** Tailwind CSS + Framer Motion (for smooth interactions)
-*   **AI Model:** Google Gemini 2.0 Flash (via Vercel Serverless Functions)
-*   **Database:** `localStorage` (Client-Side Persistence for 100% Privacy)
-*   **Icons:** Lucide React
+*   **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
+*   **Styling:** [Tailwind CSS 4](https://tailwindcss.com/) + [Framer Motion 12](https://www.framer.com/motion/)
+*   **AI Engine:** [Google Gemini 2.5 Flash](https://deepmind.google/technologies/gemini/) (Context-Aware Multimodal)
+*   **Storage:** `LocalStorage` (100% Client-Side Privacy)
 
 ---
 
-## ⚡ How to Run Locally
-
-1.  **Clone the repo:**
+## ⚡ Getting Started
+1.  **Clone the Repository:**
     ```bash
     git clone https://github.com/tharungajula2/yukti-os.git
     cd yukti-os
     ```
-
-2.  **Install dependencies:**
+2.  **Install Dependencies:**
     ```bash
     npm install
     ```
-
-3.  **Set up Environment Variables:**
-    Create a `.env.local` file in the root:
+3.  **Environment Setup:**
+    Create a `.env.local` file:
     ```env
-    NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+    NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
     ```
-
-4.  **Run the dev server:**
+4.  **Launch:**
     ```bash
     npm run dev
     ```
-    Open [http://localhost:3000](http://localhost:3000).
+    Access at `http://localhost:3000`. No password required (Concept Prototype).
 
 ---
 
 ## 🔐 Privacy & Security
-*   **Zero-Knowledge Storage:** Currently, all patient data lives **inside the user's browser** (Local Storage). No medical data is stored on our servers.
-*   **Ephemereal Analysis:** Data is sent to the AI only for the duration of the analysis window and is not trained upon.
+*   **Zero-Server Storage:** All medical data stays in the user's browser via `localStorage`.
+*   **Privacy Secure:** Technical badges in footer confirm local-first execution.
 
 ---
 
-## 🔮 Roadmap
-*   [ ] **Cloud Sync:** Supabase integration for multi-device login.
-*   [ ] **Voice Interface:** "Yukti, did I take my morning pill?"
-*   [ ] **WhatsApp API Integration:** Live connection to the mock demo.
-
----
-
-*Note: This is a Portfolio Project demonstrating Advanced Agentic Coding & Product Architecture.*
+**Designed & Conceptualized by [Tharun Gajula](https://github.com/tharungajula2)**
+*Strategic Vision Prototype for Geriatrics & Clinical Product Architecture.*
