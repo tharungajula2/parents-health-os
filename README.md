@@ -21,22 +21,22 @@ This **System Context** is what separates Yukti from generic AI wrappers. It bui
 ## 🌟 Key Features (v2.2+)
 
 ### 1. 🩺 Health Assessment (Clinical Engine)
-*   **Establish Baseline:** A 15-question geriatric assessment calculates a personalized **Risk Score (0-175)**.
+*   **Establish Baseline:** A 15-question geriatric assessment (covering 10 clinical pillars) calculates a personalized **Risk Score (0-175)**.
 *   **AI Calibration:** The system's AI sensitivity and alert thresholds are calibrated based on this clinical profile.
 
 ### 2. 🏥 Clinic Hub (Clinical Operations)
 *   **Protocol Schedule:** Streamlined glassmorphic interface for booking geriatric specialists and care team nodes.
 *   **Yukti Senior Shield:** Integrated insurance wallet system with real-time operational credit management.
 
-### 3. 📄 Diagnostics & Trends (Smart Reports)
-*   **Gemini AI Engine:** Deep neural analysis of PDFs, lab reports, and medical artifacts.
-*   **Holistic Summaries:** Synthesizes months of medical history into a single, "dots-connected" narrative for family and clinicians.
+### 📄 Diagnostics & Trends (Smart Reports)
+*   **Gemini AI Engine:** Deep neural analysis of PDFs, lab reports, and medical artifacts using Google Gemini 2.5 Flash.
+*   **Neural Narrative:** Synthesizes months of medical history into a single, cohesive clinical story.
 
 ### 4. 💊 Wellness Hub (Daily Protocol)
-*   **Adherence Tracking:** Proactive medication management with premium "Tick to Take" logging.
-*   **IoT Synchronization:** Real-time dual-sync with **FreeStyle Libre (CGM)** and **Apple Watch** for vitals automation.
+*   **Adherence Tracking:** Proactive medication management with premium "Tick to Take" logging and "Relation to Food" logic.
+*   **IoT Synchronization:** Real-time dual-sync simulation for **FreeStyle Libre (CGM)** and **Apple Watch**.
 
-### 5. 💬 WhatsApp Bot (Neural Companion)
+### 💬 WhatsApp Bot (Neural Companion)
 *   A zero-learning-curve interface demonstrating how seniors can interact with Yukti OS using familiar tools (WhatsApp), re-imagined with a premium dark frame.
 
 ---
@@ -49,9 +49,9 @@ This **System Context** is what separates Yukti from generic AI wrappers. It bui
 ---
 
 ## 🛠 Tech Stack
-*   **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
-*   **Styling:** [Tailwind CSS 4](https://tailwindcss.com/) + [Framer Motion 12](https://www.framer.com/motion/)
-*   **AI Engine:** [Google Gemini 2.5 Flash](https://deepmind.google/technologies/gemini/) (Context-Aware Multimodal)
+*   **Framework:** Next.js 15 (App Router)
+*   **Styling:** Tailwind CSS 4 + Framer Motion 12
+*   **AI Engine:** Google Gemini 2.5 Flash (Context-Aware Multimodal)
 *   **Storage:** `LocalStorage` (100% Client-Side Privacy)
 
 ---
@@ -66,12 +66,7 @@ This **System Context** is what separates Yukti from generic AI wrappers. It bui
     ```bash
     npm install
     ```
-3.  **Environment Setup:**
-    Create a `.env.local` file:
-    ```env
-    NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
-    ```
-4.  **Launch:**
+3.  **Launch:**
     ```bash
     npm run dev
     ```
