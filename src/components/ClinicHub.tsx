@@ -88,7 +88,7 @@ export function ClinicHub() {
         // Optimistic UI Update: Add to top
         setAppointments(prev => [newAppt, ...prev]);
         setShowBookingModal(false);
-        showToast("Appointment Confirmed! Dr. Desai notified.", "success");
+        showToast("Appointment Booked! Dr. Desai notified.", "success");
 
         // Reset Form
         setBookForm({ specialist: "Dr. Aruna Desai", date: "", time: "" });
@@ -98,8 +98,8 @@ export function ClinicHub() {
         <div className="max-w-6xl mx-auto space-y-12 pb-20 relative">
             {/* HEADER */}
             <div className="px-2">
-                <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase mb-1">Clinic Hub</h2>
-                <p className="text-sm text-slate-400 font-medium tracking-tight">Orchestrate consultations, insurance, and medical records.</p>
+                <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase mb-1">Care Hub</h2>
+                <p className="text-sm text-slate-400 font-medium tracking-tight">Manage consultations, insurance, and medical records.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -111,13 +111,13 @@ export function ClinicHub() {
                             <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
                                 <Calendar size={20} strokeWidth={2.5} />
                             </div>
-                            Protocol Schedule
+                            Appointment Schedule
                         </h3>
                         <button
                             onClick={() => setShowBookingModal(true)}
                             className="flex items-center gap-3 bg-slate-900 hover:bg-slate-800 text-white px-8 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all border border-white/5 active:scale-95 shadow-xl"
                         >
-                            <Plus size={14} strokeWidth={4} /> Initialize Consult
+                            <Plus size={14} strokeWidth={4} /> Book Appointment
                         </button>
                     </div>
 
@@ -168,7 +168,7 @@ export function ClinicHub() {
                                                 </div>
                                                 {appt.isPast && (
                                                     <span className="flex items-center gap-2 text-slate-600 text-[9px] font-black uppercase bg-slate-950 border border-white/5 px-3 py-1 rounded-full self-center md:self-start mb-4 md:mb-0 tracking-[0.2em]">
-                                                        <CheckCircle size={10} /> Synchronized
+                                                        <CheckCircle size={10} /> Previous
                                                     </span>
                                                 )}
                                             </div>
@@ -176,7 +176,7 @@ export function ClinicHub() {
                                             {!appt.isPast && (
                                                 <div className="flex flex-col md:flex-row gap-4">
                                                     <button className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-8 py-4 rounded-[1.25rem] font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-lg active:scale-95">
-                                                        <Video size={14} strokeWidth={3} /> Establish Link
+                                                        <Video size={14} strokeWidth={3} /> Join Call
                                                     </button>
                                                     <button className="bg-slate-950 hover:bg-slate-900 border border-white/5 text-slate-400 hover:text-white px-8 py-4 rounded-[1.25rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all">
                                                         Reschedule
@@ -184,7 +184,7 @@ export function ClinicHub() {
                                                 </div>
                                             )}
                                             {appt.isPast && (
-                                                <button className="text-slate-400 text-[10px] font-black uppercase tracking-widest hover:text-cyan-400 transition-colors border-b border-transparent hover:border-cyan-500/30 pb-1">Audit Protocol Report</button>
+                                                <button className="text-slate-400 text-[10px] font-black uppercase tracking-widest hover:text-cyan-400 transition-colors border-b border-transparent hover:border-cyan-500/30 pb-1">Review Visit Summary</button>
                                             )}
                                         </div>
                                     </div>
@@ -212,9 +212,9 @@ export function ClinicHub() {
 
                         <div className="flex justify-between items-start mb-10 relative z-10">
                             <div>
-                                <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2">Insurance Protocol</p>
+                                <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2">Insurance Coverage</p>
                                 <h4 className="font-black text-lg flex items-center gap-3">
-                                    <ShieldCheck size={18} className="text-cyan-400" /> Yukti Senior Shield
+                                    <ShieldCheck size={18} className="text-cyan-400" /> Yukti Health Shield
                                 </h4>
                             </div>
                             <span className="bg-cyan-500/10 text-cyan-400 px-3 py-1 rounded-full text-[9px] font-black border border-cyan-500/20 tracking-widest">
@@ -223,13 +223,13 @@ export function ClinicHub() {
                         </div>
 
                         <div className="space-y-1 relative z-10 mb-10">
-                            <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2">Policy Identifier</p>
-                            <p className="font-mono text-xl tracking-[0.3em] text-white">PR-8829-X</p>
+                            <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2">Policy Number</p>
+                            <p className="font-mono text-xl tracking-[0.3em] text-white">YUK-8829-X</p>
                         </div>
 
                         <div className="pt-8 border-t border-white/5 flex justify-between items-end relative z-10">
                             <div>
-                                <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2">Operational Credits</p>
+                                <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2">Wallet Balance</p>
                                 <AnimatePresence mode="popLayout">
                                     <motion.p
                                         key={balance}
@@ -257,7 +257,7 @@ export function ClinicHub() {
                                 <div className="p-3 bg-slate-950 border border-white/5 text-cyan-400 rounded-xl group-hover:border-cyan-500/30 transition-all">
                                     <FileText size={18} />
                                 </div>
-                                <span className="text-[10px] font-black text-slate-400 group-hover:text-white uppercase tracking-widest transition-colors">Audit Claims History</span>
+                                <span className="text-[10px] font-black text-slate-400 group-hover:text-white uppercase tracking-widest transition-colors">Review Claims History</span>
                             </div>
                             <ChevronRight size={14} className="text-slate-600 group-hover:translate-x-1 transition-transform" />
                         </button>
@@ -266,7 +266,7 @@ export function ClinicHub() {
                                 <div className="p-3 bg-slate-950 border border-white/5 text-white/40 rounded-xl group-hover:border-white/20 transition-all">
                                     <CreditCard size={18} />
                                 </div>
-                                <span className="text-[10px] font-black text-slate-400 group-hover:text-white uppercase tracking-widest transition-colors">Manage Fiscal Nodes</span>
+                                <span className="text-[10px] font-black text-slate-400 group-hover:text-white uppercase tracking-widest transition-colors">Manage Payment Cards</span>
                             </div>
                             <ChevronRight size={14} className="text-slate-600 group-hover:translate-x-1 transition-transform" />
                         </button>
@@ -301,8 +301,8 @@ export function ClinicHub() {
                                 <X size={20} />
                             </button>
 
-                            <h3 className="text-2xl font-black text-white tracking-tighter uppercase mb-2">Schedule Consultation</h3>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-10">Configure parameters for virtual or clinical therapeutic interaction.</p>
+                            <h3 className="text-2xl font-black text-white tracking-tighter uppercase mb-2">Schedule Appointment</h3>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-10">Request a time for a virtual or clinic-based visit.</p>
 
                             <form onSubmit={handleBookAppointment} className="space-y-8 relative z-10">
                                 <div>
@@ -322,9 +322,9 @@ export function ClinicHub() {
 
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>
-                                        <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] flex items-center gap-3 mb-3">
-                                            <Calendar size={12} className="text-cyan-500" /> Chronos
-                                        </label>
+                                    <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] flex items-center gap-3 mb-3">
+                                        <Calendar size={12} className="text-cyan-500" /> Select Date
+                                    </label>
                                         <input
                                             type="date"
                                             className="w-full p-4 bg-slate-900/50 border border-white/10 rounded-2xl font-black text-slate-300 focus:text-white focus:border-cyan-500/50 outline-none transition-all text-xs"
@@ -335,7 +335,7 @@ export function ClinicHub() {
                                     </div>
                                     <div>
                                         <label className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] flex items-center gap-3 mb-3">
-                                            <Clock size={12} className="text-cyan-500" /> Temporal Slot
+                                            <Clock size={12} className="text-cyan-500" /> Select Time
                                         </label>
                                         <input
                                             type="time"
@@ -352,7 +352,7 @@ export function ClinicHub() {
                                         type="submit"
                                         className="w-full py-5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black rounded-2xl text-[10px] uppercase tracking-[0.3em] transition-all shadow-[0_0_30px_rgba(34,211,238,0.2)] active:scale-95"
                                     >
-                                        Confirm Synchronization
+                                        Confirm Appointment
                                     </button>
                                 </div>
                             </form>

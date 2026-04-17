@@ -109,38 +109,38 @@ export function ClinicalEngine() {
     return (
         <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-14rem)] gap-8 overflow-y-auto lg:overflow-hidden pb-32 lg:pb-0">
             {/* Left Panel: Questions */}
-            <div className="w-full lg:flex-1 overflow-y-auto pr-1 lg:pr-6 custom-scrollbar">
-                <div className="mb-10 flex items-start justify-between">
-                    <div className="mb-10 px-2">
-                        <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase mb-2">Health Assessment</h2>
-                        <p className="text-sm text-slate-400 font-medium tracking-tight">Complete the 15-point clinical protocol for deep phenotyping.</p>
+            <div className="w-full lg:flex-1 overflow-y-auto pr-1 lg:pr-8 custom-scrollbar">
+                <div className="mb-12 flex items-start justify-between px-2">
+                    <div>
+                        <h2 className="text-3xl md:text-5xl font-bold text-white font-[family-name:var(--font-outfit)] uppercase tracking-tight mb-3">Assessment Hub</h2>
+                        <p className="text-sm text-slate-400 font-light font-[family-name:var(--font-inter)] tracking-wide">Complete this exploratory health profiling protocol for the concept demonstration.</p>
                     </div>
                     <button
                         onClick={handleReset}
-                        className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-red-400 transition-all px-4 py-2 rounded-xl bg-white/5 border border-white/5 hover:border-red-500/20"
+                        className="group flex items-center gap-3 data-label !text-slate-600 hover:!text-red-400 transition-all px-5 py-3 rounded-2xl bg-white/5 border border-white/5 hover:border-red-500/20 active:scale-95"
                     >
-                        <RotateCcw size={12} className="group-hover:rotate-180 transition-transform duration-500" />
+                        <RotateCcw size={14} className="group-hover:rotate-180 transition-transform duration-700 opacity-60" />
                         Reset Profile
                     </button>
                 </div>
 
                 <div className="space-y-6">
                     {QUESTIONS.map((q, idx) => (
-                        <div key={q.id} className="glass-card p-8 rounded-[2rem] border-white/5 bg-slate-900/40 hover:border-white/10 transition-all group">
-                            <div className="mb-6 flex items-center gap-4">
-                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 text-sm font-black text-white shadow-lg shadow-cyan-500/20">
-                                    {idx + 1}
+                        <div key={q.id} className="glass-card p-10 rounded-[3rem] border-white/5 bg-slate-900/40 hover:bg-white/[0.03] transition-all group">
+                            <div className="mb-8 flex items-start gap-6">
+                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/5 border border-white/10 data-label !text-cyan-400 shadow-inner">
+                                    {String(idx + 1).padStart(2, '0')}
                                 </span>
-                                <h3 className="text-lg font-bold text-white tracking-tight group-hover:text-cyan-400 transition-colors">{q.text}</h3>
+                                <h3 className="text-xl font-semibold text-white font-[family-name:var(--font-outfit)] tracking-tight leading-snug pt-1">{q.text}</h3>
                             </div>
-                            <div className="flex flex-wrap gap-3">
+                            <div className="flex flex-wrap gap-3 pl-0 md:pl-16">
                                 {q.options.map((opt) => (
                                     <button
                                         key={opt.label}
                                         onClick={() => handleSelect(q.id, opt.label)}
-                                        className={`rounded-2xl px-6 py-3 text-xs font-black uppercase tracking-widest transition-all ${answers[q.id] === opt.label
-                                            ? "bg-cyan-500 text-slate-950 shadow-[0_0_20px_rgba(34,211,238,0.4)] scale-[1.02]"
-                                            : "bg-white/5 border border-white/5 text-slate-400 hover:border-cyan-500/30 hover:text-white"
+                                        className={`rounded-2xl px-6 py-4 data-label transition-all active:scale-95 ${answers[q.id] === opt.label
+                                            ? "bg-cyan-500 text-slate-950 shadow-xl shadow-cyan-500/20"
+                                            : "bg-white/5 border border-white/5 text-slate-500 hover:border-cyan-500/30 hover:text-white"
                                             }`}
                                     >
                                         {opt.label}
@@ -153,48 +153,48 @@ export function ClinicalEngine() {
             </div>
 
             {/* Right Panel: Live Report Dashboard */}
-            <div className="w-full lg:w-96 shrink-0">
-                <div className="glass-card p-8 rounded-[2.5rem] border-white/10 bg-slate-950/60 backdrop-blur-3xl h-full flex flex-col shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-30" />
+            <div className="w-full lg:w-[400px] shrink-0">
+                <div className="glass-card p-10 rounded-[3.5rem] border-white/5 bg-slate-950/60 backdrop-blur-3xl h-full flex flex-col shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-20" />
                     
-                    <div className="mb-10 text-center">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Clinical Risk Composite</p>
-                        <div className="flex items-center justify-center gap-2 mt-4">
-                            <span className="text-7xl font-black text-white tracking-tighter shadow-sm">{scores.total}</span>
-                            <span className="text-xl text-slate-600 font-bold self-end mb-3">/ 175</span>
+                    <div className="mb-12 text-center">
+                        <p className="data-label !text-slate-500/50 !tracking-[0.2em] normal-case">Sample Health Index</p>
+                        <div className="flex items-center justify-center gap-3 mt-4">
+                            <span className="text-8xl font-bold text-white font-[family-name:var(--font-outfit)] tracking-tighter">{scores.total}</span>
+                            <span className="text-xl text-slate-750 font-medium font-[family-name:var(--font-inter)] self-end mb-4 opacity-30">/ 175</span>
                         </div>
                     </div>
 
                     {/* Risk Banner */}
-                    <div className={`mb-10 rounded-2xl border p-5 flex items-start gap-4 transition-all ${
-                        scores.total > 40 ? "border-red-500/20 bg-red-500/5 text-red-400" :
-                        scores.total > 20 ? "border-amber-500/20 bg-amber-500/5 text-amber-400" :
-                        "border-cyan-500/20 bg-cyan-500/5 text-cyan-400"
+                    <div className={`mb-12 rounded-[2rem] border p-6 flex items-start gap-5 transition-all ${
+                        scores.total > 40 ? "border-red-500/10 bg-red-500/[0.02] text-red-400" :
+                        scores.total > 20 ? "border-amber-500/10 bg-amber-500/[0.02] text-amber-400" :
+                        "border-cyan-500/10 bg-cyan-500/[0.02] text-cyan-400"
                     }`}>
-                        <scores.RiskIcon size={24} className="shrink-0 mt-0.5" />
+                        <scores.RiskIcon size={24} strokeWidth={1.5} className="shrink-0 mt-1 opacity-60" />
                         <div>
-                            <h4 className="font-black text-[10px] uppercase tracking-widest leading-tight mb-1">{scores.riskLevel}</h4>
-                            <p className="text-[11px] font-bold opacity-70">Protocol-driven health insight.</p>
+                            <h4 className="font-bold text-xs uppercase tracking-widest leading-tight mb-2 font-[family-name:var(--font-outfit)]">{scores.riskLevel}</h4>
+                            <p className="text-[11px] font-light font-[family-name:var(--font-inter)] opacity-50 uppercase tracking-tighter">Sample Profile Generated</p>
                         </div>
                     </div>
 
-                    <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-6 flex-1 overflow-y-auto pr-3 custom-scrollbar">
                         {scores.categories.map((cat) => (
-                            <div key={cat.name} className="flex items-center gap-4 group">
-                                <div className={`flex h-9 w-9 min-w-[2.25rem] items-center justify-center rounded-xl bg-white/5 border border-white/5 text-cyan-400 transition-transform group-hover:scale-110 shadow-inner`}>
-                                    <cat.icon size={18} />
+                            <div key={cat.name} className="flex items-center gap-5 group/item">
+                                <div className="flex h-10 w-10 min-w-[2.5rem] items-center justify-center rounded-2xl bg-white/5 border border-white/5 text-cyan-400/60 transition-all group-hover/item:scale-110 shadow-inner">
+                                    <cat.icon size={20} strokeWidth={1.5} className="opacity-80" />
                                 </div>
                                 <div className="flex-1">
-                                    <div className="mb-1.5 flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                        <span className="text-slate-400">{cat.name}</span>
-                                        <span className="text-white">{cat.score}</span>
+                                    <div className="mb-2 flex justify-between data-label !text-[9px]">
+                                        <span className="text-slate-500">{cat.name}</span>
+                                        <span className="text-white opacity-80">{cat.score}</span>
                                     </div>
-                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5 border border-white/5">
+                                    <div className="h-1 w-full overflow-hidden rounded-full bg-white/5 border border-white/[0.02]">
                                         <motion.div
                                             initial={{ width: 0 }}
                                             animate={{ width: `${Math.min((cat.score / cat.max) * 100, 100)}%` }}
-                                            transition={{ duration: 0.8, ease: "easeOut" }}
-                                            className={`h-full rounded-full ${cat.score > (cat.max * 0.7) ? "bg-red-500" : cat.score > (cat.max * 0.4) ? "bg-amber-400" : "bg-cyan-500"} shadow-[0_0_8px_rgba(34,211,238,0.4)]`}
+                                            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                                            className={`h-full rounded-full ${cat.score > (cat.max * 0.7) ? "bg-red-500/80" : cat.score > (cat.max * 0.4) ? "bg-amber-400/80" : "bg-cyan-500/80"} shadow-[0_0_10px_rgba(34,211,238,0.2)]`}
                                         />
                                     </div>
                                 </div>
@@ -202,10 +202,10 @@ export function ClinicalEngine() {
                         ))}
                     </div>
 
-                    <div className="mt-8 pt-6 border-t border-white/5">
-                        <div className="glass-card bg-white/5 rounded-2xl p-5 border-white/5 group hover:border-cyan-500/20 transition-all">
-                            <h4 className="font-black text-[9px] uppercase tracking-[0.2em] text-cyan-400 mb-2">Protocol Recommendation</h4>
-                            <p className="font-bold text-sm text-white leading-tight">Comprehensive Longevity Strategy Indicated</p>
+                    <div className="mt-10 pt-8 border-t border-white/5">
+                        <div className="glass-card bg-white/[0.02] rounded-3xl p-6 border-white/5 group-hover:border-cyan-500/20 transition-all text-center">
+                            <h4 className="data-label !text-cyan-400 !text-[8px] mb-2 uppercase tracking-[0.4em]">Suggested Focus</h4>
+                            <p className="font-bold text-xs text-white uppercase tracking-widest font-[family-name:var(--font-outfit)]">Longevity Study Sample</p>
                         </div>
                     </div>
                 </div>

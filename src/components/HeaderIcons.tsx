@@ -46,7 +46,7 @@ export function HeaderIcons() {
     const notifications = [
         {
             id: 1,
-            icon: <Pill size={16} className="text-cyan-400" />,
+            icon: <Pill size={16} strokeWidth={1.5} className="text-cyan-400" />,
             bg: "bg-cyan-500/10",
             title: "Medicine Reminder",
             desc: "Levolin Rotacaps due at 9:00 PM.",
@@ -54,7 +54,7 @@ export function HeaderIcons() {
         },
         {
             id: 2,
-            icon: <Activity size={16} className="text-red-400" />,
+            icon: <Activity size={16} strokeWidth={1.5} className="text-red-400" />,
             bg: "bg-red-500/10",
             title: "Health Alert",
             desc: "Assessment indicates High Metabolic Risk.",
@@ -62,7 +62,7 @@ export function HeaderIcons() {
         },
         {
             id: 3,
-            icon: <User size={16} className="text-cyan-400" />,
+            icon: <User size={16} strokeWidth={1.5} className="text-cyan-400" />,
             bg: "bg-cyan-500/10",
             title: "Dr. Aruna",
             desc: "Updated your Care Plan.",
@@ -77,11 +77,11 @@ export function HeaderIcons() {
             <div className="relative" ref={notifRef}>
                 <button
                     onClick={() => { setShowNotifications(!showNotifications); setShowProfile(false); }}
-                    className="h-10 w-10 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all relative"
+                    className="h-10 w-10 flex items-center justify-center rounded-full bg-white/[0.03] border border-white/10 text-slate-500 hover:text-white hover:bg-white/10 transition-all relative group"
                 >
-                    <Bell size={20} />
+                    <Bell size={20} strokeWidth={1.5} className="opacity-60 group-hover:opacity-100 transition-opacity" />
                     {hasUnread && (
-                        <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
+                        <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]"></span>
                     )}
                 </button>
 
@@ -91,35 +91,35 @@ export function HeaderIcons() {
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-4 w-85 bg-slate-900/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem] border border-white/10 overflow-hidden origin-top-right z-[60]"
+                            className="absolute right-0 mt-6 w-85 bg-slate-950/90 backdrop-blur-3xl shadow-3xl rounded-[2.5rem] border border-white/10 overflow-hidden origin-top-right z-[60]"
                         >
-                            <div className="p-5 border-b border-white/5 flex justify-between items-center bg-white/5">
-                                <h3 className="font-black text-white text-xs uppercase tracking-widest">Neural Notifications</h3>
+                            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                                <h3 className="data-label !text-white !tracking-[0.2em]">Care Activity</h3>
                                 {hasUnread && (
                                     <button
                                         onClick={() => setHasUnread(false)}
-                                        className="text-[10px] text-cyan-400 font-black uppercase tracking-widest hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                                        className="text-[9px] text-cyan-400 font-bold uppercase tracking-widest hover:text-cyan-300 flex items-center gap-2 transition-colors font-[family-name:var(--font-outfit)]"
                                     >
-                                        <CheckCheck size={12} /> Mark read
+                                        <CheckCheck size={12} strokeWidth={1.5} /> Mark Read
                                     </button>
                                 )}
                             </div>
                             <div className="max-h-[300px] overflow-y-auto">
                                 {notifications.map((n) => (
-                                    <div key={n.id} className="p-5 border-b border-white/5 hover:bg-white/5 transition-colors flex gap-4 cursor-pointer group">
-                                        <div className={`h-10 w-10 rounded-xl ${n.bg} border border-white/5 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+                                    <div key={n.id} className="p-6 border-b border-white/5 hover:bg-white/[0.03] transition-colors flex gap-5 cursor-pointer group">
+                                        <div className={`h-11 w-11 rounded-2xl ${n.bg} border border-white/5 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
                                             {n.icon}
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-bold text-white tracking-tight">{n.title}</h4>
-                                            <p className="text-xs text-slate-400 leading-snug mt-1">{n.desc}</p>
-                                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mt-2">{n.time}</p>
+                                            <h4 className="text-sm font-bold text-white tracking-tight font-[family-name:var(--font-outfit)]">{n.title}</h4>
+                                            <p className="text-[11px] text-slate-500 font-light mt-1 font-[family-name:var(--font-inter)] leading-relaxed">{n.desc}</p>
+                                            <p className="data-label !text-[8px] !text-slate-700 !tracking-[0.1em] mt-3 uppercase">{n.time}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="p-3 text-center bg-white/5">
-                                <button className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-white transition-colors">View All Neural Logs</button>
+                            <div className="p-4 text-center bg-white/[0.02]">
+                                <button className="data-label !text-slate-600 hover:!text-white transition-colors cursor-pointer text-[9px]">View All Signals</button>
                             </div>
                         </motion.div>
                     )}
@@ -130,9 +130,9 @@ export function HeaderIcons() {
             <div className="relative" ref={profileRef}>
                 <button
                     onClick={() => { setShowProfile(!showProfile); setShowNotifications(false); }}
-                    className="h-10 w-10 overflow-hidden rounded-full bg-cyan-500/10 border border-cyan-500/30 hover:ring-2 hover:ring-cyan-500/20 transition-all flex items-center justify-center"
+                    className="h-10 w-10 overflow-hidden rounded-full bg-white/[0.03] border border-white/10 hover:ring-2 hover:ring-white/5 transition-all flex items-center justify-center group"
                 >
-                    <span className="text-cyan-400 font-black">{userName.charAt(0).toUpperCase()}</span>
+                    <span className="text-white font-bold text-sm font-[family-name:var(--font-outfit)] opacity-60 group-hover:opacity-100 transition-opacity">{userName.charAt(0).toUpperCase()}</span>
                 </button>
 
                 <AnimatePresence>
@@ -141,37 +141,41 @@ export function HeaderIcons() {
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-4 w-72 bg-slate-900/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem] border border-white/10 overflow-hidden origin-top-right z-[60]"
+                            className="absolute right-0 mt-6 w-80 bg-slate-950/90 backdrop-blur-3xl shadow-3xl rounded-[2.5rem] border border-white/10 overflow-hidden origin-top-right z-[60]"
                         >
-                            <div className="p-6 bg-white/5 border-b border-white/5">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-cyan-500/20">
+                            <div className="p-8 bg-white/[0.02] border-b border-white/5">
+                                <div className="flex items-center gap-5">
+                                    <div className="h-14 w-14 rounded-3xl bg-white text-slate-950 flex items-center justify-center text-xl font-bold shadow-3xl font-[family-name:var(--font-outfit)]">
                                         {userName.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <h3 className="font-black text-white tracking-tight">{userName}</h3>
-                                        <p className="text-[10px] text-cyan-400 font-black uppercase tracking-widest mt-1">
-                                            {localStorage.getItem('yukti_user_age') ? `${localStorage.getItem('yukti_user_age')} • ${localStorage.getItem('yukti_user_gender')}` : 'Clinical Context'}
+                                        <h3 className="font-bold text-lg text-white tracking-tight font-[family-name:var(--font-outfit)]">{userName}</h3>
+                                        <p className="data-label !text-cyan-400 !tracking-[0.1em] mt-1 uppercase">
+                                            {localStorage.getItem('yukti_user_age') ? `${localStorage.getItem('yukti_user_age')} • ${localStorage.getItem('yukti_user_gender')}` : 'Clinical Identity'}
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-3 space-y-1">
+                            <div className="p-3 space-y-2">
                                 <button
-                                    onClick={() => alert("Settings are locked in this Demo.")}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/5 hover:text-white rounded-xl transition-all"
+                                    onClick={() => alert("Protocol settings are currently locked.")}
+                                    className="w-full flex items-center justify-between px-5 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:bg-white/[0.04] hover:text-white rounded-2xl transition-all font-[family-name:var(--font-outfit)]"
                                 >
-                                    <Settings size={16} /> System Settings
+                                    <div className="flex items-center gap-4">
+                                        <Settings size={14} strokeWidth={1.5} /> Profile & Protocol
+                                    </div>
                                 </button>
 
-                                <div className="h-px bg-white/5 my-2 mx-2"></div>
+                                <div className="h-px bg-white/5 my-3 mx-4"></div>
 
                                 <button
                                     onClick={handleSignOut}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-all"
+                                    className="w-full flex items-center justify-between px-5 py-4 text-[10px] font-bold uppercase tracking-widest text-red-500 hover:bg-red-500/10 hover:text-red-400 rounded-2xl transition-all font-[family-name:var(--font-outfit)]"
                                 >
-                                    <LogOut size={16} /> Atomic Sign Out
+                                    <div className="flex items-center gap-4">
+                                        <LogOut size={14} strokeWidth={1.5} /> Secure Sign-Out
+                                    </div>
                                 </button>
                             </div>
                         </motion.div>

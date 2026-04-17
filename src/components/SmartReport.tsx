@@ -186,23 +186,23 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
 
     if (isLocked) {
         return (
-            <div className="w-full h-full flex flex-col items-center justify-center min-h-[400px] text-center p-12 glass-card rounded-[3rem] border-white/5 relative overflow-hidden bg-slate-950/40 backdrop-blur-2xl">
-                <div className="absolute top-0 right-0 p-20 opacity-5 scale-150 rotate-12">
-                   <Lock size={120} className="text-cyan-400" />
+            <div className="w-full h-full flex flex-col items-center justify-center min-h-[500px] text-center p-12 glass-card rounded-[3.5rem] border-white/5 relative overflow-hidden bg-slate-950/40 backdrop-blur-3xl">
+                <div className="absolute top-0 right-0 p-24 opacity-[0.03] scale-150 rotate-12">
+                   <Lock size={150} className="text-cyan-400" />
                 </div>
                 <div className="relative z-10 flex flex-col items-center">
-                    <div className="mb-8 h-20 w-20 bg-white/5 border border-white/10 rounded-[2rem] flex items-center justify-center text-cyan-400 shadow-inner">
-                        <Lock size={40} />
+                    <div className="mb-10 h-20 w-20 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center text-cyan-400/60 shadow-inner">
+                        <Lock size={40} strokeWidth={1.5} />
                     </div>
-                    <h3 className="text-3xl font-black text-white mb-4 tracking-tighter uppercase">Clinical Context Required</h3>
-                    <p className="text-slate-400 max-w-md mb-10 text-lg font-medium leading-relaxed">
-                        To ensure safe and accurate AI analysis, Yukti requires your baseline profile. Complete the assessment to unlock full diagnostics.
+                    <h3 className="text-4xl font-bold text-white mb-5 font-[family-name:var(--font-outfit)] uppercase tracking-tight">Profile Setup Required</h3>
+                    <p className="text-slate-500 font-light max-w-md mb-12 text-lg font-[family-name:var(--font-inter)] leading-relaxed">
+                        To unlock automated insights, Yukti requires your baseline profile. Complete the 15-point assessment to view the demo analysis.
                     </p>
                     <button
                         onClick={onNavigate}
-                        className="flex items-center gap-3 bg-cyan-500 text-slate-950 px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
+                        className="flex items-center gap-4 bg-white text-slate-950 px-12 py-6 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-cyan-400 transition-all shadow-xl active:scale-95"
                     >
-                        Initialize Engine <ArrowRight size={20} />
+                        View Insights <ArrowRight size={18} strokeWidth={3} />
                     </button>
                 </div>
             </div>
@@ -212,14 +212,14 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
     return (
         <div className="w-full max-w-7xl mx-auto space-y-10 pb-20">
             {/* --- HEADER --- */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 px-2">
                 <div>
-                    <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase">Diagnostics & Trends</h2>
-                    <p className="text-sm text-slate-400 font-medium tracking-tight mt-1">Holistic clinical analysis of medical documents and lab reports.</p>
+                    <h2 className="text-3xl md:text-5xl font-bold text-white font-[family-name:var(--font-outfit)] tracking-tight uppercase">Health View</h2>
+                    <p className="text-sm text-slate-500 font-light font-[family-name:var(--font-inter)] tracking-wide mt-2">AI-assisted synthesis of longitudinal health records and laboratory scans.</p>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-cyan-400 bg-white/5 px-5 py-3 rounded-2xl border border-white/5">
-                    <ShieldCheck size={18} className="text-cyan-400" />
-                    <span>Cross-Document Context: {history.length} Files</span>
+                <div className="flex items-center gap-4 data-label !text-cyan-400 bg-white/[0.03] px-6 py-4 rounded-2xl border border-white/5">
+                    <ShieldCheck size={20} className="text-cyan-400/60" strokeWidth={1.5} />
+                    <span>Cross-Sync: {history.length} Records</span>
                 </div>
             </div>
 
@@ -227,37 +227,37 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 {/* LEFT: Upload Section */}
-                <div className="lg:col-span-4 space-y-6">
+                <div className="lg:col-span-4 space-y-8">
                     <div
                         {...getRootProps()}
-                        className={`glass-card rounded-[2.5rem] p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[16rem] relative overflow-hidden border-dashed ${isDragActive
+                        className={`glass-card rounded-[3rem] p-12 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[18rem] relative overflow-hidden border-dashed ${isDragActive
                             ? "border-cyan-500 bg-cyan-500/5"
-                            : "border-white/10 hover:border-cyan-500/30 hover:bg-white/5"
+                            : "border-white/5 hover:bg-white/[0.03]"
                             }`}
                     >
                         <input {...getInputProps()} />
                         {preview ? (
                             <div className="relative w-full h-full flex flex-col items-center justify-center z-10 group">
-                                <img src={preview} alt="Preview" className="max-h-48 rounded-2xl object-contain shadow-2xl group-hover:scale-105 transition-transform" />
-                                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
-                                     <UploadCloud className="text-white" size={32} />
+                                <img src={preview} alt="Preview" className="max-h-52 rounded-3xl object-contain shadow-2xl transition-transform" />
+                                <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-3xl">
+                                     <UploadCloud className="text-white" size={32} strokeWidth={1.5} />
                                 </div>
                             </div>
                         ) : file ? (
                             <div className="flex flex-col items-center z-10">
-                                <div className="h-16 w-16 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 mb-4 border border-cyan-500/20">
-                                    <FileText size={32} />
+                                <div className="h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center text-cyan-400/60 mb-5 border border-white/5 shadow-inner">
+                                    <FileText size={28} strokeWidth={1.5} />
                                 </div>
-                                <p className="text-white font-bold tracking-tight px-4 truncate w-full">{file.name}</p>
-                                <p className="text-[10px] text-slate-500 font-black uppercase mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB // READY</p>
+                                <p className="text-white font-bold tracking-tight px-4 truncate w-full font-[family-name:var(--font-outfit)]">{file.name}</p>
+                                <p className="data-label !text-slate-500 mt-3">{(file.size / 1024 / 1024).toFixed(2)} MB // STATUS: READY</p>
                             </div>
                         ) : (
                             <>
-                                <div className="h-16 w-16 rounded-2xl bg-white/5 border border-white/10 text-slate-400 flex items-center justify-center mb-6 group-hover:text-cyan-400 group-hover:border-cyan-500/20 transition-all">
-                                    <UploadCloud size={32} />
+                                <div className="h-14 w-14 rounded-2xl bg-white/5 border border-white/10 text-slate-600 flex items-center justify-center mb-6 group-hover:text-cyan-400/60 transition-all">
+                                    <UploadCloud size={32} strokeWidth={1.5} />
                                 </div>
-                                <p className="text-white font-bold tracking-tight mb-1">Select Document</p>
-                                <p className="text-xs text-slate-500 font-medium tracking-tight">PDFs, Reports, Scans</p>
+                                <p className="text-white font-bold tracking-tight mb-2 uppercase text-sm font-[family-name:var(--font-outfit)]">Select Source</p>
+                                <p className="text-[10px] text-slate-500 data-label">Labs / Scans / Records</p>
                             </>
                         )}
                     </div>
@@ -267,42 +267,42 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             onClick={analyzeReport}
-                            className="w-full py-5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-cyan-500/20 hover:scale-[1.02] flex items-center justify-center gap-3 active:scale-95 transition-all"
+                            className="w-full py-6 bg-white text-slate-950 rounded-2xl font-bold uppercase tracking-widest text-[10px] transition-all hover:scale-[1.02] flex items-center justify-center gap-4 active:scale-95 shadow-xl hover:bg-cyan-400 font-[family-name:var(--font-outfit)]"
                         >
-                            <Brain size={18} />
-                            Launch Yukon AI
+                            <Brain size={18} strokeWidth={2.5} />
+                            View Summary Insights
                         </motion.button>
                     )}
 
                     {status === "analyzing" && (
-                        <div className="w-full p-8 glass-card rounded-2xl border-white/10 flex flex-col items-center justify-center gap-4 text-center">
-                            <div className="relative h-12 w-12">
-                                <Loader2 size={48} className="animate-spin text-cyan-500" />
+                        <div className="w-full p-10 glass-card rounded-[2rem] border-white/5 flex flex-col items-center justify-center gap-6 text-center">
+                            <div className="relative h-14 w-14">
+                                <Loader2 size={56} className="animate-spin text-cyan-500/40" strokeWidth={1.5} />
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <Activity size={16} className="text-cyan-400/50" />
+                                    <Activity size={20} className="text-cyan-400" strokeWidth={1.5} />
                                 </div>
                             </div>
                             <div>
-                                <p className="text-white font-bold tracking-tight">Syncing Clinical Context...</p>
-                                <p className="text-[10px] text-slate-500 font-black uppercase mt-1">Comparing {history.length} Records</p>
+                                <p className="text-white font-bold tracking-wider font-[family-name:var(--font-outfit)] uppercase text-xs">Syncing AI Context...</p>
+                                <p className="data-label !text-slate-600 mt-2">Comparing {history.length} Datasets</p>
                             </div>
                         </div>
                     )}
 
                     {/* HISTORY LIST */}
                     {history.length > 0 && (
-                        <div className="glass-card rounded-[2rem] p-6 border-white/5">
-                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-5 flex items-center justify-between">
-                                <span className="flex items-center gap-2"><Clock size={12} /> Archival Memory</span>
-                                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400/50" />
+                        <div className="glass-card rounded-[2.5rem] p-8 border-white/5">
+                            <h4 className="data-label !text-slate-600 mb-6 flex items-center justify-between">
+                                <span className="flex items-center gap-3"><Clock size={14} strokeWidth={1.5} /> Archival Memory</span>
+                                <div className="h-1 w-1 rounded-full bg-cyan-400/40" />
                             </h4>
-                            <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-3 max-h-[350px] overflow-y-auto pr-3 custom-scrollbar">
                                 {history.map((h, i) => (
                                     <div
                                         key={i}
-                                        className={`group relative p-4 rounded-xl border cursor-pointer transition-all ${analysisData === h 
-                                            ? "bg-white/5 border-cyan-500/40 shadow-inner" 
-                                            : "glass-card border-white/5 hover:border-white/10 hover:bg-white/5"
+                                        className={`group relative p-5 rounded-2xl border transition-all ${analysisData === h 
+                                            ? "bg-white/[0.03] border-cyan-500/30" 
+                                            : "glass-card border-white/5 hover:bg-white/[0.02] hover:border-white/10"
                                             }`}
                                         onClick={() => {
                                             setAnalysisData(h);
@@ -312,14 +312,14 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                                     >
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <p className="font-bold text-white text-sm tracking-tight">{h.meta?.reportDate || "Recent Scan"}</p>
-                                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{h.meta?.reportType || h.docType || "Medical Data"}</p>
+                                                <p className="font-bold text-white text-[13px] font-[family-name:var(--font-outfit)] uppercase tracking-tight">{h.meta?.reportDate || "Recent Sync"}</p>
+                                                <p className="data-label !text-slate-600 !text-[8px] mt-1.5">{h.meta?.reportType || h.docType || "Medical Node"}</p>
                                             </div>
                                             <button
                                                 onClick={(e) => deleteHistoryItem(i, e)}
-                                                className="opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                                className="opacity-0 group-hover:opacity-100 p-2 text-slate-700 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
                                             >
-                                                <Trash2 size={12} />
+                                                <Trash2 size={14} strokeWidth={1.5} />
                                             </button>
                                         </div>
                                     </div>
@@ -350,10 +350,10 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                                 }
                             } catch (e) { setStatus("error"); }
                         }}
-                        className="w-full py-4 bg-white/5 border border-white/10 hover:bg-cyan-500/10 hover:border-cyan-500/20 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 active:scale-95"
+                        className="w-full py-5 bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] text-slate-400 hover:text-white rounded-2xl data-label !text-[9px] transition-all flex items-center justify-center gap-4 active:scale-95"
                     >
-                        <Brain size={16} className="text-cyan-400" />
-                        Generate Holistic Summary
+                        <Brain size={18} className="text-cyan-400 opacity-60" strokeWidth={1.5} />
+                        Synthesize Full Lineage
                     </button>
                 </div>
 
@@ -370,51 +370,51 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                                     <ShieldCheck size={180} className="text-cyan-400" />
                                 </div>
 
-                                {analysisData.isSummary ? (
-                                    <div className="flex-1 overflow-y-auto p-10 custom-scrollbar relative z-10">
-                                        <div className="flex items-center gap-6 mb-12">
-                                            <div className="h-16 w-16 rounded-[1.5rem] bg-gradient-to-br from-cyan-400 to-blue-600 text-white flex items-center justify-center shadow-2xl shadow-cyan-500/30">
-                                                <Brain size={32} />
+                                  {analysisData.isSummary ? (
+                                    <div className="flex-1 overflow-y-auto p-12 custom-scrollbar relative z-10">
+                                        <div className="flex items-center gap-8 mb-14">
+                                            <div className="h-20 w-20 rounded-[2rem] bg-white/5 border border-white/10 flex items-center justify-center text-cyan-400/60 shadow-inner">
+                                                <Brain size={40} strokeWidth={1.5} />
                                             </div>
                                             <div>
-                                                <h3 className="text-3xl font-black text-white tracking-tighter uppercase">{analysisData.title || "Holistic Profile"}</h3>
-                                                <div className="text-cyan-400 font-black text-[10px] uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+                                                <h3 className="text-4xl font-bold text-white tracking-tight uppercase font-[family-name:var(--font-outfit)]">{analysisData.title || "Health Summary"}</h3>
+                                                <div className="data-label !text-cyan-400 mt-3 flex items-center gap-3">
                                                      <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                                                     Deep Phenotype Synthesis
+                                                     Health Trajectory Sync Active
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-10">
-                                            <div className="glass-card p-8 rounded-[2rem] bg-white/5 border-white/10">
-                                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                                    <Activity size={16} className="text-cyan-400" /> Physiological Trajectory
+                                        <div className="space-y-12">
+                                            <div className="glass-card p-10 rounded-[3rem] bg-white/[0.02] border-white/5">
+                                                <h4 className="data-label !text-slate-600 mb-6 flex items-center gap-3">
+                                                    <Activity size={20} className="text-cyan-400 opacity-60" strokeWidth={1.5} /> Physiological Trajectory
                                                 </h4>
-                                                <div className="text-slate-300 text-lg leading-relaxed font-medium prose prose-invert max-w-none">
+                                                <div className="text-slate-400 text-lg leading-relaxed font-light font-[family-name:var(--font-inter)] prose prose-invert max-w-none">
                                                     <ReactMarkdown>{analysisData.trendAnalysis}</ReactMarkdown>
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="glass-card p-8 rounded-[2rem] bg-slate-900/40 border-white/10">
-                                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                                        <FileSearch size={16} className="text-amber-400" /> Priority Identified
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="glass-card p-10 rounded-[3rem] bg-white/[0.01] border-white/5">
+                                                    <h4 className="data-label !text-slate-600 mb-6 flex items-center gap-3">
+                                                        <FileSearch size={20} className="text-amber-500 opacity-60" strokeWidth={1.5} /> Key Interventions
                                                     </h4>
-                                                    <ul className="space-y-4">
+                                                    <ul className="space-y-5">
                                                         {analysisData.keyFindings?.map((f: string, i: number) => (
-                                                            <li key={i} className="flex gap-4 text-sm text-slate-400 font-bold leading-snug">
-                                                                <div className="h-2 w-2 rounded-full bg-amber-400/60 mt-1.5 shrink-0" />
+                                                            <li key={i} className="flex gap-5 text-sm md:text-base text-slate-500 font-light leading-snug">
+                                                                <div className="h-1.5 w-1.5 rounded-full bg-amber-400/40 mt-2 shrink-0" />
                                                                 <ReactMarkdown>{f}</ReactMarkdown>
                                                             </li>
                                                         ))}
                                                     </ul>
                                                 </div>
 
-                                                <div className="glass-card p-8 rounded-[2rem] bg-cyan-500/10 border-cyan-500/20 shadow-2xl shadow-cyan-500/5">
-                                                    <h4 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                                        <ShieldCheck size={16} /> Clinical Recommendation
+                                                <div className="glass-card p-10 rounded-[3rem] bg-cyan-500/[0.03] border-cyan-500/10 shadow-3xl shadow-cyan-500/5">
+                                                    <h4 className="data-label !text-cyan-400 mb-6 flex items-center gap-3">
+                                                        <ShieldCheck size={20} strokeWidth={1.5} /> Care Focus
                                                     </h4>
-                                                    <div className="text-white text-xl font-black tracking-tight leading-tight uppercase">
+                                                    <div className="text-white text-xl font-semibold tracking-tight leading-relaxed font-[family-name:var(--font-outfit)]">
                                                        {analysisData.recommendation}
                                                     </div>
                                                 </div>
@@ -424,59 +424,59 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                                 ) : (
                                     <>
                                         {/* SINGLE REPORT VIEW */}
-                                        <div className="p-10 border-b border-white/5 relative bg-white/5 z-10">
-                                            <div className="flex items-start justify-between mb-6">
+                                        <div className="p-12 border-b border-white/5 relative bg-white/[0.02] z-10">
+                                            <div className="flex items-start justify-between mb-8">
                                                 <div>
-                                                    <span className={`text-[10px] font-black px-4 py-1.5 rounded-full border border-white/10 uppercase tracking-widest ${analysisData.meta?.reportType?.includes('Rx') ? 'bg-blue-500/10 text-blue-400' : 'bg-cyan-500/10 text-cyan-400'}`}>
-                                                        {analysisData.meta?.reportType || analysisData.docType || "Medical Document"}
+                                                    <span className={`data-label !text-[8px] px-5 py-2 rounded-full border border-white/10 bg-white/5 ${analysisData.meta?.reportType?.includes('Rx') ? 'text-blue-400' : 'text-cyan-400'}`}>
+                                                        NODE ID: {analysisData.meta?.reportType || analysisData.docType || "DATA_STREAM"}
                                                     </span>
-                                                    <h3 className="text-4xl font-black text-white tracking-tighter mt-4 uppercase">AI Diagnostic Audit</h3>
+                                                    <h3 className="text-5xl font-bold text-white tracking-tight mt-6 uppercase font-[family-name:var(--font-outfit)]">Report Summary</h3>
                                                 </div>
-                                                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 flex items-center justify-center font-black text-cyan-400 shadow-xl">Y</div>
+                                                <div className="h-14 w-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center data-label !text-cyan-400 shadow-inner">Y</div>
                                             </div>
-                                            <p className="text-lg text-slate-400 font-medium leading-relaxed max-w-3xl">{analysisData.summary}</p>
+                                            <p className="text-xl text-slate-400 font-light font-[family-name:var(--font-inter)] leading-relaxed max-w-4xl">{analysisData.summary}</p>
                                         </div>
 
-                                        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-12 z-10">
+                                        <div className="flex-1 overflow-y-auto p-12 custom-scrollbar space-y-14 z-10">
                                             {/* Biomarker Table */}
                                             {analysisData.biomarkers && analysisData.biomarkers.length > 0 && (
                                                 <div>
-                                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                                                        <Activity size={16} className="text-cyan-400" /> Extracted Bio-Signatures
+                                                    <h4 className="data-label !text-slate-600 mb-8 flex items-center gap-3">
+                                                        <Activity size={20} className="text-cyan-400 opacity-60" strokeWidth={1.5} /> Extracted Bio-Signatures
                                                     </h4>
-                                                    <div className="overflow-hidden rounded-[2rem] border border-white/5 bg-slate-900/40">
+                                                    <div className="overflow-hidden rounded-[3rem] border border-white/5 bg-slate-950/40">
                                                         <table className="w-full text-left border-collapse">
                                                             <thead>
-                                                                <tr className="bg-white/5 border-b border-white/5">
-                                                                    <th className="px-6 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Parameter</th>
-                                                                    <th className="px-6 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Value</th>
-                                                                    <th className="px-6 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Reference</th>
-                                                                    <th className="px-6 py-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Trend</th>
+                                                                <tr className="bg-white/5 border-b border-white/5 font-[family-name:var(--font-outfit)]">
+                                                                    <th className="px-8 py-6 data-label !text-slate-500">Parameter</th>
+                                                                    <th className="px-8 py-6 data-label !text-slate-500">Metric</th>
+                                                                    <th className="px-8 py-6 data-label !text-slate-500 text-center">Reference</th>
+                                                                    <th className="px-8 py-6 data-label !text-slate-500 text-right">Trajectory</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="divide-y divide-white/5">
                                                                 {analysisData.biomarkers.map((b: any, idx: number) => (
-                                                                    <tr key={idx} className="hover:bg-white/5 transition-colors group">
-                                                                        <td className="px-6 py-5 font-black text-white text-sm tracking-tight">{b.name}</td>
-                                                                        <td className="px-6 py-5">
-                                                                            <span className="text-white font-black text-lg">{b.value}</span>
-                                                                            <span className="text-[10px] text-slate-500 font-black uppercase ml-1.5">{b.unit}</span>
+                                                                    <tr key={idx} className="hover:bg-white/[0.02] transition-colors group">
+                                                                        <td className="px-8 py-6 font-bold text-white text-[13px] font-[family-name:var(--font-outfit)] uppercase tracking-tight">{b.name}</td>
+                                                                        <td className="px-8 py-6">
+                                                                            <span className="text-white font-bold text-xl font-[family-name:var(--font-outfit)]">{b.value}</span>
+                                                                            <span className="data-label !text-slate-600 ml-2">{b.unit}</span>
                                                                         </td>
-                                                                        <td className="px-6 py-5 text-center">
-                                                                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${b.status?.toLowerCase().includes('high') || b.status?.toLowerCase().includes('low') || b.status?.toLowerCase().includes('abnormal')
-                                                                                ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                                                                                : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                                                                        <td className="px-8 py-6 text-center">
+                                                                            <span className={`px-5 py-2 rounded-full data-label !text-[8px] border ${b.status?.toLowerCase().includes('high') || b.status?.toLowerCase().includes('low') || b.status?.toLowerCase().includes('abnormal')
+                                                                                ? "text-red-400 border-red-500/20 bg-red-500/[0.02]"
+                                                                                : "text-cyan-400 border-cyan-500/20 bg-cyan-500/[0.02]"
                                                                                 }`}>
                                                                                 {b.status}
                                                                             </span>
                                                                         </td>
-                                                                        <td className="px-6 py-5 text-right">
+                                                                        <td className="px-8 py-6 text-right">
                                                                             {b.trend?.toLowerCase().includes('ris') || b.trend?.toLowerCase().includes('fall') ? (
-                                                                                <span className="inline-flex items-center gap-2 text-amber-500 font-black text-[10px] uppercase">
-                                                                                    <Milestone size={12} className={b.trend.includes('ris') ? 'rotate-[-45deg]' : 'rotate-[45deg]'} /> {b.trend}
+                                                                                <span className="inline-flex items-center gap-3 text-amber-500 data-label !text-[8px] opacity-80">
+                                                                                    <Milestone size={14} className={b.trend.includes('ris') ? 'rotate-[-45deg]' : 'rotate-[45deg]'} strokeWidth={1.5} /> {b.trend}
                                                                                 </span>
                                                                             ) : (
-                                                                                <span className="text-slate-500 font-bold text-xs uppercase">{b.trend || "-"}</span>
+                                                                                <span className="data-label !text-slate-700 !text-[8px]">{b.trend || "-"}</span>
                                                                             )}
                                                                         </td>
                                                                     </tr>
@@ -488,38 +488,38 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                                             )}
 
                                             {/* Analysis Markdown */}
-                                            <div className="glass-card p-10 rounded-[2.5rem] bg-white/5 border-white/5">
-                                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6">Detailed Clinical Insight</h4>
-                                                <div className="prose prose-invert prose-lg max-w-none text-slate-300 font-medium leading-relaxed">
+                                            <div className="glass-card p-12 rounded-[3.5rem] bg-white/[0.02] border-white/5">
+                                                <h4 className="data-label !text-slate-600 mb-8 uppercase tracking-[0.3em]">AI Insight Stream</h4>
+                                                <div className="prose prose-invert prose-lg max-w-none text-slate-400 font-light font-[family-name:var(--font-inter)] leading-relaxed">
                                                     <ReactMarkdown>{analysisData.analysis}</ReactMarkdown>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="p-8 bg-slate-900/60 border-t border-white/5 text-center relative z-10 overflow-hidden">
-                                           <div className="absolute top-0 right-0 p-10 opacity-5">
-                                               <AlertCircle size={80} className="text-amber-500" />
+                                        <div className="p-10 bg-white/[0.02] border-t border-white/5 text-center relative z-10 overflow-hidden">
+                                           <div className="absolute top-0 right-0 p-12 opacity-[0.03]">
+                                               <AlertCircle size={100} className="text-amber-600" />
                                            </div>
-                                            <p className="text-amber-500 text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3">
-                                                <AlertCircle size={14} /> Critical Disclaimer // AI Verification Required
+                                            <p className="data-label !text-amber-600 !tracking-[0.5em] flex items-center justify-center gap-4">
+                                                <AlertCircle size={14} strokeWidth={2} /> Protocol Disclaimer // Professional Review Required
                                             </p>
-                                            <p className="text-slate-500 text-[11px] font-bold mt-2 max-w-2xl mx-auto">
-                                                {analysisData.disclaimer || "Diagnostics are computational and intended for clinical decision support. Consult your primary geriatrician."}
+                                            <p className="text-slate-600 text-[11px] font-light font-[family-name:var(--font-inter)] mt-3 max-w-2xl mx-auto uppercase tracking-tighter">
+                                                {analysisData.disclaimer || "Health insights are computational decision support tools for demonstration. Consult your doctor."}
                                             </p>
                                         </div>
                                     </>
                                 )}
                             </motion.div>
                         ) : (
-                            <div className="h-full w-full flex flex-col items-center justify-center text-slate-400 glass-card rounded-[3rem] border-white/5 bg-slate-900/20 backdrop-blur-3xl p-16 text-center group">
-                                <div className="animate-float mb-8">
-                                    <div className="h-24 w-24 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-600 group-hover:text-cyan-400 group-hover:border-cyan-500/20 transition-all duration-700 shadow-2xl">
-                                        <Brain size={64} className="opacity-20 group-hover:opacity-100 transition-opacity" />
+                            <div className="h-full w-full flex flex-col items-center justify-center text-slate-400 glass-card rounded-[4rem] border-white/5 bg-slate-950/20 backdrop-blur-3xl p-16 text-center group">
+                                <div className="animate-float mb-12">
+                                    <div className="h-28 w-28 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center text-slate-800 group-hover:text-cyan-400/60 group-hover:border-cyan-500/20 transition-all duration-1000 shadow-3xl shadow-black">
+                                        <Brain size={80} strokeWidth={1} className="opacity-10 group-hover:opacity-100 transition-opacity" />
                                     </div>
                                 </div>
-                                <h3 className="text-2xl font-black text-white tracking-tighter uppercase mb-4">Central Intelligence Vault</h3>
-                                <p className="text-slate-500 font-medium max-w-sm leading-relaxed text-lg">
-                                    Upload reports to build your clinical lineage. Yukti analyzes longitudinal shifts across your full medical history.
+                                <h3 className="text-2xl font-bold text-white tracking-tight uppercase mb-5 font-[family-name:var(--font-outfit)]">Digital Health Vault</h3>
+                                <p className="text-slate-600 font-light max-w-md leading-relaxed text-lg font-[family-name:var(--font-inter)]">
+                                    Establish your health history by uploading laboratory scans. Yukti reviews trends across your biological timeline.
                                 </p>
                             </div>
                         )}

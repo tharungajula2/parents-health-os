@@ -68,7 +68,7 @@ export function WhatsAppDemo() {
                 // Simple logic: if number or pain mentioned
                 botText = "Noted. I'll share this with Dr. Aruna in the weekly report. Rest well! 🛋️";
             } else {
-                botText = "I am just a demo bot right now, but I am learning! 🧠";
+                botText = "I am a prototype assistant for this demo! How else can I help? 🌟";
             }
 
             const botMsg: Message = {
@@ -91,15 +91,15 @@ export function WhatsAppDemo() {
         <div className="flex flex-col items-center justify-center min-h-full bg-slate-950 p-4 relative overflow-hidden space-y-10">
             {/* --- HEADER --- */}
             <div className="w-full max-w-4xl px-2 text-center md:text-left">
-                <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase mb-1">WhatsApp Bot</h2>
-                <p className="text-sm text-slate-400 font-medium tracking-tight">Conversational clinical support on your familiar messaging channel.</p>
+                <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight uppercase font-[family-name:var(--font-outfit)]">Care Hub</h2>
+                <p className="text-sm text-slate-500 font-light font-[family-name:var(--font-inter)] tracking-wide mt-2">Sample messaging interface demonstration with a care companion.</p>
             </div>
             {/* Ambient Background Glows */}
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/5 blur-[120px] rounded-full animate-pulse" />
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full animate-pulse delay-700" />
 
             {/* PHONE FRAME */}
-            <div className="w-[380px] h-[720px] bg-slate-900 rounded-[3.5rem] p-3 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative border-[6px] border-slate-800 ring-1 ring-white/10">
+            <div className="w-[390px] h-[750px] bg-slate-950 rounded-[4rem] p-3 shadow-3xl relative border-[1px] border-white/10 ring-[6px] ring-slate-900/50">
 
                 {/* Dynamic island / Notch */}
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-7 bg-black rounded-b-2xl z-30 shadow-inner"></div>
@@ -110,27 +110,27 @@ export function WhatsAppDemo() {
                     <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none"></div>
 
                     {/* HEADER */}
-                    <div className="bg-slate-900/80 backdrop-blur-xl text-white p-5 pt-12 flex items-center justify-between border-b border-white/5 shadow-lg z-20 shrink-0">
-                        <div className="flex items-center gap-4">
-                            <ArrowLeft size={18} className="cursor-pointer text-slate-400 hover:text-white transition-colors" />
+                    <div className="bg-slate-950/80 backdrop-blur-3xl text-white p-6 pt-12 flex items-center justify-between border-b border-white/5 shadow-2xl z-20 shrink-0">
+                        <div className="flex items-center gap-5">
+                            <ArrowLeft size={16} strokeWidth={1.5} className="cursor-pointer text-slate-500 hover:text-white transition-colors" />
                             <div className="relative">
-                                <div className="h-10 w-10 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center overflow-hidden shadow-[0_0_15px_rgba(34,211,238,0.1)]">
-                                    <span className="text-cyan-400 font-black text-lg">Y</span>
+                                <div className="h-11 w-11 bg-white text-slate-950 border border-white/5 rounded-full flex items-center justify-center overflow-hidden shadow-3xl font-bold font-[family-name:var(--font-outfit)]">
+                                    Y
                                 </div>
-                                <div className="absolute bottom-0 right-0 h-3 w-3 bg-cyan-400 rounded-full border-2 border-slate-900 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
+                                <div className="absolute bottom-0.5 right-0.5 h-3 w-3 bg-cyan-400 rounded-full border-2 border-slate-950 shadow-[0_0_10px_rgba(34,211,238,0.6)]"></div>
                             </div>
                             <div>
-                                <h3 className="font-black text-xs uppercase tracking-widest leading-tight">Yukti Neural</h3>
+                                <h3 className="font-bold text-[13px] uppercase tracking-tight leading-tight font-[family-name:var(--font-outfit)]">Yukti Care</h3>
                                 <div className="flex items-center gap-2">
-                                    <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse"></span>
-                                    <p className="text-[9px] font-black text-cyan-400/60 uppercase tracking-tighter">Synchronized</p>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                                    <p className="data-label !text-[8px] !text-cyan-400/60 !tracking-[0.1em]">PROTOTYPE CHAT</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex gap-4 text-slate-400">
-                            <Video size={18} className="hover:text-cyan-400 transition-colors cursor-pointer" />
-                            <Phone size={18} className="hover:text-cyan-400 transition-colors cursor-pointer" />
-                            <MoreVertical size={18} className="hover:text-cyan-400 transition-colors cursor-pointer" />
+                        <div className="flex gap-5 text-slate-500">
+                            <Video size={16} strokeWidth={1.5} className="hover:text-cyan-400 transition-colors cursor-pointer" />
+                            <Phone size={16} strokeWidth={1.5} className="hover:text-cyan-400 transition-colors cursor-pointer" />
+                            <MoreVertical size={16} strokeWidth={1.5} className="hover:text-cyan-400 transition-colors cursor-pointer" />
                         </div>
                     </div>
 
@@ -145,26 +145,26 @@ export function WhatsAppDemo() {
                             >
                                 {/* Message Bubble */}
                                 <div
-                                    className={`max-w-[85%] px-5 py-4 rounded-[1.5rem] shadow-xl relative border ${msg.sender === "user"
-                                        ? "bg-cyan-500 border-cyan-400 text-slate-950 rounded-tr-none font-bold text-sm shadow-[0_0_30px_rgba(34,211,238,0.1)]"
-                                        : "glass-card bg-white/5 border-white/10 text-slate-200 rounded-tl-none font-medium text-sm"
+                                    className={`max-w-[85%] px-6 py-5 rounded-3xl shadow-2xl relative border font-[family-name:var(--font-inter)] ${msg.sender === "user"
+                                        ? "bg-white border-white text-slate-950 rounded-tr-none font-medium text-[13px] shadow-3xl"
+                                        : "bg-white/[0.04] border-white/5 backdrop-blur-3xl text-slate-200 rounded-tl-none font-light text-[13px]"
                                         }`}
                                 >
-                                    <p className="whitespace-pre-line leading-relaxed tracking-tight">{msg.text}</p>
-                                    <div className="flex items-center justify-end gap-2 mt-2 opacity-50">
-                                        <span className="text-[8px] font-black uppercase tracking-tighter">[{msg.timestamp}]</span>
-                                        {msg.sender === "user" && <CheckCheck size={12} className="text-slate-900" />}
+                                    <p className="whitespace-pre-line leading-relaxed tracking-normal">{msg.text}</p>
+                                    <div className="flex items-center justify-end gap-2 mt-3 opacity-40">
+                                        <span className="data-label !text-[7px]">{msg.timestamp}</span>
+                                        {msg.sender === "user" && <CheckCheck size={12} strokeWidth={1.5} className="text-slate-950" />}
                                     </div>
                                 </div>
 
                                 {/* Quick Replies (Bot only) */}
                                 {msg.sender === 'bot' && msg.options && (
-                                    <div className="flex flex-wrap gap-2 mt-4 px-2">
+                                    <div className="flex flex-wrap gap-2.5 mt-5 px-1">
                                         {msg.options.map((opt) => (
                                             <button
                                                 key={opt}
                                                 onClick={() => handleSendMessage(opt)}
-                                                className="bg-slate-900/60 border border-cyan-500/20 text-cyan-400 px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-cyan-500 hover:text-slate-950 hover:border-cyan-500 transition-all active:scale-95"
+                                                className="bg-white/[0.03] border border-white/10 text-white px-6 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-xl hover:bg-white hover:text-slate-950 transition-all active:scale-95 font-[family-name:var(--font-outfit)]"
                                             >
                                                 {opt}
                                             </button>
@@ -185,9 +185,9 @@ export function WhatsAppDemo() {
                     </div>
 
                     {/* INPUT AREA */}
-                    <div className="absolute bottom-6 w-[92%] left-[4%] bg-slate-900/90 backdrop-blur-2xl p-2 px-3 flex items-center gap-3 z-30 rounded-[2rem] border border-white/10 shadow-2xl">
-                        <div className="p-2 text-slate-500 hover:text-cyan-400 transition-colors pointer-events-none">
-                            <Smile size={22} />
+                    <div className="absolute bottom-8 w-[90%] left-[5%] bg-slate-950/90 backdrop-blur-3xl p-3 px-4 flex items-center gap-4 z-30 rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                        <div className="p-2 text-slate-600 hover:text-white transition-colors pointer-events-none">
+                            <Smile size={20} strokeWidth={1.5} />
                         </div>
                         
                         <div className="flex-1 px-1">
@@ -195,23 +195,23 @@ export function WhatsAppDemo() {
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
-                                placeholder="Quantum interface..."
-                                className="w-full bg-transparent text-[11px] font-black uppercase tracking-widest outline-none text-white placeholder:text-slate-600"
+                                placeholder="Type a message..."
+                                className="w-full bg-transparent text-[11px] font-bold uppercase tracking-widest outline-none text-white placeholder:text-slate-800 font-[family-name:var(--font-outfit)]"
                             />
                         </div>
 
-                        <div className="flex gap-1">
-                            <div className="p-2 text-slate-500 hover:text-cyan-400 transition-colors pointer-events-none">
-                                <Paperclip size={18} />
+                        <div className="flex gap-2">
+                            <div className="p-2 text-slate-600 hover:text-white transition-colors pointer-events-none">
+                                <Paperclip size={18} strokeWidth={1.5} />
                             </div>
                             
                             {inputValue.trim() ? (
-                                <button onClick={() => handleSendMessage(inputValue)} className="p-2.5 bg-cyan-500 text-slate-950 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:scale-110 active:scale-90 transition-all">
-                                    <Send size={16} strokeWidth={3} className="translate-x-0.5" />
+                                <button onClick={() => handleSendMessage(inputValue)} className="p-3 bg-white text-slate-950 rounded-full shadow-3xl hover:scale-110 active:scale-90 transition-all">
+                                    <Send size={14} strokeWidth={2.5} className="translate-x-0.5" />
                                 </button>
                             ) : (
-                                <div className="p-2.5 bg-slate-800 text-slate-400 rounded-full shadow-md cursor-pointer hover:text-cyan-400 transition-colors">
-                                    <Mic size={16} />
+                                <div className="p-3 bg-white/5 text-slate-600 rounded-full shadow-md cursor-pointer hover:text-white transition-colors">
+                                    <Mic size={14} strokeWidth={1.5} />
                                 </div>
                             )}
                         </div>
