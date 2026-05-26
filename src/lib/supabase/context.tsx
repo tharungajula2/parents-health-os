@@ -47,6 +47,7 @@ interface ParentsAuthContextType {
   addWhatsappMessage: (direction: "incoming" | "outgoing", body: string, mediaUrl?: string) => Promise<{ success: boolean; error?: any }>;
   updateScorecard: (answers: any, scores: any) => Promise<{ success: boolean; error?: any }>;
   resetScorecard: () => Promise<{ success: boolean; error?: any }>;
+  updateParentProfile: (parentId: string, updatedFields: Partial<TableRow<"parents">>) => Promise<{ success: boolean; error?: any }>;
   
   
   // UI Helpers
@@ -546,11 +547,26 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         updated_at: new Date().toISOString()
       };
 
-      const parentsList = [parent1, parent2];
+      let parentsList = [parent1, parent2];
+
+      // Check if Personal Sandbox Mode is active
+      const appMode = localStorage.getItem("parents_health_mode") || "demo";
+      if (appMode === "personal") {
+        const savedPersonal = localStorage.getItem("parents_health_personal_parents");
+        if (savedPersonal) {
+          try {
+            const parsed = JSON.parse(savedPersonal);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              parentsList = parsed;
+            }
+          } catch (e) {}
+        }
+      }
+
       setParents(parentsList);
 
       const activeId = localStorage.getItem("parents_health_active_parent_id") || "sandbox-parent-id";
-      const currentActive = parentsList.find(p => p.id === activeId) || parent1;
+      const currentActive = parentsList.find(p => p.id === activeId) || parentsList[0] || parent1;
       setActiveParent(currentActive);
       loadSandboxParentRecords(currentActive.id, currentActive.name);
     }
@@ -1141,6 +1157,63 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
     }
   };
 
+  const updateParentProfile = async (parentId: string, updatedFields: Partial<TableRow<"parents">>) => {
+    if (isSupabaseEnabled && supabase && user) {
+      try {
+        const { data: updatedParent, error } = await supabase
+          .from("parents")
+          .update(updatedFields)
+          .eq("id", parentId)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        if (updatedParent) {
+          setParents(prev => prev.map(p => p.id === parentId ? updatedParent : p));
+          if (activeParent?.id === parentId) {
+            setActiveParent(updatedParent);
+          }
+          await supabase.from("audit_log").insert({
+            actor_id: user.id,
+            action: "update_health_profile",
+            entity_type: "parent",
+            entity_id: parentId
+          });
+        }
+        return { success: true };
+      } catch (err) {
+        console.error("Failed to update parent profile:", err);
+        return { success: false, error: err };
+      }
+    } else {
+      // Sandbox mode: update parent in local list
+      const updatedList = parents.map(p => {
+        if (p.id === parentId) {
+          // Merge top-level fields
+          const merged = {
+            ...p,
+            ...updatedFields,
+            scorecard_answers: {
+              ...(p.scorecard_answers as any || {}),
+              ...(updatedFields.scorecard_answers as any || {})
+            }
+          };
+          return merged;
+        }
+        return p;
+      });
+      setParents(updatedList);
+      localStorage.setItem("parents_health_personal_parents", JSON.stringify(updatedList));
+      localStorage.setItem("parents_health_mode", "personal"); // Automatically ensure personal mode is enabled
+      const newActive = updatedList.find(p => p.id === activeParent?.id);
+      if (newActive) {
+        setActiveParent(newActive);
+      }
+      return { success: true };
+    }
+  };
+
   const addWhatsappMessage = async (direction: "incoming" | "outgoing", body: string, mediaUrl?: string) => {
     if (isSupabaseEnabled && supabase && activeParent) {
       const { error } = await supabase
@@ -1223,6 +1296,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         addWhatsappMessage,
         updateScorecard,
         resetScorecard,
+        updateParentProfile,
         
         selectActiveParent,
         refreshData

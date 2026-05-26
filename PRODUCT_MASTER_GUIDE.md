@@ -1,4 +1,4 @@
-# Sahara Senior (Parents Health OS): The Definitive Product Architectural, Strategic, & Replication Manual
+# Parents Health OS: The Definitive Product Architecture, Strategy, & Replication Manual
 **Version:** 5.0 (The Unified Production-Grade Reference Authority)  
 **Status:** Approved for Production Deployment & Replication  
 **Principal Architect:** Tharun Gajula  
@@ -6,9 +6,43 @@
 
 ---
 
+## Product Identity & Directory
+
+*   **Official Product Name:** Parents Health OS
+*   **Product Category:** Parent health coordination, care simulation, family health operations, and AI-assisted caregiver support system
+*   **AI Care Assistant Persona:** Anaya
+*   **Founder & Principal Architect:** Tharun Gajula
+*   **Local Project Folder:** `parents-health-os`
+*   **GitHub Repository:** [https://github.com/tharungajula2/parents-health-os](https://github.com/tharungajula2/parents-health-os)
+*   **Vercel Production Deployment:** [https://parents-health-os.vercel.app/](https://parents-health-os.vercel.app/)
+*   **Deployment Status:** Completed on Vercel
+*   **Current Stage:** Production-deployed MVP / Phase-ready foundation
+*   **Product Purpose:** A family-first health coordination operating system to help adult children and families organize, understand, simulate, and manage parent health workflows with privacy-conscious AI assistance.
+
+---
+
+## Executive Product Summary
+
+**Parents Health OS** is a context-aware health coordination platform designed to help families manage parent care more intelligently. It combines holistic health profiles, daily compliance checklists, dry-run vital synchronization, clinical wearable integration models, and secure data handling principles under a single intuitive framework.
+
+At the core of the experience is **Anaya**, a conversational AI care assistant persona. Anaya acts as the dashboard's cognitive brain—translating complex medical jargon into user-friendly definitions, helping users analyze diagnostic reports, synthesizing historical health records, generating clinical briefing documents for physical doctor consultations, and simulating interactive check-in notifications via a simulated WhatsApp gateway.
+
+Rather than acting as a simple AI chatbot wrapper, Parents Health OS acts as a full-fledged operating system designed specifically for the unique family dynamics of eldercare in India.
+
+---
+
+## Product Naming & Reference Clarification
+
+To keep operational documentation and technical architecture consistent:
+*   **"Parents Health OS"** refers to the entire product and dashboard platform.
+*   **"Anaya"** refers specifically to the conversational AI care companion and analytical persona embedded within the platform.
+*   **`parents-health-os`** is the exact repository and system directory name.
+*   **`PRODUCT_MASTER_GUIDE.md`** serves as the single-stop living product reference manual for development architecture, strategic planning, and verification.
+
+---
+
 > [!IMPORTANT]
-> **GERIATRIC PATIENT PRIVACY DIRECTIVE (RED-LINE)**
-> This application implements a strict zero-server storage model for personal data in the initial prototype, transitioning to India-residency Supabase storage (`ap-south-1` Mumbai) for production in compliance with India's **DPDPA 2023** and **DPDP Rules 2025**. All personal health identifiers (PHIs), clinical scores, medical document analysis summaries, and daily habit logs must remain stored exclusively in the client browser's local storage (`localStorage`) or secure, RLS-protected database buckets. No central tracking pixels or third-party analytical pipelines are permitted to capture patient records.
+> This application implements a local-first browser storage model for personal data by default in the sandbox environment. Optional AI report analysis uses the configured Gemini API, so uploaded report contents are transmitted to the AI processing service. For production, the roadmap plans a transition to India-residency Supabase storage (`ap-south-1` Mumbai) aligned with India's **DPDPA 2023** and **DPDP Rules 2025** guidelines. All personal health identifiers (PHIs), clinical scores, medical document analysis summaries, and daily habit logs are stored in the client browser's local storage (`localStorage`) by default, or secure database buckets when synced. No central tracking pixels or third-party analytical pipelines are permitted to capture patient records.
 
 ---
 
@@ -43,14 +77,14 @@ graph TD
 ## 1. Core Philosophy, Strategic Moat, and Target User
 
 ### 1.1 Executive Identity & Market Wedge
-**Parents Health OS** (marketed under the premium brand name **Sahara Senior** or **Sahara Sr.**) is a premium, family-shared eldercare oversight platform. The core strategic wedge is simple but extremely powerful:
+**Parents Health OS** is a premium, family-shared eldercare oversight platform. The core strategic wedge is simple but extremely powerful:
 *   **Build the product as a WhatsApp-first daughter/son dashboard, NOT as a "senior app".** Top Indian players like Khyaal, Emoha, Anvayaa, and Samarth have proven that 60–75-year-old Indian parents resist installing yet another application. The high-conversion solution is a Hindi/Telugu WhatsApp care companion bot for the parent, a Next.js web/mobile dashboard for the 25–45-year-old adult child, and Google Gemini 2.5 Flash as the translation, transcription, and summarization brain.
-*   **"Sahara"** means support/refuge in Hindi-Urdu and is universally understood across Telugu, Tamil, and Kannada, offering an emotionally warm, premium brand voice without being overly clinical.
+*   **Parents Health OS** offers an emotionally warm, premium brand voice without being overly clinical, serving as a supportive care system.
 
 ### 1.2 The Longitudinal Synthesis Layer
 Clinical health data only becomes actionable when synthesized with daily, personal routine context. Standard medical dashboards isolate data. They display a blood sugar reading of `160 mg/dL` and flag it as a generic "High Alert," causing unnecessary anxiety. 
 
-Sahara Senior's **Longitudinal Synthesis Layer** cross-references this reading against geriatric profile variables (e.g., a 76-year-old with a high risk of hypoglycemia and balance instability). It understands that for this specific patient, a higher glycemic floor is a deliberate, protective clinical target to prevent sudden syncopes (fainting) and catastrophic falls. The system correlates high-frequency, noisy daily habit logs (medications, water intake, sleep quality, physical activity) with low-frequency, high-validity clinical artifacts (laboratory reports, doctor prescriptions, radiology scans), building an ongoing digital narrative.
+Parents Health OS's **Longitudinal Synthesis Layer** cross-references this reading against geriatric profile variables (e.g., a 76-year-old with a high risk of hypoglycemia and balance instability). It understands that for this specific patient, a higher glycemic floor is a deliberate, protective clinical target to prevent sudden syncopes (fainting) and catastrophic falls. The system correlates high-frequency, noisy daily habit logs (medications, water intake, sleep quality, physical activity) with low-frequency, high-validity clinical artifacts (laboratory reports, doctor prescriptions, radiology scans), building an ongoing digital narrative.
 
 ### 1.3 The "Sanskaar-UX" Framework
 Targeting Indian seniors requires extreme sensitivity to technological friction. Standard UI designs are too clinical, cold, and demanding. Parents Health OS defines the **"Sanskaar-UX" Framework**:
@@ -171,7 +205,7 @@ Meta's billing model operates on per-message category fees:
 
 ## 4. The Longitudinal Synthesis API & Fallback Routing
 
-To synthesize clinical contexts and analyze documents, Sahara Senior routes requests to a single dynamic Next.js API endpoint: `/api/analyze/route.ts`. The implementation supports two processing workflows: **Holistic Summary Synthesis** and **Multimodal Document Analysis**, with a robust automated model fallback.
+To synthesize clinical contexts and analyze documents, Parents Health OS routes requests to a single dynamic Next.js API endpoint: `/api/analyze/route.ts`. The implementation supports two processing workflows: **Holistic Summary Synthesis** and **Multimodal Document Analysis**, with a robust automated model fallback.
 
 ### 4.1 Next.js API Route Architecture (`src/app/api/analyze/route.ts`)
 ```typescript
@@ -573,7 +607,7 @@ During the conversion from a dark-themed tech prototype to the premium, high-con
 
 Health records constitute sensitive personal data under India's **DPDPA 2023** and **DPDP Rules 2025** framework. 
 
-### 10.1 Key Directives for Sahara Senior
+### 10.1 Key Directives for Parents Health OS
 1.  **Strict Consent Ledger:** Every customer signup must log explicit, granular consent inside the `consents` table (storing timestamp, IP address, consent version, and locale).
 2.  **Verifiable Consent:** In cases of severe cognitive impairment (e.g. advanced dementia), the platform requires lawful guardianship documentation to be uploaded, making the child the primary authorized Data Principal.
 3.  **Data Residency:** Pin all Supabase instances to India's `ap-south-1` Mumbai region.
@@ -619,7 +653,7 @@ Recreate the components inside `src/components/` following these layout boundari
 5.  **Document Upload & OCR parser (`src/components/SmartReport.tsx`):** Set up drag-and-drop zones, handle base64 image encoding, fetch responses from `/api/analyze`, and execute clean medication merges into client storage.
 
 ### 90-Day Sprint Calendar Execution (Free-tier to Production Scaling)
-*   **Sprint 0 (Week 1):** Buy domains (`saharasenior.com`), set up Meta WABA, verify corporate entity, set up database tables in `ap-south-1`.
+*   **Sprint 0 (Week 1):** Buy domains (`parentshealth.in`), set up Meta WABA, verify corporate entity, set up database tables in `ap-south-1`.
 *   **Sprint 1-2 (Weeks 2-3):** Build child auth (OTP via WhatsApp template), configure consent ledger tables, and initialize local storage synchronization.
 *   **Sprint 3 (Week 4):** Connect Meta webhook to Next.js API, configure webhook media signature checking, and verify message routing.
 *   **Sprint 4-5 (Weeks 5-6):** Integrate Gemini Flash transcription, build multilingual TTS voice synthesis templates, and trace token usage costs.
@@ -629,4 +663,296 @@ Recreate the components inside `src/components/` following these layout boundari
 *   **Sprint 10-12 (Weeks 12-13):** Scale up to 100 families, activate paid tiers for Vercel, Supabase, and Gemini to ensure robust data residency compliance, and begin processing subscriptions.
 
 ---
-*End of Blueprint. This document serves as the absolute master authority for Parents Health OS & Sahara Senior replication.*
+
+## 12. Investor Demo & Founder Walkthrough Manual
+
+> [!IMPORTANT]
+> **CLINICAL AND LEGAL SAFETY WARRANTY**
+> Parents Health OS is a caregiver-assistive coordination, summarization, organization, reminder, and health simulation system. **It is NOT a licensed medical software, does not replace professional clinical judgment, and does not provide diagnostic services, clinical treatment, or emergency medical dispatch.** All emergency guidelines and clinical escalations must be directed through physical primary care doctors and emergency ambulance services.
+
+### 12.1 Demo Preparation Checklist
+Before initiating a demonstration session for investors, mentors, or clinical advisors, verify the following setup is active:
+*   **Active URL:** Open the deployed Vercel production URL ([https://parents-health-os.vercel.app/](https://parents-health-os.vercel.app/)) on both desktop and mobile viewports.
+*   **Local Repository Sandbox:** Keep VS Code open locally showing the `parents-health-os` workspace in case the audience requests a technical walkthrough of the local-first security architecture.
+*   **TypeScript Verification:** Confirm that `npm run build` is passing with exit code 0 to ensure code compilation integrity.
+*   **Data Integrity & Security:** Ensure no actual patient or private clinical records are loaded. Verify that only secure, high-fidelity synthetic profiles (**Amma Demo** and **Papa Demo**) are active inside the Client-side `localStorage`.
+*   **Reference Ready:** Keep this `PRODUCT_MASTER_GUIDE.md` open in a browser tab or markdown reader as a strategic anchor.
+*   **The Founder's Genesis Story:** Prepare a 1-minute personal narrative highlighting the friction of managing long-distance care for aging parents in India, explaining how standard tools fail elder cognitive barriers.
+
+### 12.2 The 30-Second Product Pitch
+> *"Every year, millions of working professionals experience the constant anxiety of managing their aging parents' chronic health conditions from a distance. The seniors resist installing complicated apps, and the caregivers have no visibility into daily compliance. Parents Health OS solves this with a two-way interface: a respectful, zero-friction WhatsApp care companion named Anaya for the parent, and a high-fidelity, context-aware dashboard for the family caregiver. It bridges the communication gap and ensures clinical safety without requiring seniors to learn a single new technology."*
+
+### 12.3 The 2-Minute Product Pitch
+*   **The Problem:** Aging parents in India face multiple chronic conditions (hypertension, diabetes, joint pain) requiring careful daily adherence. However, seniors resist clinical-looking apps. They communicate exclusively through WhatsApp. At the same time, their adult children are left completely in the dark regarding medication compliance, vitals variations, or report abnormal values.
+*   **The Target Users:**
+    1.  *Primary Caregivers:* 25–45 year old working professionals (often living in high-tier Indian cities or NRI zones) who manage parent health budgets.
+    2.  *Seniors:* 60–80+ year old parents who use simple smartphones and prefer local-language messaging.
+*   **The Solution:** Parents Health OS represents a specialized coordination layer. It operates on a "Sanskaar-UX" philosophy—warm, respectful, and culturally resonant.
+*   **Anaya Care Assistant:** Rather than a simple prompt wrapper, Anaya represents the cognitive intelligence layer. Anaya monitors vitals, translates clinical reports (e.g., explaining creatinine or HbA1c in simple terms), and manages scheduled daily medication checklists.
+*   **Privacy-First Direction:** Designed in alignment with India's DPDP Act 2023 principles. By defaulting to a local-first browser storage architecture in the sandbox, we demonstrate absolute user trust before planned migrations to residency-locked regional databases in production.
+*   **Future Vision:** Scale from a high-fidelity simulation model into a national integration layer connected directly to clinical laboratories, wearable telemetry, and professional geriatric care providers.
+
+### 12.4 End-to-End Demo Journey
+
+```mermaid
+graph LR
+    Step1[1. Welcome & Dashboard] --> Step2[2. Demographics Switcher]
+    Step2 --> Step3[3. Geriatric Assessment]
+    Step3 --> Step4[4. Daily Care & IoT Sync]
+    Step4 --> Step5[5. WhatsApp Demo]
+    Step5 --> Step6[6. Smart PDF Analysis]
+    Step6 --> Step7[7. Clinician Hub & Brief]
+    Step7 --> Step8[8. Privacy & Vision Summary]
+```
+
+1.  **Start at the Dashboard:** Introduce the elegant, calming, warm healthcare aesthetic designed to evoke trust rather than medical coldness.
+2.  **Explain the Dual-Profile Isolation:** Show how clicking the Parent Switcher instantly swaps the active dashboard state between "Amma Demo" and "Papa Demo" using dynamic client-side state.
+3.  **Demonstrate the Geriatric Assessment Wizard:** Navigate to the Onboarding tab to show the 15-question scorecard covering metabolic, frailty, muscular, and emotional pillars. Highlight how this index calibrates alert thresholds.
+4.  **Perform Daily Care Logging & Simulated IoT Sync:** Open the tracker checklist. Check off a medication to show immediate ring updates and premium toast indicators. Click **SYNC CGM** or **SYNC SMARTWATCH** to demonstrate how frictionless device telemetry integration is mapped.
+5.  **Simulate the WhatsApp Care Companion Dialog:** Open the WhatsApp Demo view. Highlight the mock Meta Cloud API gateway status. Send a simulated BP Measurement template and observe the automatic chat feed response showing Anaya logging compliance.
+6.  **Analyze a Medical Document (OCR):** Upload a lab report or trigger the simulated ingest. Show how Anaya extracts abnormal biomarkers and adds them to the historical trajectory chart.
+7.  **Generate a Structured Doctor Brief:** Go to the Care Team section, select the "Doctor Brief" tab, and click **Generate Doctor Brief**. Explain how this summarizes complex clinical logs into a highly practical single-page sheet for physical consults.
+8.  **Highlight Data Residency & DPDP Act Readiness:** Show the footer security badges. Explain the local-first execution model.
+9.  **Conclude with the Future Integration Vision & Investment Value Proposition.**
+
+### 12.5 Section-by-Section Demo Script & Speaking Notes
+
+#### Section A: The Dashboard Home
+*   **Action:** Point to the main header and general status tiles. Switch profiles between Amma and Papa.
+*   **What to Say:** *"Welcome to the Parents Health OS dashboard. The interface is styled using a calming warm teal and cream palette specifically tailored to reduce anxiety for Indian families. As I switch from Amma to Papa, you will see the entire clinical profile, medication list, and daily progress values swap instantly. This showcases our profile isolation model."*
+*   **Investor Question Answered:** *How does a single user coordinate care for multiple parents? Is the system reactive?*
+*   **What NOT to Overclaim:** Do not claim that this is pulling from real EHR servers yet; explain that it currently functions in high-fidelity Sandbox Local Storage mode.
+
+#### Section B: The 15-Point Assessment Engine
+*   **Action:** Navigate to the onboarding questionnaire. Point out questions on metabolic risk and frailty.
+*   **What to Say:** *"Most apps just ask for age and weight. Parents Health OS computes a comprehensive 15-question Geriatric Scorecard covering metabolic, cognitive, emotional, sleep, muscular, and frailty factors. The resultant score classifies the parent into risk profiles—Healthy, Moderate, or High. High-risk profiles automatically trigger more intensive care companion loops."*
+*   **Investor Question Answered:** *How does the system understand clinical baseline context beyond simple manual inputs?*
+*   **What NOT to Overclaim:** Do not say this replaces professional geriatric triage; it serves as a coordination baseline.
+
+#### Section C: Wearable IoT & Daily Logs
+*   **Action:** Toggle medication checklist tasks. Click **SYNC CGM** and **SYNC SMARTWATCH**.
+*   **What to Say:** *"We simplify daily health telemetry. When the parent checks off a morning medication, the adult child gets real-time visibility. By clicking our mock Freestyle Libre sync, blood sugar levels populate automatically. Smartwatch syncing captures activity and weight instantly, eliminating double data entry."*
+*   **Investor Question Answered:** *How do we overcome manual vitals typing fatigue?*
+*   **What NOT to Overclaim:** Do not state that the app is FDA/CE cleared as a primary diagnostic device.
+
+#### Section D: Simulated WhatsApp Interface
+*   **Action:** Open the WhatsApp Gateway Demo page, select "BP Measurement Request," click "Dispatch Template," and view the simulated chat feed.
+*   **What to Say:** *"Top Indian eldercare startups face a massive challenge: seniors do not like downloading apps. Our strategy is simple—bring the app to where they already are. Here we simulate Anaya dispatching respectful Hindi/English medication and vital reminders. The parent replies directly on WhatsApp, and Anaya automatically parses the text, logs the vitals to our local state, and alerts the caregiver if thresholds are breached."*
+*   **Investor Question Answered:** *How do you solve user retention and friction for seniors?*
+*   **What NOT to Overclaim:** State clearly that while the current UI runs in sandbox mode, the backend routing is designed to map directly to Meta's Cloud API endpoints.
+
+#### Section E: Smart Ingestion & The Doctor Brief
+*   **Action:** Trigger report analysis, then open the Doctor Brief page. Show the "Print / Export" option.
+*   **What to Say:** *"Diagnostic labs deliver dense PDFs that cause immense caregiver stress. Parents Health OS extracts biomarkers using Google Gemini 2.5 Flash, explaining medical terms in simple language inside brackets. More importantly, we synthesize these reports with daily log compliance to generate a concise, print-ready 'Doctor Brief'. When the parent visits their physical doctor, they present a single-page timeline that optimizes consult efficiency."*
+*   **Investor Question Answered:** *How does AI add value beyond generic chatbot interfaces?*
+*   **What NOT to Overclaim:** Emphasize that the brief is intended for reference during doctor discussions and is not automated medical diagnosis.
+
+### 12.6 Investor Q&A Blueprint
+
+#### Q1: Who is the target customer and who pays for this service?
+*   **Answer:** The primary buyer is the adult child (aged 25-45, working professional or NRI) who carries the financial burden and emotional anxiety of parent care. They pay a monthly subscription fee for coordination tools, real-time alert routing, clinical summary pipelines, and direct caregiver integration features.
+
+#### Q2: Why target parent health specifically rather than general family health?
+*   **Answer:** Geriatric care represents the most complex care coordination environment. Elders manage multiple chronic diseases (polypharmacy), face severe cognitive and physical barriers, and lack active technical literacy. By specializing in this specific niche, we build deep strategic moats around culturally resonant design principles ("Sanskaar-UX") and DPDPA-compliant India-residency architectures.
+
+#### Q3: What makes Parents Health OS different from a standard ChatGPT custom GPT or health chatbot?
+*   **Answer:** Chatbots are transient, stateless interfaces. Parents Health OS is a systematic clinical operating system. It features profile isolation, a structured 15-point assessment scorecard, dynamic historical trajectory charts, a daily compliance checklist, physical IoT sync interfaces, and structured client-side storage keys. Anaya is not just a chat window; it is the cognitive processor overlaying a solid, structured database.
+
+#### Q4: How is patient privacy managed under India's DPDP Act 2023?
+*   **Answer:** We implement strict DPDP-aligned design readiness parameters:
+    1.  *Consent Ledger Simulation:* Structured tracking of simulated caregiver and parent consent before any simulated data processing.
+    2.  *Planned Regional Residency:* The production cloud blueprint plans to pin Supabase database instances strictly to the `ap-south-1` Mumbai region for local data residency.
+    3.  *Client-Side Sandbox Default:* For this prototype, all personal profiles, vitals logs, and simulated check-ins are stored in client-side browser localStorage, demonstrating user data sovereignty.
+
+#### Q5: Is the product ready for live hospital integrations?
+*   **Answer:** The current build is a high-fidelity Sandbox and operational MVP. The API schema, local storage patterns, and modular React components are fully built to migrate cleanly to live hospital databases and official Meta Business accounts when needed.
+
+---
+
+## 13. Founder Operating Manual
+
+This master manual serves as the single source of truth for Parents Health OS. As the founder and principal architect, you should treat this document as a living artifact that reflects the exact technical and operational state of the product.
+
+### 13.1 Guidelines for Document Governance
+*   **When to Update:** This document must be updated at the end of every build phase, refactoring cycle, or branding review.
+*   **Where to Record Changes:**
+    *   *Architectural Changes:* Update **Section 4** (API routes & fallback) and **Section 8** (Client-side schema registry) if new endpoints or database schemas are established.
+    *   *Design Tokens:* If colors, corner shapes, or typography classes are modified, update **Section 9** (Design System) to ensure the replication sprint remains accurate.
+    *   *Privacy Protocols:* Update **Section 10** if new DPDP Act rules or consent requirements are implemented.
+    *   *Demo Updates:* Keep **Section 12** aligned with any UI additions so your pitches and demo flows are perfectly synchronized with the codebase.
+*   **Verification Rule:** Every time this document is edited, run `npm run build` to confirm the local code compilation remains intact, and perform a quick regex check to verify that no legacy brand names have slipped back into the guide.
+
+---
+
+## 14. Living Document Update Protocol
+
+To ensure historical engineering context is never lost as Parents Health OS scales, all future development cycles must be recorded by appending a standardized Phase Entry to the bottom of this document. Do not overwrite previous sections; append new phases sequentially.
+
+### 14.1 Phase Update Entry Template
+
+Use the following Markdown template for all future update entries:
+
+```markdown
+### Phase [Number]: [Phase Name]
+*   **Date:** YYYY-MM-DD
+*   **Principal Architect:** [Name]
+*   **Deployment Release:** [Release Version / URL]
+
+#### A. Executive Summary & Value Added
+[Provide a 2-3 sentence overview of what this phase achieved and why it matters to the caregiver/parent experience.]
+
+#### B. Technical Architecture & Structural Changes
+*   **New Components:** `src/components/...`
+*   **New API Endpoints:** `/api/...`
+*   **Database Schema Modifications:** [Describe any changes to localStorage keys or Supabase tables]
+*   **Environment Configuration:** [New variables added to .env.local]
+
+#### C. User-Facing Behavior & Onboarding Flows
+*   [Detail what caregivers see on the dashboard]
+*   [Detail what parents experience in the simulation gateway]
+
+#### D. Compliance, Safety, & Privacy Impact
+*   [Verify DPDPA 2023 status, consent logging, or encryption updates]
+*   [Confirm medical disclaimer placement and emergency support checks]
+
+#### E. Investor Demo Walkthrough Modifications
+*   [Update Section 12 script or demo step alignment if UI changed]
+
+#### F. Build Verification
+*   [ ] Run `npm run build` → Confirmation that compile exit code is 0.
+*   [ ] Verify no legacy brand names exist in codebase.
+
+#### G. Known Limitations & Next Sprint Recommendation
+*   *Limitation:* [e.g. Rate limits, dry-run state]
+*   *Next Steps:* [Recommendations for the next engineering cycle]
+```
+
+---
+
+## 15. Unified Product Roadmap & Current MVP Status
+
+This section maps the current implementation state of Parents Health OS and establishes a clear technical trajectory for scaling the platform.
+
+### 15.1 Current MVP Status (Phase 5 Complete)
+*   **Production Deployment:** Completed and running on Vercel.
+*   **Core UI Theme:** Premium, calm, high-contrast warm teal & cream healthcare theme.
+*   **Ingestion Engine:** Fully integrated with Google Gemini 2.5 Flash via Next.js Dynamic API Route `/api/analyze`.
+*   **Active Features:**
+    1.  15-Question Scorecard Engine with risk classification.
+    2.  Checklist Tracker with automated adherence rings.
+    3.  Simulated IoT Bluetooth telemetry syncing (CGM & smartwatch).
+    4.  Simulated WhatsApp companion chat preview.
+    5.  Clinical report OCR parsing and automatic biomarker extraction.
+    6.  Twin-frequency audio oscillator and Speech TTS alert systems.
+    7.  Printable/Exportable Doctor Brief generator.
+
+### 15.2 Strategic Product Roadmap
+
+```mermaid
+gantt
+    title Parents Health OS Engineering Pipeline
+    dateFormat  YYYY-MM-DD
+    section MVP Polish
+    Investor Demo Polish & UX Refinement    :active, des1, 2026-05-01, 30d
+    Privacy & DPDPA Hardening Consent       :active, des2, 2026-05-15, 20d
+    section Core Feature Scaling
+    Anaya Conversational Persona Expansion :after des1, des3, 25d
+    Medical Document Synthesis Trajectories  :after des3, des4, 30d
+    Family Dashboard Expansion              :after des4, des5, 20d
+    section Production Migration
+    Meta Cloud API Production Hardening     :des6, 2026-07-15, 30d
+    Supabase India-Residency Database Sync   :des7, 2026-08-01, 35d
+```
+
+1.  **Phase A: Investor Demo Polish & UX Refinement (Current Sprint)**
+    *   Frictionless profile switcher alignments.
+    *   Polishing toast triggers and dashboard responsiveness.
+    *   Transitioning old skeletal styles to the unified warm theme.
+2.  **Phase B: Anaya Care Assistant Expansion**
+    *   Deepen Anaya's NLP capability to support multiple regional Indian languages (Hindi, Telugu, Tamil).
+    *   Establish customized alert profiles based on the parent's risk scorecard (e.g. higher blood sugar ceiling for frail hypoglycemic seniors).
+3.  **Phase C: Longitudinal Trajectory Analytics**
+    *   Build historical trends comparing daily logged compliance (Routine Synchronization Index) against actual parsed lab reports over a 6-month period.
+4.  **Phase D: WhatsApp Meta Cloud API Production Hardening**
+    *   Move from simulated mock templates to live verified Meta Business Account routing.
+    *   Set up permanent Webhook event handling with secure media download pipelines.
+5.  **Phase E: Supabase India-Residency Hardening**
+    *   Execute the steps in `LIVE_BACKEND_PREFLIGHT.md`.
+    *   Establish regional Supabase databases in Mumbai (`ap-south-1`) with row-level security policies (RLS).
+    *   Migrate client-side `localStorage` keys into secure remote tables.
+
+---
+
+## 16. Repository & Development Specifications
+
+*   **Repository Name:** `parents-health-os`
+*   **Primary Framework:** Next.js 16 (App Router)
+*   **Package Manager:** npm (based on `package-lock.json` lockfile specifications)
+*   **Styling Engine:** Tailwind CSS v4 & PostCSS
+*   **Local Entry Point:** `src/app/page.tsx`
+*   **Core Build Command:** `npm run build`
+*   **Environment Files:**
+    *   `.env.local` — Used for local secrets (e.g. `NEXT_PUBLIC_GEMINI_API_KEY`).
+    *   `.env.example` — Secure template illustrating required variables.
+*   **Critical Operational Caution:** **NEVER commit `.env.local`, system user tokens, Supabase service role keys, or credentials to public Git repositories.** Keep all secrets securely managed inside Vercel Dashboard env variables.
+
+---
+
+## 17. System Blueprint: Phase 1B — Daily Care Dashboard, Real Personal Logs, and Local Anaya Summary
+
+### Overview of Phase 1B Implementation
+Phase 1B has established a highly robust, daily-use remote caregiving starting point for **Parents Health OS**, running entirely in a secure, local-first sandbox sandbox/localStorage environment. 
+
+#### 1. What Was Built
+*   **Today's Care Dashboard:** A high-end starting panel presenting today's care checklist progress, compliance metrics, latest vitals, dynamic observation timelines, upcoming consultations, and a dedicated Quick Actions toolbar.
+*   **Medication Daily Checklist:** Slotted medication routines classified into **Morning, Noon, Evening, and Night** buckets. Features simple toggle updates (Taken vs Pending/Missed), live percentage-based compliance rings, and clinical disclaimers urging consulting a physician before altering routines.
+*   **Vitals Quick Log:** A seamless, glassmorphic logging utility supporting Systolic/Diastolic BP, blood glucose (mg/dL), weight (kg), and qualitative notes. Triggers immediate red warning alerts on the dashboard if vitals exceed clinical safety limits (BP >= 140/90, Glucose < 70 or > 125).
+*   **Daily Observation Log:** Caregiver behavioral journals classified into *General, Symptom, Mood, Sleep, Food, Pain, Mobility, Medicine Note, and Doctor Note*, with severity tag selectors (Low, Medium, High).
+*   **Consultation Scheduler:** An appointment management engine enabling scheduling of doctor consults, tracking specialties, specifying consultation channels (In-person, Video, Phone, WhatsApp), marking appointments completed, and displaying the next upcoming visit on the main page.
+*   **Local Anaya Summary:** A completely deterministic, local-first AI synthesizer summarizing medication adherence rates, vital trends, high-severity observations, and upcoming consultations. It operates on client-side JS logic with **zero remote API calls**, enforcing a strict safety banner.
+*   **Clinical Consultation Brief:** An instant compiler organizing daily medication logs, observation histories, vital charts, and upcoming appointments into a clean, professional, monospace brief designed to print or save as a PDF for sharing with family physicians.
+*   **Data Portability (Backup & Export):** A quick backup utility packing all parent logs, medical profiles, and checklists into a structured JSON payload for instant client-side download.
+
+#### 2. Core Modified Files
+*   `src/app/page.tsx`: Houses the complete UI hierarchy of the **Today Care Dashboard**, including modal forms, group-slotted rendering checklists, live percentage calculators, vital threshold validators, local Anaya summary generators, and print layouts.
+*   `src/lib/supabase/context.tsx`: Declares local mock/localStorage-fallback routines ensuring smooth CRUD storage and schema-compatible data management when Supabase is disabled.
+
+#### 3. LocalStorage Persistence Architecture
+All state changes are instantly stored inside client-side `localStorage` keys scoped to each parent profile (e.g., `parents_health_vitals_amma`, `parents_health_observations_papa`). This ensures zero data loss during page reloads, browser crashes, or offline usage.
+
+#### 4. Safety & Privacy Safeguards
+*   **Zero Auto-API Invocations:** The local Anaya summary is entirely deterministic. It **never** automatically transmits senior health metrics, routines, or logs to OpenAI, Google Gemini, or external servers.
+*   **Strict User Consent:** Google Gemini is restricted strictly to the user-initiated **Smart Report Analyzer**, where clear, transparent consent notices are presented before file uploads.
+*   **Clinical Safety Wording:** Constant visual disclaimers remind families that the system is a tracking tool and does not provide diagnostic decisions or clinical medical advice.
+
+#### 5. System Limitations
+*   **Browser-Scoped Residency:** Data is local to the current browser instance. If the user clears site cookies/localStorage, state will be reset. Frequent use of the "Backup & Export Data" utility is highly recommended.
+
+#### 6. Next Recommended Phase
+*   **Phase 2A — Secure Multi-Family Sync:** Safe database transition matching the guidelines of `LIVE_BACKEND_PREFLIGHT.md` to migrate local keys into a dedicated Supabase instance located in the India region (Mumbai, `ap-south-1`) to comply with healthcare residency standards.
+
+---
+
+## 18. System Blueprint: Phase 1C — Personal-Use Stabilization
+
+### Overview of Phase 1C Implementation
+Phase 1C has finalized the personal-use remote caregiving starting point for **Parents Health OS**, adding robust caregiver organization structures, non-diagnostic safety-focused copy adjustments, user-controlled print preview layers, and interactive configuration tools.
+
+#### 1. What Changed
+*   **Vitals Alerts Softening:** Removed diagnostic/clinical alert headers and panic wording. Changed the panel header to **REFERENCE RANGE NOTIFICATION** and rewrote alerts to emphasize that "This value is outside the usual reference range used by this app. Please review with a qualified doctor if this is unexpected, repeated, or accompanied by symptoms. This app does not diagnose."
+*   **User-Controlled Consultation Briefs:** Prevented automatic, intrusive popups. Briefs are compiled and structured into a beautiful preview modal; users can review, close, or manually trigger the browser printing engine by clicking a dedicated "Print / Save PDF" button.
+*   **First-Time Setup Checklist:** Mounted an interactive configuration checklist on the dashboard to track critical setup tasks (Configuring profiles, emergency contacts, linking primary doctors, adding medication parameters, vitals baseline logging, care consult scheduling, and first backups). It auto-checks completed data points and saves custom manual overrides.
+*   **Daily Caregiver Routine Checklist:** Mounted a structured daily care tracking card categorized into **☀️ Morning Routine** (checking pills, logging vitals, recording symptoms) and **🌙 Evening Routine** (reviewing missed meds, logging mood/sleep/food, verifying tomorrow's consults, exporting daily backups).
+*   **Sandboxed Cache Advisory Banner:** Added prominent, lightweight inline alerts reminding families: "Secure Offline Sandbox: Data is saved 100% locally in this browser. To protect your records from loss, please export a backup regularly."
+
+#### 2. Modified Files
+*   `src/app/page.tsx`: Houses the layout updates for First-Time Setup cards, Daily Caregiver Routine checkers, softened reference alerts, print brief modals, and state handlers.
+
+#### 3. LocalStorage & Sandbox Preservation
+All interactive checklists, manual overrides, and caregiver routines are instantly saved in parent-scoped `localStorage` keys. Zero backend connections are initialized, ensuring 100% offline functionality.
+
+#### 4. Next Recommended Phase
+*   **Phase 2A — Secure Multi-Family Sync:** Safe database transition matching the guidelines of `LIVE_BACKEND_PREFLIGHT.md` to migrate local keys into a dedicated Supabase instance located in the India region (Mumbai, `ap-south-1`) to comply with healthcare residency standards.
+
+---
+*End of Blueprint. This document serves as the absolute master authority for Parents Health OS replication.*

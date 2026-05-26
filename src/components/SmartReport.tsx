@@ -388,9 +388,12 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                         <div className="flex items-start gap-4">
                             <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" strokeWidth={2} />
                             <div>
-                                <h5 className="text-[11px] font-semibold text-amber-600 tracking-wider uppercase font-[family-name:var(--font-outfit)]">Clinical Sandbox Notice</h5>
+                                <h5 className="text-[11px] font-semibold text-amber-600 tracking-wider uppercase font-[family-name:var(--font-outfit)]">Clinical Sandbox & AI Consent Notice</h5>
                                 <p className="text-[10px] text-slate-500 font-light mt-1 font-[family-name:var(--font-inter)] leading-relaxed">
-                                    Use mock reports only unless you are comfortable testing Gemini. Do not upload highly sensitive personal records in this developmental environment.
+                                    AI report analysis uses the configured Gemini API. Only upload reports you are comfortable processing through this AI service. For testing, use synthetic or redacted reports. Parents Health OS and Anaya do not diagnose or replace a doctor.
+                                </p>
+                                <p className="text-[9px] text-slate-400 font-medium mt-2 leading-relaxed italic">
+                                    ⚠️ Parents Health OS and Anaya do not provide diagnosis, prescriptions, emergency medical care, or doctor replacement. They help organize, summarize, and coordinate family care information.
                                 </p>
                             </div>
                         </div>
@@ -456,15 +459,23 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                     </div>
 
                     {(file || useMock) && status !== "analyzing" && status !== "done" && (
-                        <motion.button
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            onClick={analyzeReport}
-                            className="w-full py-6 bg-[#0E5E5A] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] transition-all hover:scale-[1.02] flex items-center justify-center gap-4 active:scale-95 shadow-xl hover:bg-[#0c4e4b] font-[family-name:var(--font-outfit)] cursor-pointer"
-                        >
-                            <Brain size={18} strokeWidth={2.5} />
-                            {useMock ? "Run Sandbox Simulation" : "View Summary Insights"}
-                        </motion.button>
+                        <div className="space-y-4 w-full">
+                            {!useMock && (
+                                <div className="p-4 rounded-xl border border-teal-500/10 bg-teal-500/[0.01] text-[10px] text-slate-500 font-light leading-relaxed">
+                                    <span className="font-bold text-[#0E5E5A] block uppercase tracking-wider text-[9px] mb-1">Gemini AI Consent Confirmation</span>
+                                    By clicking below, you confirm that you consent to processing this document's contents through the external Gemini API. Only redacted or non-sensitive reports should be uploaded during development.
+                                </div>
+                            )}
+                            <motion.button
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                onClick={analyzeReport}
+                                className="w-full py-6 bg-[#0E5E5A] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] transition-all hover:scale-[1.02] flex items-center justify-center gap-4 active:scale-95 shadow-xl hover:bg-[#0c4e4b] font-[family-name:var(--font-outfit)] cursor-pointer"
+                            >
+                                <Brain size={18} strokeWidth={2.5} />
+                                {useMock ? "Run Sandbox Simulation" : "View Summary Insights"}
+                            </motion.button>
+                        </div>
                     )}
 
                     {status === "analyzing" && (
