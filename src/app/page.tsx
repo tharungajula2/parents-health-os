@@ -1198,7 +1198,7 @@ function DashboardContent() {
                     </div>
 
                     <div className="p-5 md:p-6 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-md">
-                      <p className="text-slate-100 font-light leading-relaxed text-sm font-[family-name:var(--font-inter)]">
+                      <p className="text-white-only opacity-90 font-light leading-relaxed text-sm font-[family-name:var(--font-inter)]">
                         "{getAnayaSummary()}"
                       </p>
                     </div>
@@ -1209,8 +1209,8 @@ function DashboardContent() {
                     <div className="h-5 w-5 rounded-md bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#E05E1B] shrink-0 mt-0.5">
                       <AlertTriangle size={12} className="stroke-[2.5]" />
                     </div>
-                    <p className="text-[10px] text-teal-150 leading-relaxed font-light">
-                      <strong className="text-teal-100">Clinical Safety Lock Notice:</strong> Anaya acts as a wellness tracker and context brief builder. She does not diagnose or replace a medical professional. For any persistent physiological variations, sudden pain, or chest discomfort, please contact your emergency care physician or primary doctor immediately.
+                    <p className="text-[10px] text-white-only opacity-75 leading-relaxed font-light">
+                      <strong className="text-white-only font-semibold">Clinical Safety Lock Notice:</strong> Anaya acts as a wellness tracker and context brief builder. She does not diagnose or replace a medical professional. For any persistent physiological variations, sudden pain, or chest discomfort, please contact your emergency care physician or primary doctor immediately.
                     </p>
                   </div>
                 </div>
