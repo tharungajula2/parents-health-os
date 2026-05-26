@@ -898,61 +898,88 @@ gantt
 
 ---
 
-## 17. System Blueprint: Phase 1B — Daily Care Dashboard, Real Personal Logs, and Local Anaya Summary
+## 17. System Blueprint: Phase 1A — Profile Isolation, Settings & Portable Backups
 
-### Overview of Phase 1B Implementation
-Phase 1B has established a highly robust, daily-use remote caregiving starting point for **Parents Health OS**, running entirely in a secure, local-first sandbox sandbox/localStorage environment. 
+### Overview of Phase 1A Implementation
+Phase 1A established personal profile segmentation and settings panels to support offline data migration.
 
 #### 1. What Was Built
-*   **Today's Care Dashboard:** A high-end starting panel presenting today's care checklist progress, compliance metrics, latest vitals, dynamic observation timelines, upcoming consultations, and a dedicated Quick Actions toolbar.
-*   **Medication Daily Checklist:** Slotted medication routines classified into **Morning, Noon, Evening, and Night** buckets. Features simple toggle updates (Taken vs Pending/Missed), live percentage-based compliance rings, and clinical disclaimers urging consulting a physician before altering routines.
-*   **Vitals Quick Log:** A seamless, glassmorphic logging utility supporting Systolic/Diastolic BP, blood glucose (mg/dL), weight (kg), and qualitative notes. Triggers immediate red warning alerts on the dashboard if vitals exceed clinical safety limits (BP >= 140/90, Glucose < 70 or > 125).
-*   **Daily Observation Log:** Caregiver behavioral journals classified into *General, Symptom, Mood, Sleep, Food, Pain, Mobility, Medicine Note, and Doctor Note*, with severity tag selectors (Low, Medium, High).
-*   **Consultation Scheduler:** An appointment management engine enabling scheduling of doctor consults, tracking specialties, specifying consultation channels (In-person, Video, Phone, WhatsApp), marking appointments completed, and displaying the next upcoming visit on the main page.
-*   **Local Anaya Summary:** A completely deterministic, local-first AI synthesizer summarizing medication adherence rates, vital trends, high-severity observations, and upcoming consultations. It operates on client-side JS logic with **zero remote API calls**, enforcing a strict safety banner.
-*   **Clinical Consultation Brief:** An instant compiler organizing daily medication logs, observation histories, vital charts, and upcoming appointments into a clean, professional, monospace brief designed to print or save as a PDF for sharing with family physicians.
-*   **Data Portability (Backup & Export):** A quick backup utility packing all parent logs, medical profiles, and checklists into a structured JSON payload for instant client-side download.
+*   **Active Profile Switcher:** Segmented the data workspace based on target demographic profiles (e.g. Amma vs Papa), enabling remote child-caregivers to switch view environments without data bleed.
+*   **Settings Panel & Storage Managers:** Built a glassmorphic sidebar/overlay module containing dedicated controls for storage management, local configurations, and manual database override systems.
+*   **Portable Backup & Restore System:** Developed local JSON schema backup utilities. Users can package their entire profiles, observations, and vitals datasets into portable JSON file downloads, and import them securely into any other browser.
 
-#### 2. Core Modified Files
-*   `src/app/page.tsx`: Houses the complete UI hierarchy of the **Today Care Dashboard**, including modal forms, group-slotted rendering checklists, live percentage calculators, vital threshold validators, local Anaya summary generators, and print layouts.
-*   `src/lib/supabase/context.tsx`: Declares local mock/localStorage-fallback routines ensuring smooth CRUD storage and schema-compatible data management when Supabase is disabled.
+#### 2. Modified Files
+*   `src/app/page.tsx`: Implemented profile switching state controls and sidebar views.
+*   `src/components/SettingsAndBackup.tsx`: Added portable JSON import/export routines.
 
-#### 3. LocalStorage Persistence Architecture
-All state changes are instantly stored inside client-side `localStorage` keys scoped to each parent profile (e.g., `parents_health_vitals_amma`, `parents_health_observations_papa`). This ensures zero data loss during page reloads, browser crashes, or offline usage.
-
-#### 4. Safety & Privacy Safeguards
-*   **Zero Auto-API Invocations:** The local Anaya summary is entirely deterministic. It **never** automatically transmits senior health metrics, routines, or logs to OpenAI, Google Gemini, or external servers.
-*   **Strict User Consent:** Google Gemini is restricted strictly to the user-initiated **Smart Report Analyzer**, where clear, transparent consent notices are presented before file uploads.
-*   **Clinical Safety Wording:** Constant visual disclaimers remind families that the system is a tracking tool and does not provide diagnostic decisions or clinical medical advice.
-
-#### 5. System Limitations
-*   **Browser-Scoped Residency:** Data is local to the current browser instance. If the user clears site cookies/localStorage, state will be reset. Frequent use of the "Backup & Export Data" utility is highly recommended.
-
-#### 6. Next Recommended Phase
-*   **Phase 2A — Secure Multi-Family Sync:** Safe database transition matching the guidelines of `LIVE_BACKEND_PREFLIGHT.md` to migrate local keys into a dedicated Supabase instance located in the India region (Mumbai, `ap-south-1`) to comply with healthcare residency standards.
+#### 3. LocalStorage & Sandbox Preservation
+Full sandbox compatibility preserved by strictly binding JSON data payloads to profile-scoped browser namespaces.
 
 ---
 
-## 18. System Blueprint: Phase 1C — Personal-Use Stabilization
+## 18. System Blueprint: Phase 1A.1 — Truthful Privacy, Consent, and AI Safety Hardening
 
-### Overview of Phase 1C Implementation
-Phase 1C has finalized the personal-use remote caregiving starting point for **Parents Health OS**, adding robust caregiver organization structures, non-diagnostic safety-focused copy adjustments, user-controlled print preview layers, and interactive configuration tools.
+### Overview of Phase 1A.1 Implementation
+Phase 1A.1 corrected privacy descriptions to align strictly with legal health disclosures and clinical compliance standards.
 
-#### 1. What Changed
-*   **Vitals Alerts Softening:** Removed diagnostic/clinical alert headers and panic wording. Changed the panel header to **REFERENCE RANGE NOTIFICATION** and rewrote alerts to emphasize that "This value is outside the usual reference range used by this app. Please review with a qualified doctor if this is unexpected, repeated, or accompanied by symptoms. This app does not diagnose."
-*   **User-Controlled Consultation Briefs:** Prevented automatic, intrusive popups. Briefs are compiled and structured into a beautiful preview modal; users can review, close, or manually trigger the browser printing engine by clicking a dedicated "Print / Save PDF" button.
-*   **First-Time Setup Checklist:** Mounted an interactive configuration checklist on the dashboard to track critical setup tasks (Configuring profiles, emergency contacts, linking primary doctors, adding medication parameters, vitals baseline logging, care consult scheduling, and first backups). It auto-checks completed data points and saves custom manual overrides.
-*   **Daily Caregiver Routine Checklist:** Mounted a structured daily care tracking card categorized into **☀️ Morning Routine** (checking pills, logging vitals, recording symptoms) and **🌙 Evening Routine** (reviewing missed meds, logging mood/sleep/food, verifying tomorrow's consults, exporting daily backups).
-*   **Sandboxed Cache Advisory Banner:** Added prominent, lightweight inline alerts reminding families: "Secure Offline Sandbox: Data is saved 100% locally in this browser. To protect your records from loss, please export a backup regularly."
+#### 1. What Was Built
+*   **Consent Gate Validation:** Embedded high-contrast warning checkpoints in `SettingsAndBackup` and `SmartReport` clarifying that uploading lab report documents routes data to external third-party endpoints (Google Gemini models) for semantic parsing.
+*   **Opt-In Checkboxes:** Enabled compulsory consent switches that prevent files from being sent unless the user manually checks the compliance authorization flag.
+*   **Truthful Copy Refinements:** Aligned the documentation and layouts to truthfully represent that while vital trackers and checklists run 100% locally, report analysis interfaces utilize external processors.
 
 #### 2. Modified Files
-*   `src/app/page.tsx`: Houses the layout updates for First-Time Setup cards, Daily Caregiver Routine checkers, softened reference alerts, print brief modals, and state handlers.
+*   `src/app/page.tsx`, `src/components/SettingsAndBackup.tsx`, `src/components/SmartReport.tsx`: Overhauled privacy disclaimers and added active consent toggles.
 
-#### 3. LocalStorage & Sandbox Preservation
-All interactive checklists, manual overrides, and caregiver routines are instantly saved in parent-scoped `localStorage` keys. Zero backend connections are initialized, ensuring 100% offline functionality.
+---
 
-#### 4. Next Recommended Phase
-*   **Phase 2A — Secure Multi-Family Sync:** Safe database transition matching the guidelines of `LIVE_BACKEND_PREFLIGHT.md` to migrate local keys into a dedicated Supabase instance located in the India region (Mumbai, `ap-south-1`) to comply with healthcare residency standards.
+## 19. System Blueprint: Phase 1B — Daily Care Dashboard, Real Personal Logs, and Local Anaya Summary
+
+### Overview of Phase 1B Implementation
+Phase 1B established the consolidated personal care panel, daily medication trackers, vital logs, observation logs, and consultation brief generators.
+
+#### 1. What Was Built
+*   **Today's Care Dashboard:** Unified status progress center showing active checklist rates, current vital statistics, observation feeds, and next scheduled checkups.
+*   **Medication Daily Checklist:** Slotted medication times grouped into Morning, Noon, Evening, and Night routines, featuring live compliance status rings.
+*   **Vitals Quick Log:** A glassmorphic quick-log form mapping blood pressure, glucose, weight, and general health notes.
+*   **Daily Observation Log:** Caregiver symptom records classified into 9 distinct health dimensions with High/Medium/Low severity indicators.
+*   **Consultation Scheduler:** An appointments engine to track clinical specialists, channels, and follow-ups.
+*   **Local Anaya Summary:** A highly secure, 100% offline, deterministic summary writer synthesizing wellness briefs.
+*   **Clinical Consultation Brief:** A monospace formatted summary preview designed for printing or PDF exports.
+
+#### 2. Modified Files
+*   `src/app/page.tsx`, `src/lib/supabase/context.tsx`: Houses the layout updates for Today panels, data persistence layer, and quick actions.
+
+---
+
+## 20. System Blueprint: Phase 1C — Personal-Use Stabilization & Caregiver Checklists
+
+### Overview of Phase 1C Implementation
+Phase 1C added robust daily checklists, non-clinical reference alerts, and user-controlled print controls.
+
+#### 1. What Was Built
+*   **Non-Clinical Alerting Copy:** Removed diagnostic warning text in BP and Glucose cards. Formatted alerts into a **REFERENCE RANGE NOTIFICATION** warning.
+*   **User-Controlled Consultation Briefs:** Brief details open in a modal preview window. Browser printing is initiated strictly by clicking the "Print / Save PDF" action.
+*   **First-Time Setup Checklist:** Mounted dashboard widgets verifying profiles, emergencies, linked doctors, medications lists, baseline vitals, upcoming consults, and backup triggers.
+*   **Daily Caregiver Routine Checklist:** Categorized Morning and Evening caregiver tracking slots.
+*   **Backup Reminder Banners:** Warns the user of local browser-only data residency.
+
+#### 2. Modified Files
+*   `src/app/page.tsx`: Integrated setup and daily checklist cards, print control changes, and softened copy updates.
+
+---
+
+## 21. System Blueprint: Phase 1D — Stable Sandbox Release Snapshot & UI Polish
+
+### Overview of Phase 1D Implementation
+Phase 1D polished text contrast readability across the dark cards and compiled a fully verified production build.
+
+#### 1. What Was Built
+*   **Contrast Readability Alignment:** Replaced standard slate classes with the custom `.text-white-only` token on Anaya assistant components to bypass background contrast overrides.
+*   **Clean Production Compilation:** Checked TypeScript compilation constraints using Next.js build engines (exit code 0).
+*   **Stable Version Pushed to GitHub:** Synced the complete, optimized sandbox codebase with origin main repository.
+
+#### 2. Modified Files
+*   `src/app/page.tsx`: Resolved low-contrast paragraph rendering bugs inside dark elements.
 
 ---
 *End of Blueprint. This document serves as the absolute master authority for Parents Health OS replication.*
