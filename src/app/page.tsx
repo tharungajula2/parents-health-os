@@ -96,7 +96,7 @@ export default function Home() {
         >
           <Activity size={32} className="animate-pulse" />
         </motion.div>
-        <p className="data-label text-[#0E5E5A] animate-pulse !tracking-[0.25em] text-xs">Sahara Senior Care Connect // Loading</p>
+        <p className="data-label text-[#0E5E5A] animate-pulse !tracking-[0.25em] text-xs">Parents Health OS // Loading</p>
       </div>
     );
   }
@@ -193,7 +193,7 @@ export default function Home() {
             <h2 className="text-3xl font-bold tracking-tight text-slate-800 font-[family-name:var(--font-outfit)] uppercase">
               {mode === "login" ? "Welcome Back" : "Register Account"}
             </h2>
-            <p className="text-slate-500 text-xs mt-1.5">PARENTS HEALTH OS // SAHARA SENIOR</p>
+            <p className="text-slate-500 text-xs mt-1.5">PARENTS HEALTH OS // SANDBOX / SIMULATED DATA ONLY</p>
           </div>
 
           <div className="glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-xl bg-white/70 backdrop-blur-md">
@@ -221,7 +221,7 @@ export default function Home() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Tharun Gajula"
+                      placeholder="e.g. Amit Sharma"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
@@ -246,7 +246,7 @@ export default function Home() {
                 <input
                   type="email"
                   required
-                  placeholder="e.g. son@sahara.in"
+                  placeholder="e.g. child@parentshealth.in"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
@@ -322,7 +322,7 @@ export default function Home() {
         >
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold tracking-tight text-slate-800 font-[family-name:var(--font-outfit)] uppercase">
-              Configure Sahara Link
+              Configure Parents Health OS
             </h2>
             <p className="text-slate-550 text-[10px] mt-1.5 tracking-wider uppercase">Setup Family circle & DPDP Consent Logging</p>
           </div>
@@ -335,7 +335,7 @@ export default function Home() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Gajula Family Unit"
+                    placeholder="e.g. Sharma Family Care"
                     value={onboardForm.familyName}
                     onChange={(e) => setOnboardForm(prev => ({ ...prev, familyName: e.target.value }))}
                     className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
@@ -347,7 +347,7 @@ export default function Home() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Srinivas Gajula"
+                    placeholder="e.g. Rajesh Sharma"
                     value={onboardForm.parentName}
                     onChange={(e) => setOnboardForm(prev => ({ ...prev, parentName: e.target.value }))}
                     className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
@@ -402,7 +402,7 @@ export default function Home() {
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 uppercase font-[family-name:var(--font-outfit)] tracking-wider">DPDPA 2023 Digital Consent Declaration</h4>
                     <p className="text-[10px] text-slate-600 leading-relaxed font-light mt-1 font-[family-name:var(--font-inter)]">
-                      Sahara Senior strictly complies with India's Digital Personal Data Protection Act, 2023 (DPDPA 2023). Personal health data is stored securely under AP-SOUTH-1 regional servers and is never processed without unambiguous consent.
+                      Parents Health OS strictly complies with India's Digital Personal Data Protection Act, 2023 (DPDPA 2023). Personal health data is stored securely under AP-SOUTH-1 regional servers and is never processed without unambiguous consent.
                     </p>
                   </div>
                 </div>
@@ -415,7 +415,7 @@ export default function Home() {
                     className="h-4.5 w-4.5 rounded border-[#e2ded5] bg-white accent-[#0E5E5A] focus:ring-0 cursor-pointer mt-0.5 shrink-0"
                   />
                   <span className="text-[10px] text-slate-600 leading-relaxed font-normal group-hover:text-slate-800 transition-colors">
-                    I certify that <span className="font-semibold text-slate-800">I have obtained explicit, verifiable consent</span> from my parent to share their clinical indicators, receive automated WhatsApp check-ins through Anaya, and grant Sahara permission to process diagnostics.
+                    I certify that <span className="font-semibold text-slate-800">I have obtained explicit, verifiable consent</span> from my parent to share their clinical indicators, receive automated WhatsApp check-ins through Anaya, and grant Parents Health OS permission to process diagnostics.
                   </span>
                 </label>
               </div>

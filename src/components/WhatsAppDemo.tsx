@@ -253,7 +253,7 @@ export function WhatsAppDemo() {
           
           <div className="flex items-center gap-3 bg-[#E5F5F0] border border-teal-100 rounded-2xl px-5 py-3 self-start md:self-auto shrink-0 shadow-sm">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="data-label !text-emerald-700 !text-[8px] !tracking-[0.2em] font-black uppercase">SYSTEM PREVIEW BRIDGE ACTIVE</span>
+            <span className="data-label !text-emerald-700 !text-[8px] !tracking-[0.2em] font-black uppercase">Parents Health OS Sandbox // Simulated Data Only</span>
           </div>
         </div>
       </div>

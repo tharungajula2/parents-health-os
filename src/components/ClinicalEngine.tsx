@@ -69,7 +69,7 @@ export function ClinicalEngine() {
     });
 
     useEffect(() => {
-        if (isSupabaseEnabled && activeParent) {
+        if (activeParent) {
             const scorecardObj = activeParent.scorecard_answers as any;
             if (scorecardObj?.answers) {
                 setAnswers(prev => ({ ...prev, ...scorecardObj.answers }));
@@ -85,26 +85,9 @@ export function ClinicalEngine() {
                 resetStateToDefaults();
             }
         } else {
-            const saved = localStorage.getItem("parents_health_assessment_data_v2");
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    if (parsed.answers) {
-                        setAnswers(prev => ({ ...prev, ...parsed.answers }));
-                        if (parsed.answers.stageA_completed) {
-                            if (!parsed.answers.stageB_completed) setActiveStage("B");
-                            else if (!parsed.answers.stageC_completed) setActiveStage("C");
-                            else if (!parsed.answers.stageD_completed) setActiveStage("D");
-                        }
-                    }
-                } catch (e) {
-                    console.error("Error loading saved data", e);
-                }
-            } else {
-                resetStateToDefaults();
-            }
+            resetStateToDefaults();
         }
-    }, [isSupabaseEnabled, activeParent]);
+    }, [activeParent]);
 
     const resetStateToDefaults = () => {
         setAnswers({

@@ -70,7 +70,7 @@ This **System Context** is what separates Parents-Health from generic AI wrapper
     ```bash
     npm run dev
     ```
-    Access at `http://localhost:3000`. No password required (Concept Prototype).
+    Access at `http://localhost:3000`. No password required (Sandbox Mode).
 
 ---
 

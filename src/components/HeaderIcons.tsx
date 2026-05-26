@@ -73,6 +73,7 @@ export function HeaderIcons() {
             <div className="relative" ref={notifRef}>
                 <button
                     onClick={() => { setShowNotifications(!showNotifications); setShowProfile(false); }}
+                    aria-label="Toggle notifications"
                     className="h-10 w-10 flex items-center justify-center rounded-full bg-[#0E5E5A]/5 border border-[#0E5E5A]/15 text-[#0E5E5A] hover:bg-[#0E5E5A]/10 hover:border-[#0E5E5A]/30 transition-all relative group shadow-sm cursor-pointer"
                 >
                     <Bell size={18} strokeWidth={2} className="opacity-90 group-hover:scale-110 transition-all" />
@@ -126,6 +127,7 @@ export function HeaderIcons() {
             <div className="relative" ref={profileRef}>
                 <button
                     onClick={() => { setShowProfile(!showProfile); setShowNotifications(false); }}
+                    aria-label="Toggle profile menu"
                     className="h-10 w-10 overflow-hidden rounded-full bg-[#0E5E5A]/5 border border-[#0E5E5A]/15 text-[#0E5E5A] hover:bg-[#0E5E5A]/10 hover:border-[#0E5E5A]/30 transition-all flex items-center justify-center group shadow-sm cursor-pointer"
                 >
                     <User size={18} strokeWidth={2} className="opacity-90 group-hover:scale-110 transition-all" />

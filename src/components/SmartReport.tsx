@@ -22,6 +22,7 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
     const [analysisData, setAnalysisData] = useState<any>(null);
     const [status, setStatus] = useState<"idle" | "analyzing" | "done" | "error">("idle");
     const { isSupabaseEnabled, activeParent, labReports, medications, addLabReport, deleteLabReport, addMedication, refreshData } = useParentsAuth();
+    const parentId = activeParent?.id || "sandbox-parent-id";
     const [localIsLocked, setLocalIsLocked] = useState(true);
     const [localContext, setLocalContext] = useState("");
     const [localHistory, setLocalHistory] = useState<any[]>([]);
@@ -59,7 +60,7 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                         unit: v.unit || "",
                         status: v.status || "normal",
                         explanation: "Biological parameter value logged in historical records."
-                    })) : [],
+                     })) : [],
                     medicines: [],
                     possibleQuestionsForDoctor: ["Would you review the parameters from this report in detail?"],
                     redFlags: [],
@@ -94,10 +95,13 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
         return localContext;
     }, [isSupabaseEnabled, activeParent, localContext]);
 
-    // Load Context & History on Mount
+    // Load Context & History when activeParent changes
     useEffect(() => {
+        if (!parentId) return;
+
         // 1. Clinical Context (Gate)
-        const savedData = localStorage.getItem("parents_health_assessment_data_v2");
+        const pId = parentId;
+        const savedData = localStorage.getItem(`parents_health_assessment_data_v2_${pId}`) || localStorage.getItem("parents_health_assessment_data_v2");
         if (savedData) {
             try {
                 const parsed = JSON.parse(savedData);
@@ -122,23 +126,42 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
         }
 
         // 2. Report History (Memory)
-        const savedHistory = localStorage.getItem("parents_health_history");
+        const savedHistory = localStorage.getItem(`parents_health_lab_reports_${pId}`) || localStorage.getItem(`parents_health_history_${pId}`) || localStorage.getItem("parents_health_history");
         if (savedHistory) {
             try {
-                setLocalHistory(JSON.parse(savedHistory));
+                const parsedHist = JSON.parse(savedHistory);
+                setLocalHistory(Array.isArray(parsedHist) ? parsedHist : []);
             } catch (e) { console.error("History parse error", e); }
+        } else {
+            setLocalHistory([]);
         }
 
         // 3. Holistic Summary Persistence
-        const savedSummary = localStorage.getItem("parents_health_latest_summary");
+        const savedSummary = localStorage.getItem(`parents_health_latest_summary_${pId}`) || localStorage.getItem("parents_health_latest_summary");
         if (savedSummary) {
             try {
                 const summaryData = JSON.parse(savedSummary);
                 setAnalysisData(summaryData);
                 setStatus("done");
-            } catch (e) { console.error("Summary parse error", e); }
+            } catch (e) { 
+                // Unstructured fallback
+                setAnalysisData({
+                    reportType: "Lab Report",
+                    summaryForChild: savedSummary,
+                    summaryForParent: "Your medical record is synthesized safely. Keep up your active care routines!",
+                    keyFindings: [savedSummary],
+                    biomarkers: [],
+                    medicines: [],
+                    possibleQuestionsForDoctor: ["Would you review the parameters from this report in detail?"],
+                    redFlags: []
+                });
+                setStatus("done");
+            }
+        } else {
+            setAnalysisData(null);
+            setStatus("idle");
         }
-    }, []);
+    }, [parentId]);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const selectedFile = acceptedFiles[0];

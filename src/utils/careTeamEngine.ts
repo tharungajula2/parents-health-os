@@ -327,7 +327,45 @@ export function generateDoctorBrief(
     ? `Care baseline established (Stage A${scorecardAnswers?.stageB_completed ? ", B" : ""}${scorecardAnswers?.stageC_completed ? ", C" : ""}${scorecardAnswers?.stageD_completed ? ", D" : ""} completed).`
     : "Care baseline not yet established. Stage A assessment incomplete.";
 
+  const missedTasks: string[] = [];
+  const activeMeds = medications.filter(m => m && m.is_active !== false);
+  
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+    const logKey = `parents_health_med_log_${dateStr}_${parentId}`;
+    const fallbackLogKey = `parents_health_med_log_${dateStr}`;
+    const cachedStr = localStorage.getItem(logKey) || localStorage.getItem(fallbackLogKey);
+    if (cachedStr) {
+      try {
+        const cached = JSON.parse(cachedStr);
+        activeMeds.forEach(m => {
+          const log = cached.find((c: any) => c.id === m.id || c.medication_id === m.id);
+          if (log && log.taken === false) {
+            const dayName = d.toLocaleDateString("en-US", { weekday: 'short' });
+            missedTasks.push(`Missed ${m.name || m.med_name} on ${dayName} (${dateStr})`);
+          }
+        });
+      } catch (e) {}
+    }
+  }
+
+  const abnormalBiomarkers: string[] = [];
+  if (labReports && labReports.length > 0) {
+    labReports.forEach(report => {
+      if (report && report.biomarkers && Array.isArray(report.biomarkers)) {
+        report.biomarkers.forEach((bm: any) => {
+          if (bm && (bm.status === "Warning" || bm.status === "Critical" || bm.status === "High" || bm.status === "Low" || bm.status === "Abnormal")) {
+            abnormalBiomarkers.push(`${bm.name}: ${bm.value || bm.result || "Abnormal"} (${bm.status})`);
+          }
+        });
+      }
+    });
+  }
+
   const questionsToAsk = [
+    ...abnormalBiomarkers.map(bm => `Discuss abnormal biomarker: ${bm}`),
     ...(conditions.includes("Diabetes") ? ["Is current fasting glucose target (< 125 mg/dL) appropriate for age?"] : []),
     ...(conditions.includes("Hypertension") ? ["Is BP target of 120–135 mmHg appropriate? Any medication adjustments needed?"] : []),
     ...(conditions.includes("Heart Issues") ? ["Any cardiac event warning signs to watch for?"] : []),
@@ -350,7 +388,7 @@ export function generateDoctorBrief(
     recentRedFlags: redFlags,
     latestReportSummary: reportSummary,
     carePlanStatus,
-    missedTasks: [], // Populated from MedicationTracker missed logs if available
+    missedTasks,
     questionsToAsk: questionsToAsk as string[],
     caregiverNotes: "",
     disclaimer:

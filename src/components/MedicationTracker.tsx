@@ -19,9 +19,10 @@ interface Medication {
     status?: "Active" | "Archived";
     duration?: string;
     startDate?: string;
-    slots?: ("Morning" | "Afternoon" | "Evening" | "Night")[];
+    slots?: string[];
     relationToFood?: "Before Food" | "After Food";
     remarks?: string;
+    instructions?: string;
 }
 
 interface Vitals {
@@ -99,8 +100,15 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                 })
                 .filter(Boolean);
 
-            const logKey = `parents_health_med_log_${viewingDate}`;
-            const cachedLocalcompletions = JSON.parse(localStorage.getItem(logKey) || "[]");
+            const pId = activeParent?.id || "sandbox-parent-id";
+            const logKey = `parents_health_med_log_${viewingDate}_${pId}`;
+            const fallbackLogKey = `parents_health_med_log_${viewingDate}`;
+            let cachedLocalcompletions: any[] = [];
+            try {
+                const str = localStorage.getItem(logKey) || localStorage.getItem(fallbackLogKey);
+                if (str) cachedLocalcompletions = JSON.parse(str);
+            } catch (e) {}
+            if (!Array.isArray(cachedLocalcompletions)) cachedLocalcompletions = [];
             const localTakenTasks = cachedLocalcompletions.filter((c: any) => c.taken).map((c: any) => c.id);
 
             const dayVital = dbVitals.find(v => {
@@ -109,8 +117,16 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
             });
 
             // Also check standard file daily logs
-            const key = `parents_health_daily_log_${viewingDate}`;
-            const fileStored = JSON.parse(localStorage.getItem(key) || '{"meds": []}');
+            const key = `parents_health_daily_log_${viewingDate}_${pId}`;
+            const fallbackKey = `parents_health_daily_log_${viewingDate}`;
+            let fileStored: any = { meds: [] };
+            try {
+                const str = localStorage.getItem(key) || localStorage.getItem(fallbackKey);
+                if (str) fileStored = JSON.parse(str);
+            } catch (e) {}
+            if (!fileStored || !Array.isArray(fileStored.meds)) {
+                fileStored = { meds: [] };
+            }
             const storedTasks = fileStored.meds || [];
 
             const combinedTasks = Array.from(new Set([...takenMedNames, ...localTakenTasks, ...storedTasks]));
@@ -188,7 +204,8 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
         if (!viewingDate) setViewingDate(today);
 
         // Load Meds
-        const savedMeds = localStorage.getItem("parents_health_active_meds");
+        const pId = activeParent?.id || "sandbox-parent-id";
+        const savedMeds = localStorage.getItem(`parents_health_active_meds_${pId}`) || localStorage.getItem("parents_health_active_meds");
         if (savedMeds) {
             try {
                 const parsed = JSON.parse(savedMeds);
@@ -199,10 +216,26 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                 }));
                 setLocalMeds(migrated);
             } catch (e) {}
+        } else {
+            // Seed initial defaults if none exist
+            if (pId === "sandbox-parent-id") {
+                setLocalMeds([
+                    { name: "Glycomet 0.5mg", dosage: "500mg", timing: "Before Breakfast", instructions: "Before Breakfast", status: "Active", type: "Chronic", slots: ["Before Breakfast"], relationToFood: "After Food" },
+                    { name: "Levolin Rotacaps", dosage: "100mcg", timing: "Before Sleep", instructions: "Daily - Before Sleep", status: "Active", type: "Chronic", slots: ["Before Sleep"], relationToFood: "After Food" },
+                    { name: "Combihale FF 100", dosage: "100mg", timing: "Before Sleep", instructions: "Daily - Before Sleep", status: "Active", type: "Chronic", slots: ["Before Sleep"], relationToFood: "After Food" },
+                    { name: "Teczine", dosage: "10mg", timing: "After 6 PM", instructions: "After 6 PM (Alt Days)", status: "Active", type: "Chronic", slots: ["After 6 PM"], relationToFood: "After Food" },
+                    { name: "Excela Max Lotion", dosage: "Apply Generously", timing: "Morning & Night", instructions: "For Hand Eczema", status: "Active", type: "Chronic", slots: ["Morning & Night"], relationToFood: "After Food" }
+                ]);
+            } else {
+                setLocalMeds([
+                    { name: "Amlodipine", dosage: "5mg", timing: "Evening", instructions: "Pre Meals", status: "Active", type: "Chronic", slots: ["Evening"], relationToFood: "After Food" },
+                    { name: "Multi-Vitamin", dosage: "1 Tab", timing: "Morning", instructions: "Post breakfast", status: "Active", type: "Chronic", slots: ["Morning"], relationToFood: "After Food" }
+                ]);
+            }
         }
 
         loadHistoryContext();
-    }, [meds.length]);
+    }, [activeParent?.id]);
 
     // Load active log when date changes
     useEffect(() => {
@@ -220,9 +253,12 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                 setHabitsInput({ mealPlan: false, activity: "", hydration: "" });
             }
         });
-    }, [viewingDate, historyData]);
+    }, [viewingDate, historyData, activeParent?.id]);
 
-    const getLogKey = (date: string) => `parents_health_daily_log_${date}`;
+    const getLogKey = (date: string) => {
+        const pId = activeParent?.id || "sandbox-parent-id";
+        return `parents_health_daily_log_${date}_${pId}`;
+    };
 
     const loadDailyLog = async (date: string): Promise<DailyLog> => {
         const key = getLogKey(date);
@@ -234,10 +270,12 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
 
     const loadHistoryContext = () => {
         const cache: Record<string, DailyLog> = {};
+        const pId = activeParent?.id || "sandbox-parent-id";
+        const prefix = `parents_health_daily_log_`;
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key?.startsWith("parents_health_daily_log_")) {
-                const date = key.replace("parents_health_daily_log_", "");
+            if (key?.startsWith(prefix) && key.endsWith(`_${pId}`)) {
+                const date = key.substring(prefix.length, key.length - `_${pId}`.length);
                 try {
                     cache[date] = JSON.parse(localStorage.getItem(key) || "{}");
                 } catch (e) {}
@@ -282,8 +320,16 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
             }
 
             // Sync other tasks via LocalStorage checklist
-            const logKey = `parents_health_med_log_${viewingDate}`;
-            const cached = JSON.parse(localStorage.getItem(logKey) || "[]");
+            const pId = activeParent?.id || "sandbox-parent-id";
+            const logKey = `parents_health_med_log_${viewingDate}_${pId}`;
+            const fallbackLogKey = `parents_health_med_log_${viewingDate}`;
+            let cached: any[] = [];
+            try {
+                const str = localStorage.getItem(logKey) || localStorage.getItem(fallbackLogKey);
+                if (str) cached = JSON.parse(str);
+            } catch (e) {}
+            if (!Array.isArray(cached)) cached = [];
+
             const idx = cached.findIndex((c: any) => c.id === taskId);
             if (idx > -1) {
                 cached[idx].taken = !isTaken;
@@ -291,10 +337,18 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                 cached.push({ id: taskId, taken: !isTaken });
             }
             localStorage.setItem(logKey, JSON.stringify(cached));
+            localStorage.setItem(fallbackLogKey, JSON.stringify(cached));
 
             // Also mirror to active file logs to trigger rendering update
             const fileKey = getLogKey(viewingDate);
-            const localLog = JSON.parse(localStorage.getItem(fileKey) || '{"meds": [], "vitals": {}}');
+            let localLog: any = { meds: [], vitals: {} };
+            try {
+                const str = localStorage.getItem(fileKey);
+                if (str) localLog = JSON.parse(str);
+            } catch (e) {}
+            if (!localLog || !Array.isArray(localLog.meds)) {
+                localLog = { meds: [], vitals: {} };
+            }
             let updatedMeds = localLog.meds || [];
             if (isTaken) {
                 updatedMeds = updatedMeds.filter((m: string) => m !== taskId);
@@ -346,6 +400,8 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
 
     const saveLocalMedsList = (newMeds: Medication[]) => {
         setLocalMeds(newMeds);
+        const pId = activeParent?.id || "sandbox-parent-id";
+        localStorage.setItem(`parents_health_active_meds_${pId}`, JSON.stringify(newMeds));
         localStorage.setItem("parents_health_active_meds", JSON.stringify(newMeds));
     };
 
@@ -462,6 +518,8 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                                         categories: []
                                     }
                                 };
+                                const pId = activeParent?.id || "sandbox-parent-id";
+                                localStorage.setItem(`parents_health_assessment_data_v2_${pId}`, JSON.stringify(sampleData));
                                 localStorage.setItem("parents_health_assessment_data_v2", JSON.stringify(sampleData));
                                 showToast("Injected quick demo profile. Refreshing...", "success");
                                 setTimeout(() => window.location.reload(), 1000);
@@ -737,7 +795,7 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full -mr-16 -mt-16" />
                                 
                                 <h3 className="text-[10px] font-bold text-emerald-400 flex items-center gap-3 tracking-[0.2em] uppercase mb-6">
-                                    <MessageSquare size={14} /> Anaya Care Companion Chat Simulator
+                                    <MessageSquare size={14} /> Anaya Care Companion Chat Simulator (Sandbox)
                                 </h3>
 
                                 <div className="space-y-4">

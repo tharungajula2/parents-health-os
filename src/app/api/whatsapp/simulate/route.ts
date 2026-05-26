@@ -62,7 +62,7 @@ export async function POST(req: Request) {
             parent_id: parentId,
             granted_by_profile_id: parentId, // link to parent context
             consent_type: "geriatric_health_data_processing",
-            consent_version: "Sahara_v1.0_WhatsApp",
+            consent_version: "PHOS_v1.0_WhatsApp",
             ip_address: "whatsapp_simulator",
             is_granted: true
           });

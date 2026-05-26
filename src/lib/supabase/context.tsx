@@ -252,105 +252,80 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
     }
   };
 
-  // --- LOCAL SANDBOX MODE (LocalStorage Backup) ---
-  const loadLocalSandboxData = () => {
-    const auth = localStorage.getItem("parents_health_auth_v2") === "true";
-    setIsAuthenticated(auth);
-    
-    if (auth) {
-      // Mock user & profile
-      setUser({ id: "sandbox-child-id", email: "child@sahara.in" });
-      setProfile({
-        id: "sandbox-child-id",
-        full_name: "Sahara User",
-        phone: "+91 99999 99999",
-        role: "child",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-      
-      setFamily({
-        id: "sandbox-family-id",
-        name: "Sahara Family",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
-      // Handle Parent Load from LocalStorage
-      const mockParentName = localStorage.getItem("parents_health_user_name") || "Gajula Senior";
-      const mockParentAge = localStorage.getItem("parents_health_user_age") || "72";
-      const mockParentRelationship = "Father";
-      const mockScorecard = localStorage.getItem("parents_health_assessment_data_v2");
-      
-      const mockParent: TableRow<"parents"> = {
-        id: "sandbox-parent-id",
-        family_id: "sandbox-family-id",
-        name: mockParentName,
-        relationship: mockParentRelationship,
-        phone: "+91 98480 22338",
-        language: "Telugu",
-        primary_conditions: ["Diabetes Type 2", "Mild Hypertension"],
-        risk_level: "Healthy Baseline",
-        health_index: 85,
-        scorecard_answers: mockScorecard ? JSON.parse(mockScorecard) : {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      setParents([mockParent]);
-      setActiveParent(mockParent);
-
-      // Load Vitals from local storage
-      const vitalLogsStr = localStorage.getItem("parents_health_history");
-      if (vitalLogsStr) {
+  // Helper to load parent-specific records in sandbox mode
+  const loadSandboxParentRecords = (parentId: string, parentName: string) => {
+    // 1. Vitals
+    const vitalLogsStr = localStorage.getItem(`parents_health_history_${parentId}`) || localStorage.getItem("parents_health_history");
+    let mappedVitals: TableRow<"vitals">[] = [];
+    if (vitalLogsStr) {
+      try {
         const parsed = JSON.parse(vitalLogsStr);
-        // Map history entries to Vitals structure
-        const mappedVitals: TableRow<"vitals">[] = parsed.map((item: any, idx: number) => ({
-          id: `sandbox-vital-${idx}`,
-          parent_id: "sandbox-parent-id",
-          measured_at: item.date || new Date().toISOString(),
-          bp_sys: item.systolic || 122,
-          bp_dia: item.diastolic || 80,
-          sugar: item.sugar || 110,
-          weight: item.weight || 68,
+        mappedVitals = parsed.map((item: any, idx: number) => ({
+          id: item.id || `sandbox-vital-${idx}-${parentId}`,
+          parent_id: parentId,
+          measured_at: item.date ? `${item.date}T08:00:00.000Z` : new Date().toISOString(),
+          bp_sys: item.systolic || item.bp_sys || 120,
+          bp_dia: item.diastolic || item.bp_dia || 80,
+          sugar: item.sugar || 105,
+          weight: item.weight || 65,
           logged_by: "sandbox-child-id",
-          source: "manual",
+          source: item.source || "manual",
           created_at: new Date().toISOString()
         }));
-        setVitals(mappedVitals);
-      }
+      } catch (e) {}
+    }
+    setVitals(mappedVitals);
 
-      // Load Medications
-      const activeMedsStr = localStorage.getItem("parents_health_active_meds");
-      const defaultMeds = [
-        { id: "med-1", name: "Metformin", dosage: "500mg", timing: "Morning, Night", instructions: "Post Meals" },
-        { id: "med-2", name: "Amlodipine", dosage: "5mg", timing: "Evening", instructions: "Pre Meals" },
-        { id: "med-3", name: "Multi-Vitamin", dosage: "1 Tab", timing: "Morning", instructions: "Post breakfast" }
+    // 2. Medications
+    const activeMedsStr = localStorage.getItem(`parents_health_active_meds_${parentId}`) || localStorage.getItem("parents_health_active_meds");
+    let parsedMeds: any[] = [];
+    if (activeMedsStr) {
+      try {
+        parsedMeds = JSON.parse(activeMedsStr);
+      } catch (e) {}
+    } else if (parentId === "sandbox-parent-id") {
+      // Default for Amma Demo
+      parsedMeds = [
+        { id: "m1", name: "Glycomet 0.5mg", dosage: "500mg", timing: "Before Breakfast", instructions: "Before Breakfast", is_active: true },
+        { id: "m2", name: "Levolin Rotacaps", dosage: "100mcg", timing: "Before Sleep", instructions: "Daily - Before Sleep", is_active: true },
+        { id: "m3", name: "Combihale FF 100", dosage: "100mg", timing: "Before Sleep", instructions: "Daily - Before Sleep", is_active: true },
+        { id: "m4", name: "Teczine", dosage: "10mg", timing: "After 6 PM", instructions: "After 6 PM (Alt Days)", is_active: true },
+        { id: "m5", name: "Excela Max Lotion", dosage: "Apply Generously", timing: "Morning & Night", instructions: "For Hand Eczema", is_active: true }
       ];
-      const parsedMeds = activeMedsStr ? JSON.parse(activeMedsStr) : defaultMeds;
-      setMedications(parsedMeds.map((m: any) => ({
-        id: m.id || `sandbox-med-${Math.random()}`,
-        parent_id: "sandbox-parent-id",
-        name: m.name,
-        dosage: m.dosage,
-        timing: m.timing,
-        instructions: m.instructions || "",
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })));
+    } else {
+      // Default for Papa Demo
+      parsedMeds = [
+        { id: "med-1", name: "Amlodipine", dosage: "5mg", timing: "Evening", instructions: "Pre Meals", is_active: true },
+        { id: "med-2", name: "Multi-Vitamin", dosage: "1 Tab", timing: "Morning", instructions: "Post breakfast", is_active: true }
+      ];
+    }
+    setMedications(parsedMeds.map((m: any) => ({
+      id: m.id || m.name || `sandbox-med-${Math.random()}`,
+      parent_id: parentId,
+      name: m.name,
+      dosage: m.dosage,
+      timing: m.timing,
+      instructions: m.instructions || "",
+      is_active: m.is_active !== undefined ? m.is_active : true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })));
 
-      // Load Daily Checklists
-      const checklistLogs: TableRow<"medication_logs">[] = [];
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith("parents_health_med_log_")) {
-          const dateStr = key.replace("parents_health_med_log_", "");
+    // 3. Medication Logs (checklists)
+    const checklistLogs: TableRow<"medication_logs">[] = [];
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("parents_health_med_log_")) {
+        const parts = key.replace("parents_health_med_log_", "").split("_");
+        const dateStr = parts[0];
+        const keyParentId = parts[1] || "sandbox-parent-id";
+
+        if (keyParentId === parentId) {
           try {
             const list = JSON.parse(localStorage.getItem(key) || "[]");
             list.forEach((logItem: any) => {
               checklistLogs.push({
                 id: `sandbox-log-${logItem.id}-${dateStr}`,
-                parent_id: "sandbox-parent-id",
+                parent_id: parentId,
                 medication_id: logItem.id,
                 log_date: dateStr,
                 taken: logItem.taken,
@@ -361,21 +336,223 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
             });
           } catch (e) {}
         }
-      });
-      setMedicationLogs(checklistLogs);
+      }
+    });
+    setMedicationLogs(checklistLogs);
 
-      // Setup Simulated Conversations & Messages
+    // 4. WhatsApp Messages
+    const whatsappKey = `parents_health_whatsapp_messages_${parentId}`;
+    const cachedWhatsapp = localStorage.getItem(whatsappKey);
+    if (cachedWhatsapp) {
+      try {
+        setWhatsappMessages(JSON.parse(cachedWhatsapp));
+      } catch (e) {}
+    } else {
       const mockWhatsAppFeed: TableRow<"whatsapp_messages">[] = [
-        { id: "msg-1", parent_id: "sandbox-parent-id", direction: "incoming", message_sid: "sandbox-sid-1", message_type: "text", body: "Anaya, I completed walking today.", media_url: null, status: "read", created_at: new Date(Date.now() - 3600000).toISOString() },
-        { id: "msg-2", parent_id: "sandbox-parent-id", direction: "outgoing", message_sid: "sandbox-sid-2", message_type: "text", body: "Wonderful dad! Did you take Metformin 500mg?", media_url: null, status: "read", created_at: new Date(Date.now() - 3500000).toISOString() },
-        { id: "msg-3", parent_id: "sandbox-parent-id", direction: "incoming", message_sid: "sandbox-sid-3", message_type: "text", body: "Yes, just after my breakfast.", media_url: null, status: "read", created_at: new Date(Date.now() - 3400000).toISOString() }
+        { id: `msg-1-${parentId}`, parent_id: parentId, direction: "incoming", message_sid: `sandbox-sid-1-${parentId}`, message_type: "text", body: `Anaya, I completed walking today.`, media_url: null, status: "read", created_at: new Date(Date.now() - 3600000).toISOString() },
+        { id: `msg-2-${parentId}`, parent_id: parentId, direction: "outgoing", message_sid: `sandbox-sid-2-${parentId}`, message_type: "text", body: `Wonderful! Did you take your medicines?`, media_url: null, status: "read", created_at: new Date(Date.now() - 3500000).toISOString() },
+        { id: `msg-3-${parentId}`, parent_id: parentId, direction: "incoming", message_sid: `sandbox-sid-3-${parentId}`, message_type: "text", body: `Yes, just after my breakfast.`, media_url: null, status: "read", created_at: new Date(Date.now() - 3400000).toISOString() }
       ];
       setWhatsappMessages(mockWhatsAppFeed);
+      localStorage.setItem(whatsappKey, JSON.stringify(mockWhatsAppFeed));
+    }
 
+    // 5. AI Conversations
+    const aiKey = `parents_health_ai_conversations_${parentId}`;
+    const cachedAi = localStorage.getItem(aiKey);
+    if (cachedAi) {
+      try {
+        setAiConversations(JSON.parse(cachedAi));
+      } catch (e) {}
+    } else {
       const mockAiFeed = [
-        { id: "ai-1", parent_id: "sandbox-parent-id", user_message: "Fasting blood sugar measured at 145 mg/dL", ai_response: "Your blood sugar is slightly elevated today. Please make sure to stick to the diabetic diet and take your morning Metformin after meal. Let's record your next reading before dinner.", source: "whatsapp", token_count: 85, created_at: new Date().toISOString() }
+        { id: `ai-1-${parentId}`, parent_id: parentId, user_message: "Fasting blood sugar measured at 145 mg/dL", ai_response: `Fasting blood sugar of 145 mg/dL is elevated. Please ensure you have taken your morning diabetic medications and stick to a low glycemic index meal. We should check your pre-dinner level to watch the trend.`, source: "whatsapp", token_count: 85, created_at: new Date().toISOString() }
       ];
       setAiConversations(mockAiFeed);
+      localStorage.setItem(aiKey, JSON.stringify(mockAiFeed));
+    }
+
+    // 6. Lab Reports
+    const reportsKey = `parents_health_lab_reports_${parentId}`;
+    const cachedReports = localStorage.getItem(reportsKey);
+    if (cachedReports) {
+      try {
+        setLabReports(JSON.parse(cachedReports));
+      } catch (e) {}
+    } else {
+      const reportHistoryStr = localStorage.getItem(`parents_health_history_${parentId}`) || localStorage.getItem("parents_health_history");
+      let reports: TableRow<"lab_reports">[] = [];
+      if (reportHistoryStr) {
+        try {
+          const parsed = JSON.parse(reportHistoryStr);
+          reports = parsed.map((item: any, idx: number) => ({
+            id: `sandbox-report-${idx}-${parentId}`,
+            parent_id: parentId,
+            report_date: item.date || new Date().toISOString(),
+            report_type: item.type || "Lab Report",
+            storage_path: "sandbox/local-attachment.pdf",
+            summary: item.summary || "Lab report details",
+            biomarkers: item.biomarkers || [],
+            full_analysis_markdown: item.summary || "Lab report details",
+            uploaded_by: "sandbox-child-id",
+            created_at: new Date().toISOString()
+          }));
+        } catch (e) {}
+      }
+      setLabReports(reports);
+      localStorage.setItem(reportsKey, JSON.stringify(reports));
+    }
+  };
+
+  // --- LOCAL SANDBOX MODE (LocalStorage Backup) ---
+  const loadLocalSandboxData = () => {
+    const auth = localStorage.getItem("parents_health_auth_v2") === "true";
+    setIsAuthenticated(auth);
+    
+    if (auth) {
+      // Mock user & profile
+      setUser({ id: "sandbox-child-id", email: "child@parentshealth.in" });
+      setProfile({
+        id: "sandbox-child-id",
+        full_name: "Demo Caregiver",
+        phone: "+91 99999 99999",
+        role: "child",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      
+      setFamily({
+        id: "sandbox-family-id",
+        name: "Demo Family",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+      // Handle Parent 1 Profile Load from LocalStorage
+      const mockParentName = localStorage.getItem("parents_health_user_name") || "Amma Demo";
+      const mockParentAge = localStorage.getItem("parents_health_user_age") || "61";
+      const mockScorecard = localStorage.getItem("parents_health_assessment_data_v2_sandbox-parent-id") || localStorage.getItem("parents_health_assessment_data_v2");
+      
+      // Dynamic Scorecard mappings for Parent 1
+      let risk_level1 = "High Risk: Immediate Action Required";
+      let health_index1 = 25;
+      let primary_conditions1 = ["Diabetes Type 2", "Chronic Asthma", "Severe Joint Pain"];
+
+      if (mockScorecard) {
+        try {
+          const parsed = JSON.parse(mockScorecard);
+          const scAnswers = parsed.answers || {};
+          const scScores = parsed.scores || {};
+          
+          const conditions: string[] = [];
+          if (scAnswers.q2 === "Diabetes" || scAnswers.q2?.includes("Diabetes")) {
+            conditions.push("Diabetes Type 2");
+          }
+          if (scAnswers.q4 === "Often" || scAnswers.q4 === "Sometimes") {
+            conditions.push("Chronic Asthma");
+          }
+          if (scAnswers.q8 === "Severe/Daily" || scAnswers.q8 === "Moderate/Weekly") {
+            conditions.push("Severe Joint Pain");
+          }
+          if (scAnswers.q3 === "Yes" || scAnswers.q3?.includes("Yes")) {
+            conditions.push("Cardiovascular Issue");
+          }
+          if (conditions.length > 0) {
+            primary_conditions1 = conditions;
+          }
+
+          const totalScore = scScores.total || 0;
+          if (totalScore >= 70) {
+            risk_level1 = "High Risk: Immediate Action Required";
+          } else if (totalScore >= 40) {
+            risk_level1 = "Moderate Risk: Monitor Trends";
+          } else {
+            risk_level1 = "Healthy Baseline";
+          }
+
+          health_index1 = Math.max(0, 100 - totalScore);
+        } catch (e) {}
+      }
+      
+      const parent1: TableRow<"parents"> = {
+        id: "sandbox-parent-id",
+        family_id: "sandbox-family-id",
+        name: mockParentName,
+        relationship: mockParentName === "Amma Demo" ? "Mother" : "Father",
+        phone: "+91 98480 22338",
+        language: "Telugu",
+        primary_conditions: primary_conditions1,
+        risk_level: risk_level1,
+        health_index: health_index1,
+        scorecard_answers: mockScorecard ? JSON.parse(mockScorecard) : {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Seeding Parent 2 for a full interactive multi-profile switcher demonstration
+      const mockScorecard2 = localStorage.getItem("parents_health_assessment_data_v2_sandbox-parent-2-id");
+      let risk_level2 = "Healthy Baseline";
+      let health_index2 = 85;
+      let primary_conditions2 = ["Mild Hypertension"];
+
+      if (mockScorecard2) {
+        try {
+          const parsed = JSON.parse(mockScorecard2);
+          const scAnswers = parsed.answers || {};
+          const scScores = parsed.scores || {};
+          
+          const conditions: string[] = [];
+          if (scAnswers.q2 === "Diabetes" || scAnswers.q2?.includes("Diabetes")) {
+            conditions.push("Diabetes Type 2");
+          }
+          if (scAnswers.q4 === "Often" || scAnswers.q4 === "Sometimes") {
+            conditions.push("Chronic Asthma");
+          }
+          if (scAnswers.q8 === "Severe/Daily" || scAnswers.q8 === "Moderate/Weekly") {
+            conditions.push("Severe Joint Pain");
+          }
+          if (scAnswers.q3 === "Yes" || scAnswers.q3?.includes("Yes")) {
+            conditions.push("Cardiovascular Issue");
+          }
+          if (conditions.length > 0) {
+            primary_conditions2 = conditions;
+          }
+
+          const totalScore = scScores.total || 0;
+          if (totalScore >= 70) {
+            risk_level2 = "High Risk: Immediate Action Required";
+          } else if (totalScore >= 40) {
+            risk_level2 = "Moderate Risk: Monitor Trends";
+          } else {
+            risk_level2 = "Healthy Baseline";
+          }
+
+          health_index2 = Math.max(0, 100 - totalScore);
+        } catch (e) {}
+      }
+
+      const parent2: TableRow<"parents"> = {
+        id: "sandbox-parent-2-id",
+        family_id: "sandbox-family-id",
+        name: "Papa Demo",
+        relationship: "Father",
+        phone: "+91 98765 43210",
+        language: "Telugu",
+        primary_conditions: primary_conditions2,
+        risk_level: risk_level2,
+        health_index: health_index2,
+        scorecard_answers: mockScorecard2 ? JSON.parse(mockScorecard2) : {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const parentsList = [parent1, parent2];
+      setParents(parentsList);
+
+      const activeId = localStorage.getItem("parents_health_active_parent_id") || "sandbox-parent-id";
+      const currentActive = parentsList.find(p => p.id === activeId) || parent1;
+      setActiveParent(currentActive);
+      loadSandboxParentRecords(currentActive.id, currentActive.name);
     }
     setIsLoading(false);
   };
@@ -493,7 +670,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
             parent_id: parentObj.id,
             granted_by_profile_id: user.id,
             consent_type: "geriatric_health_data_processing",
-            consent_version: "Sahara_v1.0",
+            consent_version: "PHOS_v1.0",
             ip_address: "127.0.0.1",
             is_granted: true
           });
@@ -599,6 +776,8 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         sugar: v.sugar,
         weight: v.weight
       }));
+      const pId = activeParent?.id || "sandbox-parent-id";
+      localStorage.setItem(`parents_health_history_${pId}`, JSON.stringify(rawHistory));
       localStorage.setItem("parents_health_history", JSON.stringify(rawHistory));
 
       return { success: true, data: newMockVital };
@@ -646,6 +825,8 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
 
       const updated = [...medications, newMockMed];
       setMedications(updated);
+      const pId = activeParent?.id || "sandbox-parent-id";
+      localStorage.setItem(`parents_health_active_meds_${pId}`, JSON.stringify(updated));
       localStorage.setItem("parents_health_active_meds", JSON.stringify(updated));
       return { success: true, data: newMockMed };
     }
@@ -688,8 +869,21 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       }
     } else {
       // Local Checklist checklist log
-      const logKey = `parents_health_med_log_${logDate}`;
-      const cached = JSON.parse(localStorage.getItem(logKey) || "[]");
+      const pId = activeParent?.id || "sandbox-parent-id";
+      const logKey = `parents_health_med_log_${logDate}_${pId}`;
+      const fallbackLogKey = `parents_health_med_log_${logDate}`;
+      let cached: any[] = [];
+      try {
+        const cachedStr = localStorage.getItem(logKey) || localStorage.getItem(fallbackLogKey);
+        if (cachedStr) {
+          cached = JSON.parse(cachedStr);
+        }
+      } catch (e) {
+        cached = [];
+      }
+      if (!Array.isArray(cached)) {
+        cached = [];
+      }
       
       const idx = cached.findIndex((c: any) => c.id === medicationId);
       if (idx > -1) {
@@ -698,12 +892,13 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         cached.push({ id: medicationId, taken });
       }
       localStorage.setItem(logKey, JSON.stringify(cached));
+      localStorage.setItem(fallbackLogKey, JSON.stringify(cached));
 
       // Re-map internal checklist
       const mappedLogs: TableRow<"medication_logs">[] = medicationLogs.filter(l => !(l.medication_id === medicationId && l.log_date === logDate));
       mappedLogs.push({
         id: `sandbox-log-${medicationId}-${logDate}`,
-        parent_id: activeParent?.id || "sandbox-parent-id",
+        parent_id: pId,
         medication_id: medicationId,
         log_date: logDate,
         taken,
@@ -746,9 +941,10 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       }
       return { success: false, error };
     } else {
+      const pId = activeParent?.id || "sandbox-parent-id";
       const mockReport: TableRow<"lab_reports"> = {
         id: `sandbox-report-${Date.now()}`,
-        parent_id: activeParent?.id || "sandbox-parent-id",
+        parent_id: pId,
         report_date: data.report_date,
         report_type: data.report_type,
         storage_path: "sandbox/local-attachment.pdf",
@@ -759,8 +955,27 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         created_at: new Date().toISOString()
       };
       
-      setLabReports(prev => [mockReport, ...prev]);
+      const updatedReports = [mockReport, ...labReports];
+      setLabReports(updatedReports);
+      localStorage.setItem(`parents_health_lab_reports_${pId}`, JSON.stringify(updatedReports));
       localStorage.setItem("parents_health_latest_summary", data.summary);
+      localStorage.setItem(`parents_health_latest_summary_${pId}`, data.summary);
+
+      // Dynamically sync newly uploaded lab reports to history timeline under Overview
+      const reportHistoryStr = localStorage.getItem(`parents_health_history_${pId}`) || localStorage.getItem("parents_health_history") || "[]";
+      let parsedHist: any[] = [];
+      try {
+        parsedHist = JSON.parse(reportHistoryStr);
+      } catch (e) {}
+      parsedHist.unshift({
+        date: data.report_date,
+        type: data.report_type,
+        summary: data.summary,
+        biomarkers: data.biomarkers
+      });
+      localStorage.setItem(`parents_health_history_${pId}`, JSON.stringify(parsedHist));
+      localStorage.setItem("parents_health_history", JSON.stringify(parsedHist));
+
       return { success: true, data: mockReport };
     }
   };
@@ -805,16 +1020,19 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       }
       return { success: false, error };
     } else {
+      const pId = activeParent?.id || "sandbox-parent-id";
       const newConv: TableRow<"ai_conversations"> = {
         id: `sandbox-ai-${Date.now()}`,
-        parent_id: activeParent?.id || "sandbox-parent-id",
+        parent_id: pId,
         user_message: userMessage,
         ai_response: aiResponse,
         source: "dashboard",
         token_count: 100,
         created_at: new Date().toISOString()
       };
-      setAiConversations(prev => [...prev, newConv]);
+      const updated = [...aiConversations, newConv];
+      setAiConversations(updated);
+      localStorage.setItem(`parents_health_ai_conversations_${pId}`, JSON.stringify(updated));
       return { success: true };
     }
   };
@@ -856,13 +1074,15 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         return { success: false, error: err };
       }
     } else {
+      const pId = activeParent?.id || "sandbox-parent-id";
+      localStorage.setItem(`parents_health_assessment_data_v2_${pId}`, JSON.stringify({ answers, scores }));
       localStorage.setItem("parents_health_assessment_data_v2", JSON.stringify({ answers, scores }));
       if (activeParent) {
         const updated = {
           ...activeParent,
           scorecard_answers: { answers, scores } as any,
           risk_level: scores.riskLevel,
-          health_index: 100 - scores.total
+          health_index: Math.max(0, 100 - (scores.total || 0))
         };
         setParents(prev => prev.map(p => p.id === activeParent.id ? updated : p));
         setActiveParent(updated);
@@ -904,6 +1124,8 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         return { success: false, error: err };
       }
     } else {
+      const pId = activeParent?.id || "sandbox-parent-id";
+      localStorage.removeItem(`parents_health_assessment_data_v2_${pId}`);
       localStorage.removeItem("parents_health_assessment_data_v2");
       if (activeParent) {
         const updated = {
@@ -937,9 +1159,10 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       }
       return { success: false, error };
     } else {
+      const pId = activeParent?.id || "sandbox-parent-id";
       const newMsg: TableRow<"whatsapp_messages"> = {
         id: `sandbox-msg-${Date.now()}`,
-        parent_id: activeParent?.id || "sandbox-parent-id",
+        parent_id: pId,
         direction,
         body,
         media_url: mediaUrl || null,
@@ -948,7 +1171,9 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         status: "read",
         created_at: new Date().toISOString()
       };
-      setWhatsappMessages(prev => [...prev, newMsg]);
+      const updated = [...whatsappMessages, newMsg];
+      setWhatsappMessages(updated);
+      localStorage.setItem(`parents_health_whatsapp_messages_${pId}`, JSON.stringify(updated));
       return { success: true };
     }
   };
@@ -960,6 +1185,8 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       localStorage.setItem("parents_health_active_parent_id", parentId);
       if (isSupabaseEnabled) {
         fetchParentRecords(parentId);
+      } else {
+        loadSandboxParentRecords(parentId, parent.name);
       }
     }
   };
