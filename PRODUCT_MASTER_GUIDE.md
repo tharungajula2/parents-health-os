@@ -975,4 +975,33 @@ Phase 1D polished text contrast readability across the dark cards and compiled a
 *   `src/app/page.tsx`: Resolved low-contrast paragraph rendering bugs inside dark elements.
 
 ---
+
+## 22. System Blueprint: Phase 2A — Public Resources Library + Premium PDF Slide Viewer
+
+### Overview of Phase 2A Implementation
+Phase 2A designed and deployed a public-access Resources / Learning Hub with a custom, premium PDF-to-slide presentation viewer component. This enables visitors to present and read operational and health education materials securely.
+
+#### 1. What Was Built
+*   **Public Resources Library (/resources):** A highly aesthetic index dashboard presenting founder-authored decks in a grid of glassmorphic elements matching the custom light clinical design system.
+*   **Dynamic Presentation Viewers (/resources/[deck]):** Dynamic routing slots pre-rendering static routes at compile time using `generateStaticParams()` to ensure optimized delivery and server build compliance.
+*   **Aesthetic Responsive DeckViewer:** Custom-built React presentation viewer rendering raw PDF page vectors onto active canvas buffers via client-side PDF.js scripts. Includes previous/next slide navigation, touch swipe support, interactive slide numbers click navigator tracks, browser fullscreen overlays, focus modes, and linear progress status rails.
+*   **Public Accessibility:** Available immediately to the public without requiring system sign-in, allowing seamless exploration of strategic resources.
+*   **Secure Content Protection (No-Download UI Policy):** Strictly disabled UI download icons, exports, PPTX source files, or direct asset link sharing to protect the strategic integrity of original slide work.
+*   **Primes Integration:** Mounted a public knowledge base card segment on the primary landing screen, prompting visitors to read decks before signing in.
+
+#### 2. Modified & Created Files
+*   `src/lib/resources/decks.ts`: Houses metadata dictionaries, slide dimensions, categories, and clinical/operating disclaimers.
+*   `src/components/resources/DeckViewer.tsx`: Premium presentation slider Canvas rendering script using dynamic client-side PDF.js pipelines.
+*   `src/components/resources/ResourceDeckCard.tsx`: Glassmorphic category card displaying slide summaries.
+*   `src/app/resources/page.tsx`: Library index page layout displaying decks and clinical boundaries.
+*   `src/app/resources/[deck]/page.tsx`: Dynamic presentation viewer route featuring static pre-rendering maps.
+*   `src/app/page.tsx`: Integrated the Knowledge Base card segment within the core landing viewport.
+
+#### 3. Known Security Limitations & Caveats
+*   **Asset Accessibility Limitation:** In client-side web architectures, files stored under `/public` can theoretically be discovered via direct URL inspection or browser network tabs. However, the frontend UI strictly enforces a "No-Download" presentation-only mode to prevent casual replication.
+
+#### 4. Next Recommended Phase
+*   **Phase 2B — Advanced Care Simulation & Offline Synchronization Engines:** Integrating client offline state fallback layers with reactive synchronization status indicators.
+
+---
 *End of Blueprint. This document serves as the absolute master authority for Parents Health OS replication.*

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Stethoscope, FileText, BookOpen, Users, Lock, ArrowRight, Activity, Bell, MessageCircle, Calendar, AlertTriangle, ShieldCheck, Heart, UserPlus, LogIn, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { loadDemoData } from "../utils/demoData";
 import { useParentsAuth } from "../lib/supabase/context";
 
@@ -155,6 +156,57 @@ export default function Home() {
                 title="WhatsApp Bridge"
                 desc="Simulated dialogue interface with Anaya AI Care companion."
               />
+            </div>
+
+            {/* Resources/Knowledge Base Segment */}
+            <div className="w-full bg-white border border-[#e2ded5] rounded-3xl p-6 md:p-8 mb-20 shadow-sm max-w-4xl mx-auto text-left">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 pb-6 border-b border-[#e2ded5]">
+                <div className="space-y-1">
+                  <span className="data-label text-[#E05E1B] font-mono text-[9px] uppercase tracking-widest font-bold">Public Knowledge Base</span>
+                  <h3 className="text-xl md:text-2xl font-bold font-outfit text-[#122321]">Explore the Parents Health OS knowledge base</h3>
+                  <p className="text-xs text-slate-500 font-medium">Founder-built health education and product operating decks for Indian families and caregivers.</p>
+                </div>
+                
+                <Link 
+                  href="/resources"
+                  className="inline-flex items-center text-xs font-bold text-[#0E5E5A] hover:text-[#E05E1B] transition-colors shrink-0"
+                >
+                  View All Resources
+                  <ArrowRight size={14} className="ml-1.5" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-5 rounded-2xl bg-[#FAF9F6] border border-[#e2ded5] flex flex-col justify-between space-y-4 hover:border-[#0E5E5A]/20 transition-all">
+                  <div className="space-y-2">
+                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide bg-[#0E5E5A]/10 text-[#0E5E5A] uppercase">Health Curriculum</span>
+                    <h4 className="font-bold text-sm text-[#122321]">Body & Mind OS — A Health Curriculum for Indian Families</h4>
+                    <p className="text-[11px] text-slate-500 font-medium leading-relaxed line-clamp-2">A structured family health curriculum covering prevention, nutrition, movement, sleep, and screening.</p>
+                  </div>
+                  <Link 
+                    href="/resources/body-mind-os" 
+                    className="inline-flex items-center text-xs font-semibold text-[#0E5E5A] hover:text-[#E05E1B]"
+                  >
+                    Read Curriculum
+                    <ArrowRight size={12} className="ml-1" />
+                  </Link>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-[#FAF9F6] border border-[#e2ded5] flex flex-col justify-between space-y-4 hover:border-[#0E5E5A]/20 transition-all">
+                  <div className="space-y-2">
+                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide bg-[#E05E1B]/10 text-[#E05E1B] uppercase">Product Vision</span>
+                    <h4 className="font-bold text-sm text-[#122321]">Parents Health OS — Vision & Operating Deck</h4>
+                    <p className="text-[11px] text-slate-500 font-medium leading-relaxed line-clamp-2">The founder vision, architecture, operating model, privacy posture, and GTM plan.</p>
+                  </div>
+                  <Link 
+                    href="/resources/parents-health-os-vision" 
+                    className="inline-flex items-center text-xs font-semibold text-[#0E5E5A] hover:text-[#E05E1B]"
+                  >
+                    Read Operating Deck
+                    <ArrowRight size={12} className="ml-1" />
+                  </Link>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col items-center gap-6 md:gap-10">
