@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ParentsAuthProvider } from "../lib/supabase/context";
+import { ServiceWorkerRegister } from "../components/ServiceWorkerRegister";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -51,6 +52,7 @@ export default function RootLayout({
 
         <ParentsAuthProvider>
           {children}
+          <ServiceWorkerRegister />
         </ParentsAuthProvider>
       </body>
     </html>

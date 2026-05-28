@@ -42,6 +42,27 @@ export function SettingsAndBackup() {
   // App Mode State (Demo vs Personal)
   const [appMode, setAppMode] = useState<"demo" | "personal">("demo");
   
+  // Service Worker Cache Status Check (Phase 2B.2)
+  const [swStatus, setSwStatus] = useState<"Active" | "Bypassed (Dev)" | "Unsupported">("Unsupported");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      if (process.env.NODE_ENV === "development") {
+        setSwStatus("Bypassed (Dev)");
+      } else {
+        navigator.serviceWorker.ready.then((reg) => {
+          if (reg.active) {
+            setSwStatus("Active");
+          } else {
+            setSwStatus("Unsupported");
+          }
+        }).catch(() => {
+          setSwStatus("Unsupported");
+        });
+      }
+    }
+  }, []);
+  
   // Profile Form State
   const [formData, setFormData] = useState({
     name: "",
@@ -710,7 +731,7 @@ export function SettingsAndBackup() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 font-[family-name:var(--font-inter)]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 pt-2 font-[family-name:var(--font-inter)]">
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/50">
                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Last Secure Save</span>
                 <span className="text-xs font-semibold text-slate-700">
@@ -738,6 +759,18 @@ export function SettingsAndBackup() {
                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Sync Server Status</span>
                 <span className="text-xs font-bold text-amber-600 flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Offline (Sandbox)
+                </span>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/50">
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Offline Shell Cache</span>
+                <span className={`text-xs font-bold flex items-center gap-1.5 ${
+                  swStatus === "Active" ? "text-teal-600" : swStatus === "Bypassed (Dev)" ? "text-blue-600" : "text-slate-500"
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${
+                    swStatus === "Active" ? "bg-teal-500 animate-pulse" : swStatus === "Bypassed (Dev)" ? "bg-blue-500" : "bg-slate-400"
+                  }`} />
+                  {swStatus}
                 </span>
               </div>
             </div>
