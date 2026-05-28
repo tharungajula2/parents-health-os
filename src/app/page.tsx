@@ -123,7 +123,7 @@ export default function Home() {
                 className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white border border-[#e2ded5] shadow-sm mb-8"
               >
                 <div className="h-1.5 w-1.5 rounded-full bg-[#E05E1B] animate-pulse" />
-                <span className="data-label text-[#0E5E5A]/80 uppercase tracking-widest text-[9px]">PARENTS-HEALTH // LIVE FAMILY CARE CONNECTED</span>
+                <span className="data-label text-[#0E5E5A]/80 uppercase tracking-widest text-[9px]">PARENTS HEALTH OS // ACTIVE INTERACTIVE PROTOTYPE</span>
               </motion.div>
               
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter mb-6 font-[family-name:var(--font-outfit)]">
@@ -189,8 +189,8 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col items-center gap-2">
-                <p className="data-label text-slate-400 text-[10px] uppercase tracking-widest font-bold">
-                  A family care platform by <span className="text-slate-500">Tharun Gajula</span>
+                <p className="data-label text-slate-400 text-[10px] uppercase tracking-widest font-bold text-center">
+                  An interactive elder-care prototype designed & built by <span className="text-slate-500">Tharun Gajula</span>
                 </p>
                 <div className="h-px w-12 bg-[#e2ded5]" />
               </div>
