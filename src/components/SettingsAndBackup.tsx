@@ -714,8 +714,16 @@ export function SettingsAndBackup() {
           <div className="p-6 bg-amber-50 border border-amber-200 rounded-[2rem] flex gap-4 text-xs text-amber-800 leading-relaxed">
             <AlertTriangle size={24} className="shrink-0 text-amber-600 mt-1" />
             <div>
-              <span className="font-bold block uppercase tracking-wider text-[10px] text-amber-900 mb-1">Local Physical Sandbox Active</span>
-              Sandbox profile, medication, vitals, and backup data are stored locally in this browser by default. No live Supabase database sync is active. Optional AI report analysis may send uploaded report content to the configured Gemini API for processing.
+              <span className="font-bold block uppercase tracking-wider text-[10px] text-amber-900 mb-1">Local Sandbox Mode: Caregiver Data Isolation Active</span>
+              <p className="mb-2">
+                All patient profiles, daily checklist activities, tracked vitals, and medical logs are stored <strong>100% locally in your browser's private storage (LocalStorage)</strong>.
+              </p>
+              <p className="mb-2">
+                ⚠️ <strong>Connection Status:</strong> Cloud synchronization is disconnected. The event log queue and synchronization triggers operate in a high-fidelity local simulation to preview downstream migration capabilities.
+              </p>
+              <p>
+                🔒 <strong>Privacy & Security Scope:</strong> The Service Worker offline cache stores only public learning decks and static UI assets. Sensitive clinical logs, daily observations, and report-analysis payloads are excluded from caching and never sent across the network.
+              </p>
             </div>
           </div>
 

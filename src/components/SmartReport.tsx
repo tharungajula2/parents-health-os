@@ -30,6 +30,7 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
 
     // NEW PHASE 5 SANDBOX & SIMULATION STATES
     const [useMock, setUseMock] = useState(true);
+    const [consentChecked, setConsentChecked] = useState(false);
     const [medsToSync, setMedsToSync] = useState<any[] | null>(null);
     const [syncSelections, setSyncSelections] = useState<{ [key: string]: boolean }>({});
     const [duplicateOverwrite, setDuplicateOverwrite] = useState<{ [key: string]: boolean }>({});
@@ -461,16 +462,32 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                     {(file || useMock) && status !== "analyzing" && status !== "done" && (
                         <div className="space-y-4 w-full">
                             {!useMock && (
-                                <div className="p-4 rounded-xl border border-teal-500/10 bg-teal-500/[0.01] text-[10px] text-slate-500 font-light leading-relaxed">
-                                    <span className="font-bold text-[#0E5E5A] block uppercase tracking-wider text-[9px] mb-1">Gemini AI Consent Confirmation</span>
-                                    By clicking below, you confirm that you consent to processing this document's contents through the external Gemini API. Only redacted or non-sensitive reports should be uploaded during development.
+                                <div className="p-5 rounded-2xl border border-teal-600/30 bg-[#0E5E5A]/[0.02] text-[11px] text-slate-700 font-light leading-relaxed space-y-3">
+                                    <span className="font-bold text-[#0E5E5A] block uppercase tracking-wider text-[9px] mb-1">🔒 Explicit Data & AI Consent Required</span>
+                                    <p>
+                                        Parents Health OS and its Anaya diagnostics suite respect patient privacy. To route this physical document safely through the Google Gemini API, you must explicitly review and consent:
+                                    </p>
+                                    <label className="flex items-start gap-3 cursor-pointer text-slate-800 font-medium select-none bg-white/40 p-3 rounded-xl hover:bg-white/60 transition-all border border-[#e2ded5]">
+                                        <input
+                                            type="checkbox"
+                                            checked={consentChecked}
+                                            onChange={(e) => setConsentChecked(e.target.checked)}
+                                            className="mt-0.5 rounded border-slate-300 text-[#0E5E5A] focus:ring-[#0E5E5A]"
+                                        />
+                                        <span>I consent to sending this redacted, non-emergency document to Gemini AI for structural observation parsing.</span>
+                                    </label>
                                 </div>
                             )}
                             <motion.button
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 onClick={analyzeReport}
-                                className="w-full py-6 bg-[#0E5E5A] text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] transition-all hover:scale-[1.02] flex items-center justify-center gap-4 active:scale-95 shadow-xl hover:bg-[#0c4e4b] font-[family-name:var(--font-outfit)] cursor-pointer"
+                                disabled={!useMock && !consentChecked}
+                                className={`w-full py-6 text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-4 active:scale-95 shadow-xl font-[family-name:var(--font-outfit)] ${
+                                    (!useMock && !consentChecked)
+                                        ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
+                                        : "bg-[#0E5E5A] hover:scale-[1.02] hover:bg-[#0c4e4b] cursor-pointer"
+                                }`}
                             >
                                 <Brain size={18} strokeWidth={2.5} />
                                 {useMock ? "Run Sandbox Simulation" : "View Summary Insights"}
