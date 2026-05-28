@@ -4,6 +4,12 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { createClient } from "./client";
 import { Database } from "./types";
 import { loadDemoData } from "../../utils/demoData";
+import {
+  registerLocalChange,
+  getLastSavedTimestamp,
+  getPendingLocalChangesCount,
+  resetPendingLocalChanges
+} from "../offline/localPersistence";
 
 type TableRow<T extends keyof Database["public"]["Tables"]> = Database["public"]["Tables"][T]["Row"];
 
@@ -31,6 +37,11 @@ interface ParentsAuthContextType {
   aiConversations: TableRow<"ai_conversations">[];
   whatsappMessages: TableRow<"whatsapp_messages">[];
   
+  // Local persistence stats (Phase 2B.1)
+  lastSaved: string;
+  pendingChanges: number;
+  resetLocalPendingChanges: () => void;
+  
   // Actions
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: any }>;
@@ -48,7 +59,6 @@ interface ParentsAuthContextType {
   updateScorecard: (answers: any, scores: any) => Promise<{ success: boolean; error?: any }>;
   resetScorecard: () => Promise<{ success: boolean; error?: any }>;
   updateParentProfile: (parentId: string, updatedFields: Partial<TableRow<"parents">>) => Promise<{ success: boolean; error?: any }>;
-  
   
   // UI Helpers
   selectActiveParent: (parentId: string) => void;
@@ -77,9 +87,29 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
   const [aiConversations, setAiConversations] = useState<TableRow<"ai_conversations">[]>([]);
   const [whatsappMessages, setWhatsappMessages] = useState<TableRow<"whatsapp_messages">[]>([]);
 
+  // Sync / Offline State
+  const [lastSaved, setLastSaved] = useState<string>("Never");
+  const [pendingChanges, setPendingChanges] = useState<number>(0);
+
+  const registerChange = () => {
+    registerLocalChange();
+    setLastSaved(getLastSavedTimestamp());
+    setPendingChanges(getPendingLocalChangesCount());
+  };
+
+  const handleResetLocalPendingChanges = () => {
+    resetPendingLocalChanges();
+    setLastSaved(getLastSavedTimestamp());
+    setPendingChanges(0);
+  };
+
   const supabase = createClient();
 
   useEffect(() => {
+    // Initialize offline persistence metadata on load
+    setLastSaved(getLastSavedTimestamp());
+    setPendingChanges(getPendingLocalChangesCount());
+
     // Check if Supabase keys exist in process.env
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -795,6 +825,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       const pId = activeParent?.id || "sandbox-parent-id";
       localStorage.setItem(`parents_health_history_${pId}`, JSON.stringify(rawHistory));
       localStorage.setItem("parents_health_history", JSON.stringify(rawHistory));
+      registerChange();
 
       return { success: true, data: newMockVital };
     }
@@ -844,6 +875,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       const pId = activeParent?.id || "sandbox-parent-id";
       localStorage.setItem(`parents_health_active_meds_${pId}`, JSON.stringify(updated));
       localStorage.setItem("parents_health_active_meds", JSON.stringify(updated));
+      registerChange();
       return { success: true, data: newMockMed };
     }
   };
@@ -924,6 +956,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       });
       
       setMedicationLogs(mappedLogs);
+      registerChange();
       return { success: true };
     }
   };
@@ -991,6 +1024,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       });
       localStorage.setItem(`parents_health_history_${pId}`, JSON.stringify(parsedHist));
       localStorage.setItem("parents_health_history", JSON.stringify(parsedHist));
+      registerChange();
 
       return { success: true, data: mockReport };
     }
@@ -1016,6 +1050,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       return { success: false, error };
     } else {
       setLabReports(prev => prev.filter(r => r.id !== reportId));
+      registerChange();
       return { success: true };
     }
   };
@@ -1049,6 +1084,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       const updated = [...aiConversations, newConv];
       setAiConversations(updated);
       localStorage.setItem(`parents_health_ai_conversations_${pId}`, JSON.stringify(updated));
+      registerChange();
       return { success: true };
     }
   };
@@ -1103,6 +1139,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         setParents(prev => prev.map(p => p.id === activeParent.id ? updated : p));
         setActiveParent(updated);
       }
+      registerChange();
       return { success: true };
     }
   };
@@ -1153,6 +1190,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         setParents(prev => prev.map(p => p.id === activeParent.id ? updated : p));
         setActiveParent(updated);
       }
+      registerChange();
       return { success: true };
     }
   };
@@ -1210,6 +1248,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       if (newActive) {
         setActiveParent(newActive);
       }
+      registerChange();
       return { success: true };
     }
   };
@@ -1247,6 +1286,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       const updated = [...whatsappMessages, newMsg];
       setWhatsappMessages(updated);
       localStorage.setItem(`parents_health_whatsapp_messages_${pId}`, JSON.stringify(updated));
+      registerChange();
       return { success: true };
     }
   };
@@ -1297,6 +1337,10 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         updateScorecard,
         resetScorecard,
         updateParentProfile,
+        
+        lastSaved,
+        pendingChanges,
+        resetLocalPendingChanges: handleResetLocalPendingChanges,
         
         selectActiveParent,
         refreshData

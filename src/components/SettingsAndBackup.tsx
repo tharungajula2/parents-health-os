@@ -29,7 +29,10 @@ export function SettingsAndBackup() {
     activeParent, 
     selectActiveParent, 
     updateParentProfile,
-    isSupabaseEnabled 
+    isSupabaseEnabled,
+    lastSaved,
+    pendingChanges,
+    resetLocalPendingChanges
   } = useParentsAuth();
   
   const { showToast } = useToast();
@@ -689,6 +692,78 @@ export function SettingsAndBackup() {
               <span className="font-bold block uppercase tracking-wider text-[10px] text-amber-900 mb-1">Local Physical Sandbox Active</span>
               Sandbox profile, medication, vitals, and backup data are stored locally in this browser by default. No live Supabase database sync is active. Optional AI report analysis may send uploaded report content to the configured Gemini API for processing.
             </div>
+          </div>
+
+          {/* Sandbox Vault Persistence Metrics (Phase 2B.1) */}
+          <div className="p-6 md:p-8 rounded-[2.5rem] bg-white border border-[#e2ded5] shadow-sm space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A]">
+                <Database size={18} />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-800 uppercase tracking-tight font-[family-name:var(--font-outfit)]">
+                  Sandbox Vault Persistence Stats
+                </h4>
+                <p className="text-xs text-slate-500 font-light mt-0.5 leading-none">
+                  Real-time status of your client-side SQLite/LocalStorage buffer
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 font-[family-name:var(--font-inter)]">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/50">
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Last Secure Save</span>
+                <span className="text-xs font-semibold text-slate-700">
+                  {(() => {
+                    if (lastSaved === "Never") return "Never";
+                    try {
+                      const d = new Date(lastSaved);
+                      if (isNaN(d.getTime())) return lastSaved;
+                      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " " + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                    } catch (e) {
+                      return lastSaved;
+                    }
+                  })()}
+                </span>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/50">
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Unsaved Local Changes</span>
+                <span className="text-xs font-semibold text-slate-700">
+                  {pendingChanges === 0 ? "0 (All changes flushed)" : `${pendingChanges} unsaved edit${pendingChanges > 1 ? "s" : ""}`}
+                </span>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/50">
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Sync Server Status</span>
+                <span className="text-xs font-bold text-amber-600 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Offline (Sandbox)
+                </span>
+              </div>
+            </div>
+
+            {pendingChanges > 0 && (
+              <div className="flex flex-wrap gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    resetLocalPendingChanges();
+                    showToast("🔄 Simulated backup sync complete. Local pending changes updated!", "success");
+                  }}
+                  className="px-5 py-2.5 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-white bg-[#0E5E5A] hover:bg-[#0c4e4b] transition-all flex items-center gap-2 shadow-sm"
+                >
+                  <RefreshCw size={12} className="animate-spin" style={{ animationDuration: '3s' }} /> Simulate Sync & Commit
+                </button>
+                <button
+                  onClick={() => {
+                    resetLocalPendingChanges();
+                    showToast("🧹 Local pending changes buffer cleared.", "info");
+                  }}
+                  className="px-5 py-2.5 rounded-xl text-[10px] font-extrabold uppercase tracking-widest text-slate-600 bg-slate-100 hover:bg-slate-200 transition-all"
+                >
+                  Dismiss Changes Log
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

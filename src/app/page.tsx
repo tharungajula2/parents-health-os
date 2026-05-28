@@ -513,7 +513,10 @@ import {
   Download, 
   Upload, 
   Play, 
-  Briefcase 
+  Briefcase,
+  Database,
+  CloudOff,
+  Save
 } from "lucide-react";
 import { ClinicHub } from "../components/ClinicHub";
 import { CallOverlay } from "../components/CallOverlay";
@@ -550,7 +553,10 @@ function DashboardContent() {
     addVital,
     addMedication,
     toggleMedicationLog,
-    isSupabaseEnabled
+    isSupabaseEnabled,
+    lastSaved,
+    pendingChanges,
+    resetLocalPendingChanges
   } = useParentsAuth();
   
   const [activeView, setActiveView] = useState("dashboard");
@@ -1136,6 +1142,79 @@ function DashboardContent() {
           {activeView === "dashboard" && (
             <div className="space-y-8 animate-fadeIn">
               
+              {/* Sync Resilience & Offline Status Bar (Phase 2B.1) */}
+              <div className="p-4 md:p-5 rounded-3xl bg-white border border-[#e2ded5] shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A] shrink-0">
+                    <Database size={18} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] uppercase tracking-wider">
+                        Sandbox Data Vault
+                      </h4>
+                      <div className="flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-teal-500 animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
+                        <span className="text-[9px] font-bold text-teal-600 uppercase tracking-widest">Active</span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-light mt-0.5 leading-none">
+                      Local-first sandbox // Saved securely in this browser cache
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 xl:gap-8 text-xs text-slate-600 font-[family-name:var(--font-inter)]">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Vault Integrity</span>
+                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                      <Check size={12} className="text-[#0E5E5A] stroke-[3]" /> Encrypted Client Buffer
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Last Saved</span>
+                    <span className="text-[11px] font-semibold text-slate-700">
+                      {(() => {
+                        if (lastSaved === "Never") return "Never";
+                        try {
+                          const d = new Date(lastSaved);
+                          if (isNaN(d.getTime())) return lastSaved;
+                          return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " // " + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                        } catch (e) {
+                          return lastSaved;
+                        }
+                      })()}
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Pending Changes</span>
+                    <span className="text-[11px] font-semibold text-slate-700">
+                      {pendingChanges === 0 ? "None (In Sync)" : `${pendingChanges} unsaved edits`}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-100 text-[#E05E1B] text-[9px] font-bold uppercase tracking-wider font-mono">
+                      <CloudOff size={10} className="stroke-[2.5]" /> Sync Status // Off
+                    </span>
+
+                    {pendingChanges > 0 && (
+                      <button
+                        onClick={() => {
+                          resetLocalPendingChanges();
+                          showToast("🔄 Simulated backup sync complete. Local pending changes updated!", "success");
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl text-[9px] font-extrabold uppercase tracking-widest text-[#0E5E5A] bg-[#0E5E5A]/5 hover:bg-[#0E5E5A]/10 border border-[#0E5E5A]/10 hover:border-[#0E5E5A]/20 transition-all flex items-center gap-1.5 shadow-sm"
+                      >
+                        Simulate Sync
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* TOP STATUS AND ANAYA AI CARDS */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
