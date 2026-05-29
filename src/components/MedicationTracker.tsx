@@ -741,16 +741,16 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                                                         onClick={() => toggleTask(task.id)}
                                                         className={`group cursor-pointer p-6 rounded-[2rem] border transition-all duration-500 relative overflow-hidden ${
                                                             isCompleted
-                                                                ? "bg-cyan-500/[0.03] border-cyan-500/20 shadow-lg"
-                                                                : "bg-white/[0.01] border-white/5 hover:border-white/15 hover:bg-white/[0.03]"
+                                                                ? "bg-emerald-50/50 border-emerald-200 shadow-sm"
+                                                                : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm"
                                                         }`}
                                                     >
                                                         <div className="flex items-center gap-6 relative z-10">
                                                             {/* Custom Checkbox */}
                                                             <div className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-all duration-500 ${
                                                                 isCompleted 
-                                                                    ? "bg-[#0E5E5A] text-white shadow-lg scale-105" 
-                                                                    : "bg-slate-900 border border-white/5 text-slate-600 hover:border-white/10"
+                                                                    ? "bg-[#0E5E5A] text-white shadow-sm scale-105" 
+                                                                    : "bg-slate-50 border border-slate-200 text-slate-400 group-hover:border-slate-300"
                                                             }`}>
                                                                 {isCompleted ? <Check size={20} strokeWidth={3.5} /> : (
                                                                     task.category === "medicine" ? <Pill size={16} /> :
@@ -791,18 +791,18 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                             })}
 
                             {/* WHATSAPP HIGH-FIDELITY CHAT PREVIEW */}
-                            <div className="glass-card p-6 md:p-10 rounded-[3rem] border-emerald-500/10 bg-slate-950/40 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full -mr-16 -mt-16" />
+                            <div className="bg-white p-6 md:p-10 rounded-[3rem] border border-[#e2ded5] shadow-sm relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full -mr-16 -mt-16" />
                                 
-                                <h3 className="text-[10px] font-bold text-emerald-400 flex items-center gap-3 tracking-[0.2em] uppercase mb-6">
-                                    <MessageSquare size={14} /> Anaya Care Companion Chat Simulator (Sandbox)
+                                <h3 className="text-[10px] font-bold text-[#0E5E5A] flex items-center gap-3 tracking-[0.2em] uppercase mb-6">
+                                    <MessageSquare size={14} className="text-emerald-600" /> Anaya Care Companion Chat Simulator (Sandbox)
                                 </h3>
 
                                 <div className="space-y-4">
                                     {/* Preview message */}
-                                    <div className="bg-slate-900/60 p-5 rounded-2xl border border-white/5 relative">
-                                        <span className="absolute -top-2.5 left-5 px-3 py-0.5 rounded-full bg-emerald-500 text-[7px] font-black text-white uppercase tracking-widest shadow-lg">ANAYA OUTGOING PREVIEW</span>
-                                        <p className="text-slate-800 text-xs leading-relaxed italic mt-2">
+                                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 relative">
+                                        <span className="absolute -top-2.5 left-5 px-3 py-0.5 rounded-full bg-emerald-600 text-[7px] font-black text-white uppercase tracking-widest shadow-sm">ANAYA OUTGOING PREVIEW</span>
+                                        <p className="text-slate-700 text-xs leading-relaxed italic mt-2">
                                             "{carePlan.whatsappPrompts[0]?.message}"
                                         </p>
                                     </div>
@@ -811,9 +811,9 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                                         <motion.div 
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="bg-emerald-950/20 p-5 rounded-2xl border border-emerald-500/10"
+                                            className="bg-emerald-50 p-5 rounded-2xl border border-emerald-200"
                                         >
-                                            <p className="text-emerald-400 text-xs font-medium leading-relaxed">
+                                            <p className="text-emerald-800 text-xs font-medium leading-relaxed">
                                                 {simulatedReply}
                                             </p>
                                         </motion.div>
@@ -822,7 +822,7 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                                     <button
                                         onClick={handleSimulateResponse}
                                         disabled={isSimulating}
-                                        className="w-full py-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                                        className="w-full py-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                                     >
                                         {isSimulating ? (
                                             <>
@@ -899,48 +899,7 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                                 </div>
                             </div>
 
-                            {/* DEVICE SYNC */}
-                            <div className="glass-card p-8 rounded-[2rem] border-white/5 bg-slate-950/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-6 opacity-5">
-                                    <Bluetooth size={100} strokeWidth={1} />
-                                </div>
-                                
-                                <h3 className="text-[10px] font-bold text-cyan-400 flex items-center gap-3 tracking-[0.2em] uppercase mb-6">
-                                    <Bluetooth size={14} strokeWidth={2} /> Device Sync Integration
-                                </h3>
 
-                                <div className="flex flex-col gap-4 relative z-10">
-                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex items-center justify-between hover:bg-slate-800/50 transition-all group/item">
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-3 bg-cyan-500/10 text-cyan-400 rounded-xl group-hover/item:bg-cyan-500 group-hover/item:text-white transition-colors">
-                                                <Activity size={18} strokeWidth={3} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-black text-slate-800 text-xs tracking-tight">FreeStyle Libre 3</h4>
-                                                <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5">Continuous Glucose</p>
-                                            </div>
-                                        </div>
-                                        <button onClick={() => simulateDeviceSync('cgm')} className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1.5 rounded-full hover:bg-cyan-500 hover:text-white transition-all uppercase tracking-widest">
-                                            Sync
-                                        </button>
-                                    </div>
-
-                                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5 flex items-center justify-between hover:bg-slate-800/50 transition-all group/item">
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl group-hover/item:bg-blue-500 group-hover/item:text-white transition-colors">
-                                                <Watch size={18} strokeWidth={3} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-black text-slate-800 text-xs tracking-tight">Apple Watch Ultra</h4>
-                                                <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5">Activity & Vitals</p>
-                                            </div>
-                                        </div>
-                                        <button onClick={() => simulateDeviceSync('watch')} className="text-[9px] font-black text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-full hover:bg-blue-500 hover:text-white transition-all uppercase tracking-widest">
-                                            Sync
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
 
                             {/* NUTRITION & CLINICAL GUIDELINES */}
                             <div className="glass-card p-8 rounded-[2rem] border-white/5 bg-slate-950/40 relative overflow-hidden">

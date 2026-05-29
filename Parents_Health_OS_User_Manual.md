@@ -30,6 +30,26 @@ If you want to experience the app completely from scratch (as a brand new user):
 
 ---
 
+## 🗺️ The Big Picture: Navigating the OS
+
+Parents Health OS is designed to be comprehensive but not overwhelming. As a son or daughter, **you do not need to check every single page every day.**
+
+### The Role of Anaya (AI Care Companion)
+**How Anaya Helps You:** Anaya is the bridge between you and your parents. Instead of you having to constantly call and nag your parents with questions like *"Did you take your pill?"* or *"What was your blood pressure today?"*, Anaya handles this gracefully. 
+*   Anaya chats with your parents on WhatsApp in their native language (e.g., Hindi, Telugu).
+*   Anaya asks them about their day, gently reminds them to take their medications, and collects their vital readings.
+*   Anaya then synthesizes all this information and populates the **Dashboard** and **Daily Care Logs** for you to review at your convenience. 
+
+### What You Should Focus On
+*   **The Main Dashboard (Home):** This is your daily bread and butter. **For 95% of your days, the Dashboard is the only page you need to visit.** It gives you a bird's-eye view of your parent's health, combining alerts, recent vitals, and medication adherence all in one place.
+*   **Daily Care Logs:** Visit this page if you want to see the granular breakdown of today's specific checklist, or if you want to manually mark off a medication that Anaya missed.
+*   **Reports & Insights:** Use this page when preparing for a doctor's visit, or when you want to look at long-term health trends (e.g., blood sugar levels over the last 3 months).
+*   **Care Team (Consult Hub) vs Clinic Hub:** 
+    *   **Care Team:** This is for clinical collaboration. You go here to generate medical reports, prepare questions for doctors, and review simulated consult logic.
+    *   **Clinic Hub:** This is for logistics and finances. You go here to schedule specific appointments, check the family wallet balance, and review insurance coverage.
+
+---
+
 ## 📖 Complete Application Walkthrough
 
 Every tab, button, and field explained in detail.

@@ -868,8 +868,8 @@ export function ClinicalEngine() {
             </div>
 
             {/* Right Panel: Dynamic Care Index Status Indicator */}
-            <div className="w-full lg:w-[400px] shrink-0">
-                <div className="glass-card p-6 md:p-10 rounded-[3.5rem] border-slate-200 bg-white h-full flex flex-col shadow-xl relative overflow-hidden group">
+            <div className="w-full lg:w-[400px] shrink-0 lg:sticky lg:top-8 lg:h-[calc(100vh-4rem)]">
+                <div className="glass-card p-6 md:p-10 rounded-[3.5rem] border-slate-200 bg-white h-full max-h-full flex flex-col shadow-xl relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1.5 bg-[#0E5E5A]" />
                     
                     <div className="mb-10 text-center">

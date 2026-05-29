@@ -49,7 +49,7 @@ Parents Health OS features a **secure profile boundary** between two simulated p
 
 ## 📅 Part B: Daily Care Checklist & Real-Time Sync Simulators
 
-The **Daily Care Logs** tab organizes medication checklists, vital checks, and daily habits. It includes dry-run device sync integrations with clinical wearables.
+The **Daily Care Logs** tab organizes medication checklists, vital checks, and daily habits.
 
 ### Walkthrough Steps:
 1. Navigate to **Daily Care Logs** in the left sidebar.

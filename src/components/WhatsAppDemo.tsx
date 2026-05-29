@@ -247,7 +247,7 @@ export function WhatsAppDemo() {
             <span className="data-label text-[#E05E1B] !text-[9px] !tracking-[0.3em] uppercase bg-orange-50 px-3 py-1 rounded-full border border-orange-100">Anaya WhatsApp Gateway</span>
             <h1 className="text-3xl md:text-5xl font-black text-[#0E5E5A] font-[family-name:var(--font-outfit)] tracking-tight mt-4 uppercase leading-none">WhatsApp oversight</h1>
             <p className="text-slate-600 text-sm font-light mt-3 max-w-2xl font-[family-name:var(--font-inter)] leading-relaxed">
-              Test and monitor compliance check-ins. Trigger scheduled clinical templates, log vital readings, check Indian DPDP Act 2023 consent records, and simulate parent responses interactively.
+              See how **Anaya (The AI Care Companion)** interacts with your parents. Instead of you nagging them, Anaya chats with them on WhatsApp in their native language to ensure they take their pills and check their vitals. Here, you can test and monitor compliance check-ins, trigger scheduled clinical templates, and simulate parent responses interactively.
             </p>
           </div>
           
