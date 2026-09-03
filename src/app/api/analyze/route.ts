@@ -1,143 +1,28 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-// Secure server-side only key with client fallback
-const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+// Secure server-side only key
+const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 // Vercel / Next.js App Router Config
-export const maxDuration = 60; // Request max duration (Hobby plan is limited to 10s-30s, Pro is 300s)
+export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
-
-// Realistic High-Fidelity Mock Response for testing and missing key fallback
-const HIGH_FIDELITY_MOCK_REPORT = {
-  reportType: "Lab Report",
-  reportDate: new Date().toISOString().split("T")[0],
-  patientName: "Ramesh Kumar",
-  summaryForChild: "Your parent's overall blood panel shows stable vital parameters, but blood sugar (HbA1c) and cholesterol are slightly above the optimal range. The kidney and liver functions are completely normal. No immediate emergency is indicated.",
-  summaryForParent: "Ramesh ji, your lab results look quite stable and heartening! Your kidney and liver are in wonderful shape. There is a slight, gentle rise in your sugar level, which we can easily manage together with your doctor. Keep up the light morning walks, and we will take good care of you!",
-  keyFindings: [
-    "**Blood Sugar (HbA1c) is 7.2%**: Indicating mild, manageable hyperglycemia (type-2 diabetes range).",
-    "**LDL Cholesterol is 135 mg/dL**: Slightly borderline high, but easily manageable with dietary adjustments.",
-    "**Kidney & Liver Biomarkers (Creatinine, ALT/AST) are Normal**: Confirming healthy underlying organ function."
-  ],
-  biomarkers: [
-    {
-      name: "HbA1c (Glycated Hemoglobin)",
-      value: "7.2",
-      unit: "%",
-      referenceRange: "4.0 - 5.6% (Normal), 5.7 - 6.4% (Prediabetes), >= 6.5% (Diabetes)",
-      status: "high",
-      explanation: "HbA1c measures average blood sugar over 3 months. A value of 7.2% shows moderate elevation, requiring light exercise, sweet limitation, and routine medical review."
-    },
-    {
-      name: "LDL Cholesterol",
-      value: "135",
-      unit: "mg/dL",
-      referenceRange: "< 100 mg/dL (Optimal)",
-      status: "high",
-      explanation: "Known as 'bad' cholesterol. 135 is borderline elevated, so incorporating high-fiber foods (oats, legumes) and reducing deep-fried snacks is recommended."
-    },
-    {
-      name: "Serum Creatinine",
-      value: "0.9",
-      unit: "mg/dL",
-      referenceRange: "0.6 - 1.2 mg/dL",
-      status: "normal",
-      explanation: "A standard marker of kidney filtration. 0.9 is perfectly in the middle of the healthy range, indicating robust kidney health."
-    },
-    {
-      name: "Hemoglobin",
-      value: "13.8",
-      unit: "g/dL",
-      referenceRange: "12.0 - 15.5 g/dL",
-      status: "normal",
-      explanation: "Carries oxygen throughout the body. A solid 13.8 shows healthy iron/blood levels with no clinical signs of anemia."
-    }
-  ],
-  medicines: [
-    {
-      name: "Metformin (Glycomet)",
-      strength: "500mg",
-      dosage: "1 tablet",
-      timing: "after food",
-      frequency: "twice daily",
-      duration: "chronic",
-      instruction: "Take with breakfast and dinner to minimize potential mild stomach sensitivity.",
-      confidence: "high",
-      source: "from uploaded report"
-    },
-    {
-      name: "Atorvastatin (Lipvas)",
-      strength: "10mg",
-      dosage: "1 tablet",
-      timing: "bedtime",
-      frequency: "once daily",
-      duration: "chronic",
-      instruction: "Take regularly at night, as cholesterol synthesis peak occurs overnight.",
-      confidence: "high",
-      source: "from uploaded report"
-    },
-    {
-      name: "Telmisartan (Telma)",
-      strength: "40mg",
-      dosage: "1 tablet",
-      timing: "morning",
-      frequency: "once daily",
-      duration: "chronic",
-      instruction: "Take in the morning with or without food to maintain optimal, steady blood pressure.",
-      confidence: "high",
-      source: "from uploaded report"
-    }
-  ],
-  possibleQuestionsForDoctor: [
-    "Is the current dose of Metformin 500mg optimal given the HbA1c level of 7.2%?",
-    "Do we need to start Atorvastatin immediately, or can we try managing cholesterol with dietary and physical adjustments for 3 months first?",
-    "When should we schedule a repeat HbA1c test to monitor sugar level progress?"
-  ],
-  redFlags: [
-    "Please seek physical medical attention if your parent experiences severe dizziness, sudden unexplained fainting, extreme dehydration, or blurry vision."
-  ],
-  confidenceLevel: "high",
-  disclaimer: "AI-generated summary. Please verify with your doctor. This does not replace clinical advice."
-};
-
-const HIGH_FIDELITY_MOCK_SUMMARY = {
-  title: "Holistic Health Summary",
-  patientRiskProfile: "Moderate Risk Profile (Borderline Sugar & Cholesterol)",
-  keyFindings: [
-    "**Primary Concern**: Borderline Elevated Sugar (HbA1c 7.2%) requiring moderate sweet restriction and routine monitoring.",
-    "**Secondary Concern**: Borderline LDL Cholesterol (135 mg/dL) showing mild vascular stress, manageable with active lifestyle adjustments.",
-    "**Encouraging Markers**: Kidney filtration and oxygen carrying capacity are functioning flawlessly."
-  ],
-  trendAnalysis: "Longitudinal analysis shows a steady metabolic profile. Organ functions are fully preserved, indicating that the patient has a high baseline of health. Focused dietary care and medication compliance will help stabilize borderline blood sugar and cardiovascular metrics within 90 days.",
-  recommendation: "Establish a gentle morning walking schedule (30 mins daily) and consult your general physician to monitor medication intake timings."
-};
 
 export async function POST(req: Request) {
   try {
+    if (!apiKey || !genAI) {
+      return NextResponse.json(
+        { error: "GEMINI_API_KEY is not configured on the server." },
+        { status: 500 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const clinicalContext = formData.get("clinicalContext") as string || "No clinical profile available.";
     const historyContext = formData.get("historyContext") as string || "No previous reports.";
     const mode = formData.get("mode") as string;
-    const useMock = formData.get("useMock") as string === "true";
-
-    // --- CASE A: MOCK SIMULATION OR MISSING API KEY ---
-    if (!apiKey || useMock) {
-      console.log(`Using safe sandbox mock mode. API Key status: ${apiKey ? "Present" : "Missing"}, useMock: ${useMock}`);
-      if (mode === "summary") {
-        return NextResponse.json({ result: HIGH_FIDELITY_MOCK_SUMMARY, modelUsed: "mock-simulator", mocked: true });
-      } else {
-        // Add a slight latency to simulate processing
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        return NextResponse.json({ result: HIGH_FIDELITY_MOCK_REPORT, modelUsed: "mock-simulator", mocked: true });
-      }
-    }
-
-    if (!genAI) {
-      return NextResponse.json({ error: "Gemini client failed to initialize." }, { status: 500 });
-    }
 
     // --- MODE 1: HOLISTIC SUMMARY ---
     if (mode === "summary") {
@@ -192,7 +77,6 @@ export async function POST(req: Request) {
 
        const text = result.response.text();
        
-       // Clean JSON
        let jsonString = text;
        const codeBlockMatch = /```(?:json)?\s*([\s\S]*?)\s*```/i.exec(text);
        if (codeBlockMatch) {
@@ -220,7 +104,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Convert File to Base64
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64Data = buffer.toString("base64");
@@ -228,7 +111,6 @@ export async function POST(req: Request) {
 
     console.log(`Analyzing file: ${file.name} (${mimeType})`);
 
-    // Primary Model: Gemini 2.5 Flash
     let modelString = "gemini-2.5-flash"; 
     let model = genAI.getGenerativeModel({ model: modelString });
 
@@ -333,7 +215,6 @@ export async function POST(req: Request) {
 
     const responseText = result.response.text();
     
-    // Clean and Parse JSON
     let jsonString = responseText;
     const codeBlockMatch = /```(?:json)?\s*([\s\S]*?)\s*```/i.exec(responseText);
     if (codeBlockMatch) {
@@ -346,34 +227,15 @@ export async function POST(req: Request) {
         }
     }
     
-    let parsedResult;
     try {
-        parsedResult = JSON.parse(jsonString);
+        const parsedResult = JSON.parse(jsonString);
+        return NextResponse.json({ result: parsedResult, modelUsed: modelString });
     } catch (e) {
-        console.error("Failed to parse JSON from AI, attempting sanitization", responseText);
-        try {
-            const sanitized = jsonString.replace(/\n/g, "\\n");
-            parsedResult = JSON.parse(sanitized);
-        } catch (e2) {
-             // Safe fallback structured layout to avoid complete UI failure
-             parsedResult = {
-                reportType: "Lab Report",
-                reportDate: new Date().toISOString().split("T")[0],
-                patientName: "",
-                summaryForChild: "The analysis succeeded but returned unstructured text. Please review the detailed insights stream.",
-                summaryForParent: "Your records have been parsed safely! All organ parameters are registered successfully. Please review with your doctor at your next checkup.",
-                keyFindings: ["Unstructured raw insights stream generated by AI."],
-                biomarkers: [],
-                medicines: [],
-                possibleQuestionsForDoctor: ["Would you review the details parsed from my uploaded health record?"],
-                redFlags: [],
-                confidenceLevel: "low",
-                disclaimer: "AI parsing format issue. Please verify all raw output with your physician."
-            };
-        }
+        return NextResponse.json(
+          { error: "Failed to parse JSON response from Gemini", rawText: responseText },
+          { status: 500 }
+        );
     }
-
-    return NextResponse.json({ result: parsedResult, modelUsed: modelString });
 
   } catch (error: any) {
     console.error("Parents Health AI Analysis Error:", error);
@@ -386,4 +248,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

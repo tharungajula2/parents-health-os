@@ -51,19 +51,8 @@ export function BaselineCamp() {
     setWeight("68");
   };
 
-  // Load from local storage
-  useEffect(() => {
-    const cached = localStorage.getItem("parents_health_camp_roster");
-    if (cached) {
-      try {
-        setScreenedPatients(JSON.parse(cached));
-      } catch (e) {}
-    }
-  }, []);
-
-  const saveRosterToLocalStorage = (newRoster: ScreenedPatient[]) => {
+  const saveRosterToState = (newRoster: ScreenedPatient[]) => {
     setScreenedPatients(newRoster);
-    localStorage.setItem("parents_health_camp_roster", JSON.stringify(newRoster));
   };
 
   const handleAddScreening = (e: React.FormEvent) => {
@@ -87,7 +76,7 @@ export function BaselineCamp() {
     };
 
     const updated = [...screenedPatients, newPatient];
-    saveRosterToLocalStorage(updated);
+    saveRosterToState(updated);
 
     // Clear fields
     setPatientName("");
@@ -97,87 +86,26 @@ export function BaselineCamp() {
     setSugar("");
     setWeight("");
 
-    setNotification("Screening log successfully recorded to offline queue!");
+    setNotification("Screening log successfully recorded to active session list.");
     setTimeout(() => setNotification(null), 3000);
   };
 
   const handleSyncBatch = () => {
     const unsyncedCount = screenedPatients.filter(p => !p.synced).length;
     if (unsyncedCount === 0) {
-      setNotification("All screening records are already synced.");
+      setNotification("All screening records are already marked registered.");
       return;
     }
 
     setIsSyncing(true);
 
-    setTimeout(async () => {
-      // Load current parent profile database
-      const existingParentsStr = localStorage.getItem("parents_health_personal_parents");
-      let personalParents = [];
-      if (existingParentsStr) {
-        try {
-          personalParents = JSON.parse(existingParentsStr);
-        } catch (e) {}
-      }
-
-      // Feed screened patients into the personal database
-      const updatedScreened = screenedPatients.map(p => {
-        if (!p.synced) {
-          const parentId = `sandbox-parent-${p.id}`;
-          const newParent = {
-            id: parentId,
-            name: p.name,
-            age: p.age,
-            gender: p.gender,
-            risk_level: p.bp_sys > 140 || p.sugar > 140 ? "Watch" : "Healthy Baseline",
-            health_index: Math.max(20, 100 - (p.bp_sys > 140 ? 15 : 0) - (p.sugar > 140 ? 15 : 0)),
-            scorecard_answers: {
-              answers: {
-                relation: "Self (Camp Admission)",
-                age: p.age,
-                campName: campName,
-                bp: `${p.bp_sys}/${p.bp_dia}`,
-                sugar: p.sugar,
-                weight: p.weight
-              },
-              scores: {
-                total: p.bp_sys > 140 || p.sugar > 140 ? 12 : 3,
-                riskLevel: p.bp_sys > 140 || p.sugar > 140 ? "Watch" : "Healthy Baseline"
-              }
-            },
-            created_at: p.timestamp
-          };
-          personalParents.push(newParent);
-
-          // Seed vitals log for this parent
-          const mockHistory = [
-            {
-              date: p.timestamp.split("T")[0],
-              systolic: p.bp_sys,
-              diastolic: p.bp_dia,
-              sugar: p.sugar,
-              weight: p.weight
-            }
-          ];
-          localStorage.setItem(`parents_health_history_${parentId}`, JSON.stringify(mockHistory));
-
-          return { ...p, synced: true };
-        }
-        return p;
-      });
-
-      // Save list
-      localStorage.setItem("parents_health_personal_parents", JSON.stringify(personalParents));
-      saveRosterToLocalStorage(updatedScreened);
+    setTimeout(() => {
+      const updatedScreened = screenedPatients.map(p => ({ ...p, synced: true }));
+      saveRosterToState(updatedScreened);
       setIsSyncing(false);
-      setNotification(`Simulated Sync Successful! Registered ${unsyncedCount} screenings into local active patient list.`);
-
-      if (refreshData) {
-        await refreshData();
-      }
-
+      setNotification(`Registered ${unsyncedCount} screenings into active health camp roster.`);
       setTimeout(() => setNotification(null), 4000);
-    }, 2000);
+    }, 800);
   };
 
   const unsyncedCount = screenedPatients.filter(p => !p.synced).length;
@@ -209,7 +137,7 @@ export function BaselineCamp() {
             ) : (
               <>
                 <Database size={16} />
-                Simulated Sync {unsyncedCount} Field Screenings to Local Console
+                Register {unsyncedCount} Field Screenings to Local Roster
               </>
             )}
           </button>

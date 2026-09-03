@@ -12,9 +12,9 @@ export function HeaderIcons() {
     const [hasUnread, setHasUnread] = useState(true);
 
     const parent = parents[0];
-    const userName = parent?.name || "Geriatric Profile";
-    const userAge = typeof window !== "undefined" ? localStorage.getItem("parents_health_user_age") || "72" : "72";
-    const userGender = typeof window !== "undefined" ? localStorage.getItem("parents_health_user_gender") || "Female" : "Female";
+    const userName = parent?.name || profile?.full_name || "Caregiver";
+    const userAge = (parent?.scorecard_answers as any)?.personal_profile?.age || "N/A";
+    const userGender = (parent?.scorecard_answers as any)?.personal_profile?.gender || "N/A";
 
     // Close dropdowns when clicking outside
     const notifRef = useRef<HTMLDivElement>(null);

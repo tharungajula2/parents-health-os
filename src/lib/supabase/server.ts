@@ -1,14 +1,19 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { Database } from './types'
+import { assertNotForbiddenProject, assertServerOnly } from './safety'
 
 export async function createClient() {
+  assertServerOnly('supabase/server')
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
   if (!url || !key) {
     return null as any
   }
+
+  assertNotForbiddenProject(url)
 
   const cookieStore = await cookies()
 

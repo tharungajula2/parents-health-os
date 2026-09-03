@@ -308,7 +308,6 @@ export function ClinicalEngine() {
         if (confirm("Are you sure? This will clear the baseline care-recipient profile completely.")) {
             await resetScorecard();
             resetStateToDefaults();
-            localStorage.removeItem("parents_health_assessment_data_v2");
             showToast("Record baseline reset successfully. Please complete Stage A again.", "info");
         }
     };

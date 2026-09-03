@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { UserPlus, ShieldCheck, Heart, User, Calendar, Activity, CheckCircle, Smartphone, Play, Sparkles } from "lucide-react";
 
 export function FamilyIntake() {
-  const { isSupabaseEnabled, parents, updateParentProfile, refreshData } = useParentsAuth();
+  const { isSupabaseEnabled, parents, updateParentProfile, refreshData, onboard } = useParentsAuth();
   
   // State for Buyer Demographics
   const [buyerName, setBuyerName] = useState("");
@@ -52,33 +52,7 @@ export function FamilyIntake() {
     setNotes("Lives independently in Pune. Son lives in Bengaluru. Needs daily reminder check-ins for morning/evening blood pressure meds.");
   };
 
-  // Load latest intake from localStorage on mount if it exists
-  useEffect(() => {
-    const cachedIntake = localStorage.getItem("parents_health_latest_intake");
-    if (cachedIntake) {
-      try {
-        const data = JSON.parse(cachedIntake);
-        setBuyerName(data.buyerName || "");
-        setBuyerRelation(data.buyerRelation || "son");
-        setBuyerPhone(data.buyerPhone || "");
-        setBuyerEmail(data.buyerEmail || "");
-        setBuyerLocation(data.buyerLocation || "");
-        
-        setParentName(data.parentName || "");
-        setParentAge(data.parentAge || "");
-        setParentGender(data.parentGender || "Female");
-        setPrimaryNeeds(data.primaryNeeds || "");
-        setMobilityStatus(data.mobilityStatus || "Independent");
-        setExistingDiagnoses(data.existingDiagnoses || "");
-        setAllergies(data.allergies || "");
-        setBloodGroup(data.bloodGroup || "O+");
-        setEngagementStatus(data.engagementStatus || "Pending Assessment");
-        setNotes(data.notes || "");
-      } catch (e) {
-        console.error("Error loading cached intake", e);
-      }
-    }
-  }, []);
+
 
   const handleSaveIntake = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,72 +80,18 @@ export function FamilyIntake() {
       timestamp: new Date().toISOString()
     };
 
-    // Save to local storage
-    localStorage.setItem("parents_health_latest_intake", JSON.stringify(intakeData));
-
-    // Save to general intake records archive
-    const existingIntakesStr = localStorage.getItem("parents_health_all_intakes") || "[]";
-    let allIntakes = [];
-    try {
-      allIntakes = JSON.parse(existingIntakesStr);
-    } catch (e) {}
-    allIntakes.push(intakeData);
-    localStorage.setItem("parents_health_all_intakes", JSON.stringify(allIntakes));
-
-    // Update or add parent in the parents list
-    const existingParentsStr = localStorage.getItem("parents_health_personal_parents");
-    let personalParents = [];
-    if (existingParentsStr) {
-      try {
-        personalParents = JSON.parse(existingParentsStr);
-      } catch (e) {}
-    } else if (parents && parents.length > 0) {
-      personalParents = [...parents];
+    if (onboard) {
+      await onboard({
+        familyName: `${buyerName}'s Family`,
+        parentName,
+        relationship: buyerRelation,
+        parentPhone: buyerPhone,
+        language: "English"
+      });
     }
 
-    const parentId = `sandbox-parent-${Date.now()}`;
-    const newParentRecord = {
-      id: parentId,
-      name: parentName,
-      age: parseInt(parentAge) || 70,
-      gender: parentGender,
-      risk_level: "Healthy Baseline",
-      health_index: 95,
-      scorecard_answers: {
-        answers: {
-          relation: buyerRelation,
-          age: parentAge,
-          diagnoses: existingDiagnoses.split(",").map(d => d.trim()),
-          needs: primaryNeeds,
-          mobility: mobilityStatus,
-          allergies: allergies,
-          bloodGroup: bloodGroup
-        },
-        scores: {
-          total: 5,
-          riskLevel: "Healthy Baseline",
-          categories: [
-            { category: "Clinical Needs", score: 2, label: "Mild Concerns" },
-            { category: "Daily Independence", score: 3, label: "Fully Independent" }
-          ]
-        }
-      },
-      created_at: new Date().toISOString()
-    };
-
-    // Push into sandbox list
-    personalParents.push(newParentRecord);
-    localStorage.setItem("parents_health_personal_parents", JSON.stringify(personalParents));
-    localStorage.setItem("parents_health_mode", "personal");
-    localStorage.setItem("parents_health_active_parent_id", parentId);
-
-    // Refresh context data
-    if (refreshData) {
-      await refreshData();
-    }
-
-    setNotification("Intake profile saved! Synced into local active patient list.");
-    setTimeout(() => setNotification(null), 4000);
+    setNotification(`✅ First Family Care Link established for ${parentName}! Record saved to Care Operations System.`);
+    setTimeout(() => setNotification(null), 5000);
   };
 
   return (

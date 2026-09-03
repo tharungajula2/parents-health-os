@@ -1,7 +1,6 @@
 // ============================================================
-// careTeamEngine.ts — Phase 7: Care Team Sandbox Engine
-// Parents Health OS — Sandbox/localStorage only
-// No Supabase. No real doctor connections. No live API calls.
+// careTeamEngine.ts — Care Team Domain Engine
+// Parents Health OS
 // ============================================================
 
 // ------- TYPES -------
@@ -20,7 +19,7 @@ export interface CareTeamMember {
   availabilityLabel: string;
   consultModes: ConsultMode[];
   status: MemberStatus;
-  registrationNumber: string; // Demo placeholder only
+  registrationNumber: string;
   bio: string;
   isAI?: boolean;
 }
@@ -116,7 +115,7 @@ export const DEFAULT_CARE_TEAM: CareTeamMember[] = [
     availabilityLabel: "Mon–Sat, 10 AM–1 PM",
     consultModes: ["phone", "video"],
     status: "assigned",
-    registrationNumber: "Demo registration pending",
+    registrationNumber: "Pending Registration",
     bio: "20+ years in family medicine with focus on geriatric chronic care, polypharmacy review, and preventive health for Indian families.",
   },
   {
@@ -128,7 +127,7 @@ export const DEFAULT_CARE_TEAM: CareTeamMember[] = [
     availabilityLabel: "Tue & Thu, 2–5 PM",
     consultModes: ["video", "in-person"],
     status: "assigned",
-    registrationNumber: "Demo registration pending",
+    registrationNumber: "Pending Registration",
     bio: "Cardiac specialist focused on BP management, ECG reviews, and heart health for elderly patients. Monitors medication interactions.",
   },
   {
@@ -140,7 +139,7 @@ export const DEFAULT_CARE_TEAM: CareTeamMember[] = [
     availabilityLabel: "Mon, Wed, Fri — 11 AM–1 PM",
     consultModes: ["phone", "whatsapp"],
     status: "assigned",
-    registrationNumber: "Demo registration pending",
+    registrationNumber: "Pending Registration",
     bio: "Diet specialist for diabetic seniors, digestive wellness, hydration tracking, and meal timing aligned with medication schedules.",
   },
   {
@@ -152,7 +151,7 @@ export const DEFAULT_CARE_TEAM: CareTeamMember[] = [
     availabilityLabel: "Mon–Fri, 7–9 AM",
     consultModes: ["video", "in-person"],
     status: "assigned",
-    registrationNumber: "Demo registration pending",
+    registrationNumber: "Pending Registration",
     bio: "Specialist in geriatric mobility restoration, fall-prevention programs, chair exercises, and post-hospitalisation recovery.",
   },
   {
@@ -164,7 +163,7 @@ export const DEFAULT_CARE_TEAM: CareTeamMember[] = [
     availabilityLabel: "Wed & Sat, 4–6 PM",
     consultModes: ["phone", "video"],
     status: "assigned",
-    registrationNumber: "Demo registration pending",
+    registrationNumber: "Pending Registration",
     bio: "Specialises in elderly anxiety, sleep disorders, cognitive engagement, and family-senior communication coaching.",
   },
   {
@@ -194,94 +193,48 @@ export const FOLLOW_UP_TASK_TEMPLATES = [
   { label: "Review diet plan with nutritionist notes", category: "medicine" as const, dueLabel: "This week" },
 ];
 
-// ------- LOCALSTORAGE KEYS (parent-specific) -------
-const lsKey = (base: string, parentId: string) => `phos_${base}_${parentId}`;
-
-// ------- CARE TEAM STORAGE -------
-export function getCareTeam(parentId: string): CareTeamMember[] {
-  try {
-    const raw = localStorage.getItem(lsKey("care_team", parentId));
-    if (raw) return JSON.parse(raw) as CareTeamMember[];
-  } catch {}
-  // Seed default team for new parent
-  saveCareTeam(parentId, DEFAULT_CARE_TEAM);
+// ------- CARE TEAM STATE READERS (Pure Data) -------
+export function getCareTeam(_parentId: string): CareTeamMember[] {
   return DEFAULT_CARE_TEAM;
 }
 
-export function saveCareTeam(parentId: string, team: CareTeamMember[]): void {
-  localStorage.setItem(lsKey("care_team", parentId), JSON.stringify(team));
+export function saveCareTeam(_parentId: string, _team: CareTeamMember[]): void {
+  // Persistence will be managed via Supabase in Phase 1
 }
 
-// ------- CONSULT REQUESTS -------
-export function getConsultRequests(parentId: string): ConsultRequest[] {
-  try {
-    const raw = localStorage.getItem(lsKey("consult_requests", parentId));
-    if (raw) return JSON.parse(raw) as ConsultRequest[];
-  } catch {}
+export function getConsultRequests(_parentId: string): ConsultRequest[] {
   return [];
 }
 
-export function saveConsultRequest(parentId: string, req: ConsultRequest): void {
-  const existing = getConsultRequests(parentId);
-  const idx = existing.findIndex((r) => r.id === req.id);
-  if (idx >= 0) existing[idx] = req;
-  else existing.unshift(req);
-  localStorage.setItem(lsKey("consult_requests", parentId), JSON.stringify(existing));
+export function saveConsultRequest(_parentId: string, _req: ConsultRequest): void {
+  // Persistence will be managed via Supabase in Phase 1
 }
 
-export function updateConsultStatus(parentId: string, consultId: string, status: ConsultStatus): void {
-  const reqs = getConsultRequests(parentId);
-  const req = reqs.find((r) => r.id === consultId);
-  if (req) {
-    req.status = status;
-    req.updatedAt = new Date().toISOString();
-    if (status === "completed") req.completedAt = new Date().toISOString();
-    localStorage.setItem(lsKey("consult_requests", parentId), JSON.stringify(reqs));
-  }
+export function updateConsultStatus(_parentId: string, _consultId: string, _status: ConsultStatus): void {
+  // Persistence will be managed via Supabase in Phase 1
 }
 
-// ------- CONSULT NOTES -------
-export function getConsultNotes(parentId: string): ConsultNote[] {
-  try {
-    const raw = localStorage.getItem(lsKey("consult_notes", parentId));
-    if (raw) return JSON.parse(raw) as ConsultNote[];
-  } catch {}
+export function getConsultNotes(_parentId: string): ConsultNote[] {
   return [];
 }
 
-export function saveConsultNote(parentId: string, note: ConsultNote): void {
-  const existing = getConsultNotes(parentId);
-  existing.unshift(note);
-  localStorage.setItem(lsKey("consult_notes", parentId), JSON.stringify(existing));
+export function saveConsultNote(_parentId: string, _note: ConsultNote): void {
+  // Persistence will be managed via Supabase in Phase 1
 }
 
-// ------- FOLLOW-UP TASKS -------
-export function getFollowUpTasks(parentId: string): FollowUpTask[] {
-  try {
-    const raw = localStorage.getItem(lsKey("followup_tasks", parentId));
-    if (raw) return JSON.parse(raw) as FollowUpTask[];
-  } catch {}
+export function getFollowUpTasks(_parentId: string): FollowUpTask[] {
   return [];
 }
 
-export function saveFollowUpTask(parentId: string, task: FollowUpTask): void {
-  const existing = getFollowUpTasks(parentId);
-  const idx = existing.findIndex((t) => t.id === task.id);
-  if (idx >= 0) existing[idx] = task;
-  else existing.unshift(task);
-  localStorage.setItem(lsKey("followup_tasks", parentId), JSON.stringify(existing));
+export function saveFollowUpTask(_parentId: string, _task: FollowUpTask): void {
+  // Persistence will be managed via Supabase in Phase 1
 }
 
-export function toggleFollowUpTask(parentId: string, taskId: string): void {
-  const tasks = getFollowUpTasks(parentId);
-  const t = tasks.find((t) => t.id === taskId);
-  if (t) {
-    t.isDone = !t.isDone;
-    localStorage.setItem(lsKey("followup_tasks", parentId), JSON.stringify(tasks));
-  }
+export function toggleFollowUpTask(_parentId: string, _taskId: string): void {
+  // Persistence will be managed via Supabase in Phase 1
 }
 
-// ------- DOCTOR BRIEF GENERATOR (rule-based, no Gemini) -------
+// ------- DOCTOR BRIEF GENERATOR (Deterministic Rule Engine) -------
 export function generateDoctorBrief(
   parentId: string,
   parentName: string,
@@ -328,28 +281,6 @@ export function generateDoctorBrief(
     : "Care baseline not yet established. Stage A assessment incomplete.";
 
   const missedTasks: string[] = [];
-  const activeMeds = medications.filter(m => m && m.is_active !== false);
-  
-  for (let i = 0; i < 7; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
-    const logKey = `parents_health_med_log_${dateStr}_${parentId}`;
-    const fallbackLogKey = `parents_health_med_log_${dateStr}`;
-    const cachedStr = localStorage.getItem(logKey) || localStorage.getItem(fallbackLogKey);
-    if (cachedStr) {
-      try {
-        const cached = JSON.parse(cachedStr);
-        activeMeds.forEach(m => {
-          const log = cached.find((c: any) => c.id === m.id || c.medication_id === m.id);
-          if (log && log.taken === false) {
-            const dayName = d.toLocaleDateString("en-US", { weekday: 'short' });
-            missedTasks.push(`Missed ${m.name || m.med_name} on ${dayName} (${dateStr})`);
-          }
-        });
-      } catch (e) {}
-    }
-  }
 
   const abnormalBiomarkers: string[] = [];
   if (labReports && labReports.length > 0) {
@@ -392,18 +323,12 @@ export function generateDoctorBrief(
     questionsToAsk: questionsToAsk as string[],
     caregiverNotes: "",
     disclaimer:
-      "⚠️ This brief is prepared for discussion with a registered medical practitioner and is NOT medical advice. It is generated from sandbox data for care coordination purposes only.",
+      "⚠️ This brief is prepared for discussion with a registered medical practitioner and is NOT medical advice. It is generated for care coordination purposes only.",
   };
 
-  // Persist
-  localStorage.setItem(lsKey("doctor_brief", parentId), JSON.stringify(brief));
   return brief;
 }
 
-export function getLastDoctorBrief(parentId: string): DoctorBrief | null {
-  try {
-    const raw = localStorage.getItem(lsKey("doctor_brief", parentId));
-    if (raw) return JSON.parse(raw) as DoctorBrief;
-  } catch {}
+export function getLastDoctorBrief(_parentId: string): DoctorBrief | null {
   return null;
 }

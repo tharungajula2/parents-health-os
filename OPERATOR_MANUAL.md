@@ -65,7 +65,7 @@ Open your terminal (PowerShell, Command Prompt, or Bash) and run the following c
 3.  **Configure Environment Variables:**
     Create a file in the project root named `.env.local` and add your Google Gemini API key:
     ```bash
-    NEXT_PUBLIC_GEMINI_API_KEY=your_actual_gemini_api_key_here
+    GEMINI_API_KEY=your_actual_gemini_api_key_here
     ```
     *Note: If no Gemini key is provided, the application will fallback to high-fidelity mocks for lab report analysis, ensuring the demo still functions.*
 
@@ -455,7 +455,8 @@ When transitioning the console from local sandbox mode to a live database, follo
 2.  Uncomment and fill out the connection variables:
     ```bash
     NEXT_PUBLIC_SUPABASE_URL=https://your-parents-health-os-ref.supabase.co
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key_here
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_actual_supabase_publishable_key_here
+    SUPABASE_SECRET_KEY=your_actual_supabase_secret_key_here
     ```
 3.  Verify the connection: Start the application (`npm run dev`) and open the console. The settings panel should update from *Local Sandbox* to *Connected* or *Cloud Synchronized*.
 4.  Run a final build check before deployment:

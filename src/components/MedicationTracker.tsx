@@ -44,11 +44,12 @@ interface DailyLog {
 }
 
 interface MedicationTrackerProps {
-    onTriggerCall?: () => void;
     onNavigate?: (view: string) => void;
 }
 
-export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrackerProps) {
+
+
+export function MedicationTracker({ onNavigate }: MedicationTrackerProps) {
     const { showToast } = useToast();
     const { 
         isSupabaseEnabled, 
@@ -100,39 +101,13 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                 })
                 .filter(Boolean);
 
-            const pId = activeParent?.id || "sandbox-parent-id";
-            const logKey = `parents_health_med_log_${viewingDate}_${pId}`;
-            const fallbackLogKey = `parents_health_med_log_${viewingDate}`;
-            let cachedLocalcompletions: any[] = [];
-            try {
-                const str = localStorage.getItem(logKey) || localStorage.getItem(fallbackLogKey);
-                if (str) cachedLocalcompletions = JSON.parse(str);
-            } catch (e) {}
-            if (!Array.isArray(cachedLocalcompletions)) cachedLocalcompletions = [];
-            const localTakenTasks = cachedLocalcompletions.filter((c: any) => c.taken).map((c: any) => c.id);
-
             const dayVital = dbVitals.find(v => {
                 const vitalDate = v.measured_at?.split("T")[0] || v.created_at?.split("T")[0];
                 return vitalDate === viewingDate;
             });
 
-            // Also check standard file daily logs
-            const key = `parents_health_daily_log_${viewingDate}_${pId}`;
-            const fallbackKey = `parents_health_daily_log_${viewingDate}`;
-            let fileStored: any = { meds: [] };
-            try {
-                const str = localStorage.getItem(key) || localStorage.getItem(fallbackKey);
-                if (str) fileStored = JSON.parse(str);
-            } catch (e) {}
-            if (!fileStored || !Array.isArray(fileStored.meds)) {
-                fileStored = { meds: [] };
-            }
-            const storedTasks = fileStored.meds || [];
-
-            const combinedTasks = Array.from(new Set([...takenMedNames, ...localTakenTasks, ...storedTasks]));
-
             return {
-                meds: combinedTasks,
+                meds: takenMedNames,
                 vitals: {
                     bpSys: dayVital?.bp_sys || undefined,
                     bpDia: dayVital?.bp_dia || undefined,
@@ -152,20 +127,8 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
 
     // Extract Answers
     const answers = useMemo(() => {
-        let parsed: any = {};
-        if (isSupabaseEnabled && activeParent) {
-            const scorecardObj = activeParent.scorecard_answers as any;
-            parsed = scorecardObj?.answers || {};
-        } else {
-            const saved = localStorage.getItem("parents_health_assessment_data_v2");
-            if (saved) {
-                try {
-                    parsed = JSON.parse(saved).answers || {};
-                } catch(e){}
-            }
-        }
-        return parsed;
-    }, [isSupabaseEnabled, activeParent]);
+        return (activeParent?.scorecard_answers as any)?.answers || {};
+    }, [activeParent]);
 
     // Baseline guard completion check
     const isBaselineSetupCompleted = useMemo(() => {
@@ -202,91 +165,9 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
         const today = new Date().toISOString().split('T')[0];
         setTodayKey(today);
         if (!viewingDate) setViewingDate(today);
+    }, [viewingDate]);
 
-        // Load Meds
-        const pId = activeParent?.id || "sandbox-parent-id";
-        const savedMeds = localStorage.getItem(`parents_health_active_meds_${pId}`) || localStorage.getItem("parents_health_active_meds");
-        if (savedMeds) {
-            try {
-                const parsed = JSON.parse(savedMeds);
-                const migrated = parsed.map((m: any) => ({
-                    ...m,
-                    status: m.status || "Active",
-                    type: m.type || "Chronic"
-                }));
-                setLocalMeds(migrated);
-            } catch (e) {}
-        } else {
-            // Seed initial defaults if none exist
-            if (pId === "sandbox-parent-id") {
-                setLocalMeds([
-                    { name: "Glycomet 0.5mg", dosage: "500mg", timing: "Before Breakfast", instructions: "Before Breakfast", status: "Active", type: "Chronic", slots: ["Before Breakfast"], relationToFood: "After Food" },
-                    { name: "Levolin Rotacaps", dosage: "100mcg", timing: "Before Sleep", instructions: "Daily - Before Sleep", status: "Active", type: "Chronic", slots: ["Before Sleep"], relationToFood: "After Food" },
-                    { name: "Combihale FF 100", dosage: "100mg", timing: "Before Sleep", instructions: "Daily - Before Sleep", status: "Active", type: "Chronic", slots: ["Before Sleep"], relationToFood: "After Food" },
-                    { name: "Teczine", dosage: "10mg", timing: "After 6 PM", instructions: "After 6 PM (Alt Days)", status: "Active", type: "Chronic", slots: ["After 6 PM"], relationToFood: "After Food" },
-                    { name: "Excela Max Lotion", dosage: "Apply Generously", timing: "Morning & Night", instructions: "For Hand Eczema", status: "Active", type: "Chronic", slots: ["Morning & Night"], relationToFood: "After Food" }
-                ]);
-            } else {
-                setLocalMeds([
-                    { name: "Amlodipine", dosage: "5mg", timing: "Evening", instructions: "Pre Meals", status: "Active", type: "Chronic", slots: ["Evening"], relationToFood: "After Food" },
-                    { name: "Multi-Vitamin", dosage: "1 Tab", timing: "Morning", instructions: "Post breakfast", status: "Active", type: "Chronic", slots: ["Morning"], relationToFood: "After Food" }
-                ]);
-            }
-        }
-
-        loadHistoryContext();
-    }, [activeParent?.id]);
-
-    // Load active log when date changes
-    useEffect(() => {
-        if (!viewingDate) return;
-        loadDailyLog(viewingDate).then(log => {
-            setLocalActiveLog(log);
-            setStatsInput(log.vitals || {});
-            if (log.habits) {
-                setHabitsInput({
-                    mealPlan: log.habits.mealPlan || false,
-                    activity: log.habits.activity?.toString() || "",
-                    hydration: log.habits.hydration?.toString() || ""
-                });
-            } else {
-                setHabitsInput({ mealPlan: false, activity: "", hydration: "" });
-            }
-        });
-    }, [viewingDate, historyData, activeParent?.id]);
-
-    const getLogKey = (date: string) => {
-        const pId = activeParent?.id || "sandbox-parent-id";
-        return `parents_health_daily_log_${date}_${pId}`;
-    };
-
-    const loadDailyLog = async (date: string): Promise<DailyLog> => {
-        const key = getLogKey(date);
-        const stored = localStorage.getItem(key);
-        if (stored) return JSON.parse(stored);
-        if (historyData[date]) return historyData[date];
-        return { meds: [], vitals: {} };
-    };
-
-    const loadHistoryContext = () => {
-        const cache: Record<string, DailyLog> = {};
-        const pId = activeParent?.id || "sandbox-parent-id";
-        const prefix = `parents_health_daily_log_`;
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith(prefix) && key.endsWith(`_${pId}`)) {
-                const date = key.substring(prefix.length, key.length - `_${pId}`.length);
-                try {
-                    cache[date] = JSON.parse(localStorage.getItem(key) || "{}");
-                } catch (e) {}
-            }
-        }
-        setHistoryData(cache);
-    };
-
-    const saveLog = (date: string, log: DailyLog) => {
-        localStorage.setItem(getLogKey(date), JSON.stringify(log));
-        setHistoryData(prev => ({ ...prev, [date]: log }));
+    const saveLog = (_date: string, log: DailyLog) => {
         setLocalActiveLog(log);
     };
 
@@ -319,46 +200,14 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                 }
             }
 
-            // Sync other tasks via LocalStorage checklist
-            const pId = activeParent?.id || "sandbox-parent-id";
-            const logKey = `parents_health_med_log_${viewingDate}_${pId}`;
-            const fallbackLogKey = `parents_health_med_log_${viewingDate}`;
-            let cached: any[] = [];
-            try {
-                const str = localStorage.getItem(logKey) || localStorage.getItem(fallbackLogKey);
-                if (str) cached = JSON.parse(str);
-            } catch (e) {}
-            if (!Array.isArray(cached)) cached = [];
-
-            const idx = cached.findIndex((c: any) => c.id === taskId);
-            if (idx > -1) {
-                cached[idx].taken = !isTaken;
-            } else {
-                cached.push({ id: taskId, taken: !isTaken });
-            }
-            localStorage.setItem(logKey, JSON.stringify(cached));
-            localStorage.setItem(fallbackLogKey, JSON.stringify(cached));
-
-            // Also mirror to active file logs to trigger rendering update
-            const fileKey = getLogKey(viewingDate);
-            let localLog: any = { meds: [], vitals: {} };
-            try {
-                const str = localStorage.getItem(fileKey);
-                if (str) localLog = JSON.parse(str);
-            } catch (e) {}
-            if (!localLog || !Array.isArray(localLog.meds)) {
-                localLog = { meds: [], vitals: {} };
-            }
-            let updatedMeds = localLog.meds || [];
+            let updatedMeds = activeLog.meds || [];
             if (isTaken) {
                 updatedMeds = updatedMeds.filter((m: string) => m !== taskId);
             } else {
                 updatedMeds = [...updatedMeds, taskId];
             }
-            localLog.meds = updatedMeds;
-            localStorage.setItem(fileKey, JSON.stringify(localLog));
-            setLocalActiveLog(localLog);
-            
+            const updatedLog = { ...activeLog, meds: updatedMeds };
+            setLocalActiveLog(updatedLog);
             showToast(`Task checklist updated successfully`, "success");
             refreshData();
         } else {
@@ -400,9 +249,6 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
 
     const saveLocalMedsList = (newMeds: Medication[]) => {
         setLocalMeds(newMeds);
-        const pId = activeParent?.id || "sandbox-parent-id";
-        localStorage.setItem(`parents_health_active_meds_${pId}`, JSON.stringify(newMeds));
-        localStorage.setItem("parents_health_active_meds", JSON.stringify(newMeds));
     };
 
     const changeDate = (days: number) => {
@@ -498,35 +344,6 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                             className="px-10 py-5 bg-[#0E5E5A] hover:bg-[#0c4e4b] text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all flex items-center gap-3 cursor-pointer"
                         >
                             <Sparkles size={14} /> Begin Health Assessment
-                        </button>
-                        
-                        <button
-                            onClick={() => {
-                                // Inject a minimal baseline in localStorage to bypass
-                                const sampleData = {
-                                    answers: {
-                                        relation: "Mother",
-                                        age: "68",
-                                        language: "Hindi",
-                                        conditions: ["Hypertension"],
-                                        mobility: "Independent",
-                                        stageA_completed: true
-                                    },
-                                    scores: {
-                                        total: 45,
-                                        riskLevel: "Low Risk",
-                                        categories: []
-                                    }
-                                };
-                                const pId = activeParent?.id || "sandbox-parent-id";
-                                localStorage.setItem(`parents_health_assessment_data_v2_${pId}`, JSON.stringify(sampleData));
-                                localStorage.setItem("parents_health_assessment_data_v2", JSON.stringify(sampleData));
-                                showToast("Injected quick demo profile. Refreshing...", "success");
-                                setTimeout(() => window.location.reload(), 1000);
-                            }}
-                            className="px-8 py-5 bg-white/5 border border-white/5 text-slate-500 hover:text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
-                        >
-                            Quick Bypass (Demo Profile)
                         </button>
                     </div>
                 </motion.div>
@@ -645,30 +462,22 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                     {[
                         { id: "daily", label: "Daily Schedule", icon: Check },
                         { id: "calendar", label: "History Logs", icon: CalendarIcon },
-                        { id: "manage", label: "Medication List", icon: pillIcon(meds.length) }
+                        { id: "manage", label: "Medication List", icon: Pill }
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-4 px-4 md:px-10 py-4 md:py-5 rounded-2xl text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all duration-700 font-[family-name:var(--font-outfit)] cursor-pointer ${activeTab === tab.id
-                                ? "bg-[#0E5E5A] text-white shadow-2xl scale-[1.02]"
-                                : "text-slate-500 hover:text-[#0E5E5A] hover:bg-[#0E5E5A]/5"
-                                }`}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-4 px-4 md:px-10 py-4 md:py-5 rounded-2xl text-[9px] md:text-[10px] font-bold uppercase tracking-widest transition-all duration-700 font-[family-name:var(--font-outfit)] cursor-pointer ${
+                                activeTab === tab.id
+                                    ? "bg-[#0E5E5A] text-white shadow-2xl scale-[1.02]"
+                                    : "text-slate-500 hover:text-[#0E5E5A] hover:bg-[#0E5E5A]/5"
+                            }`}
                         >
                             <tab.icon size={16} strokeWidth={activeTab === tab.id ? 2.5 : 1.5} className={activeTab === tab.id ? "text-white" : "text-[#E05E1B] opacity-80"} />
                             <span className="truncate">{tab.label}</span>
                         </button>
                     ))}
                 </div>
-
-                {/* Call Trigger */}
-                <button 
-                    onClick={onTriggerCall} 
-                    className="flex data-label !text-[8px] md:!text-[9px] !text-slate-500 hover:!text-cyan-400 gap-3 md:gap-4 items-center px-6 md:px-8 py-3 bg-white/[0.03] border border-white/5 rounded-full transition-all hover:bg-white/[0.06] active:scale-95"
-                >
-                    <Clock size={14} strokeWidth={1.5} className="opacity-60" /> 
-                    <span>Daily Care Reminder Call</span>
-                </button>
             </div>
 
             {/* TAB 1: DAILY CARE PLAN */}
@@ -1229,15 +1038,6 @@ export function MedicationTracker({ onTriggerCall, onNavigate }: MedicationTrack
                     </div>
                 </div>
             )}
-        </div>
-    );
-}
-
-function pillIcon(count: number) {
-    return ({ size }: { size: number }) => (
-        <div className="relative">
-            <Pill size={size} />
-            {count > 0 && <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-orange-500 text-[8px] text-white">{count}</span>}
         </div>
     );
 }

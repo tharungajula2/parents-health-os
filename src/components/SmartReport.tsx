@@ -98,71 +98,18 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
 
     // Load Context & History when activeParent changes
     useEffect(() => {
-        if (!parentId) return;
+        if (!activeParent) return;
 
-        // 1. Clinical Context (Gate)
-        const pId = parentId;
-        const savedData = localStorage.getItem(`parents_health_assessment_data_v2_${pId}`) || localStorage.getItem("parents_health_assessment_data_v2");
-        if (savedData) {
-            try {
-                const parsed = JSON.parse(savedData);
-                const answers = parsed.answers || {};
-                if (answers.relation || answers.age || answers.stageA_completed || Object.keys(answers).length >= 5) {
-                    setLocalIsLocked(false);
-                    const contextSummary = `
-                Scores: ${JSON.stringify(parsed.scores?.categories)}
-                Total Risk: ${parsed.scores?.riskLevel} (${parsed.scores?.total}/175)
-                User Answers: ${JSON.stringify(parsed.answers)}
-              `;
-                    setLocalContext(contextSummary);
-                } else {
-                    setLocalIsLocked(true);
-                }
-            } catch (e) {
-                setLocalContext("Assessment data corrupted.");
-                setLocalIsLocked(false);
-            }
+        const answers = (activeParent.scorecard_answers as any)?.answers || {};
+        if (answers.relation || answers.age || answers.stageA_completed || Object.keys(answers).length >= 5) {
+            setLocalIsLocked(false);
+            setLocalContext(`Scores: ${JSON.stringify((activeParent.scorecard_answers as any)?.scores)}`);
         } else {
-            setLocalIsLocked(true);
+            setLocalIsLocked(false);
         }
 
-        // 2. Report History (Memory)
-        const savedHistory = localStorage.getItem(`parents_health_lab_reports_${pId}`) || localStorage.getItem(`parents_health_history_${pId}`) || localStorage.getItem("parents_health_history");
-        if (savedHistory) {
-            try {
-                const parsedHist = JSON.parse(savedHistory);
-                setLocalHistory(Array.isArray(parsedHist) ? parsedHist : []);
-            } catch (e) { console.error("History parse error", e); }
-        } else {
-            setLocalHistory([]);
-        }
-
-        // 3. Holistic Summary Persistence
-        const savedSummary = localStorage.getItem(`parents_health_latest_summary_${pId}`) || localStorage.getItem("parents_health_latest_summary");
-        if (savedSummary) {
-            try {
-                const summaryData = JSON.parse(savedSummary);
-                setAnalysisData(summaryData);
-                setStatus("done");
-            } catch (e) { 
-                // Unstructured fallback
-                setAnalysisData({
-                    reportType: "Lab Report",
-                    summaryForChild: savedSummary,
-                    summaryForParent: "Your medical record is synthesized safely. Keep up your active care routines!",
-                    keyFindings: [savedSummary],
-                    biomarkers: [],
-                    medicines: [],
-                    possibleQuestionsForDoctor: ["Would you review the parameters from this report in detail?"],
-                    redFlags: []
-                });
-                setStatus("done");
-            }
-        } else {
-            setAnalysisData(null);
-            setStatus("idle");
-        }
-    }, [parentId]);
+        setLocalHistory(labReports || []);
+    }, [activeParent?.id, labReports]);
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         const selectedFile = acceptedFiles[0];
@@ -236,7 +183,6 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                 } else {
                     const updatedHistory = [newHistoryItem, ...localHistory];
                     setLocalHistory(updatedHistory);
-                    localStorage.setItem("parents_health_history", JSON.stringify(updatedHistory));
                 }
 
                 // If medicines were extracted, prepare sync selections
@@ -319,7 +265,6 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
             } else {
                 const updated = localHistory.filter((_, i) => i !== index);
                 setLocalHistory(updated);
-                localStorage.setItem("parents_health_history", JSON.stringify(updated));
             }
             if (activeTab === "current" && analysisData === item) {
                 setAnalysisData(null);
@@ -331,7 +276,6 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
 
     const clearAllHistory = () => {
         if (confirm("Are you sure you want to clear your local diagnostics history archive? This cannot be undone.")) {
-            localStorage.removeItem("parents_health_history");
             setLocalHistory([]);
             setAnalysisData(null);
             setMedsToSync(null);
@@ -594,7 +538,7 @@ export function SmartReport({ onNavigate }: SmartReportProps) {
                                 if (response.ok) {
                                     setAnalysisData({ ...data.result, isSummary: true });
                                     setStatus("done");
-                                    localStorage.setItem("parents_health_latest_summary", JSON.stringify({ ...data.result, isSummary: true }));
+                                    // Holistic Summary calculated
                                 } else {
                                     setAnalysisData({ error: "Holistic sync failed." });
                                     setStatus("error");

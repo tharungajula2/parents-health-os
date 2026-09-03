@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Stethoscope, FileText, BookOpen, Users, Lock, ArrowRight, Activity, Bell, MessageCircle, Calendar, AlertTriangle, ShieldCheck, Heart, UserPlus, LogIn, Loader2, Sparkles, LayoutDashboard, Smartphone } from "lucide-react";
 import Link from "next/link";
-import { loadDemoData } from "../utils/demoData";
 import { useParentsAuth } from "../lib/supabase/context";
 
 export default function Home() {
@@ -37,30 +36,7 @@ export default function Home() {
   });
   const [consentChecked, setConsentChecked] = useState(false);
 
-  const simulateDemoAutofill = () => {
-    const demoEmail = "ramesh.dev@familycare.in";
-    const demoPassword = "CareDemo@2026";
-    setEmail("");
-    setPassword("");
-    let emailIndex = 0;
-    const typeEmail = setInterval(() => {
-      if (emailIndex < demoEmail.length) {
-        setEmail(demoEmail.substring(0, emailIndex + 1));
-        emailIndex++;
-      } else {
-        clearInterval(typeEmail);
-        let passwordIndex = 0;
-        const typePassword = setInterval(() => {
-          if (passwordIndex < demoPassword.length) {
-            setPassword(demoPassword.substring(0, passwordIndex + 1));
-            passwordIndex++;
-          } else {
-            clearInterval(typePassword);
-          }
-        }, 30);
-      }
-    }, 25);
-  };
+
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,14 +200,7 @@ export default function Home() {
           </div>
 
           <div className="glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-xl bg-white/70 backdrop-blur-md">
-            {!isSupabaseEnabled && (
-              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-3 text-[11px] text-amber-800 font-light leading-relaxed">
-                <AlertTriangle size={18} className="shrink-0 text-amber-600" />
-                <div>
-                  <span className="font-bold">Sandbox Environment Active:</span> Any login details will bypass auth and load standalone demo state immediately.
-                </div>
-              </div>
-            )}
+
 
             {authError && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex gap-3 text-[11px] text-red-800 font-light">
@@ -268,17 +237,7 @@ export default function Home() {
                 </>
               )}
 
-              {mode === "login" && (
-                <div className="flex justify-end -mb-1">
-                  <button
-                    type="button"
-                    onClick={simulateDemoAutofill}
-                    className="px-3.5 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200/50 text-[#0E5E5A] font-bold text-[9px] uppercase tracking-wider transition-all flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-sm"
-                  >
-                    <Play size={10} className="fill-[#0E5E5A] text-[#0E5E5A]" /> Use Demo Staff
-                  </button>
-                </div>
-              )}
+
 
               <div>
                 <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Email Address</label>
@@ -510,7 +469,6 @@ import { SmartReport } from "../components/SmartReport";
 import { ClinicalEngine } from "../components/ClinicalEngine";
 import { MedicationTracker } from "../components/MedicationTracker";
 import { CareTeam } from "../components/CareTeam";
-import { WhatsAppDemo } from "../components/WhatsAppDemo";
 import { HeaderIcons } from "../components/HeaderIcons";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { ToastProvider, useToast } from "../components/ui/Toast";
@@ -539,7 +497,6 @@ import {
   Save
 } from "lucide-react";
 import { ClinicHub } from "../components/ClinicHub";
-import { CallOverlay } from "../components/CallOverlay";
 import { SettingsAndBackup } from "../components/SettingsAndBackup";
 import { generateCarePlan } from "../utils/carePlanEngine";
 import { 
@@ -580,12 +537,8 @@ function DashboardContent() {
   } = useParentsAuth();
   
   const [activeView, setActiveView] = useState("dashboard");
-  const [isCallActive, setIsCallActive] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isParentDropdownOpen, setIsParentDropdownOpen] = useState(false);
-
-  // App Mode State (Demo vs Personal)
-  const [appMode, setAppMode] = useState<"demo" | "personal">("demo");
   
   // Modals / Quick Actions State
   const [showVitalsModal, setShowVitalsModal] = useState(false);
@@ -638,29 +591,9 @@ function DashboardContent() {
 
   useEffect(() => {
     if (activeParent) {
-      const savedSetup = localStorage.getItem(`parents_health_setup_chk_${activeParent.id}`);
-      if (savedSetup) {
-        try { setSetupChecklistManual(JSON.parse(savedSetup)); } catch (e) {}
-      } else {
-        setSetupChecklistManual({});
-      }
-      
-      const savedRoutine = localStorage.getItem(`parents_health_routine_chk_${activeParent.id}`);
-      if (savedRoutine) {
-        try { setRoutineChecklist(JSON.parse(savedRoutine)); } catch (e) {}
-      } else {
-        setRoutineChecklist({});
-      }
-
-      let savedPriority = localStorage.getItem(`parents_health_priority_${activeParent.id}`) as any;
-      if (savedPriority === "Critical") {
-        savedPriority = "Urgent Follow-up";
-      }
-      if (savedPriority) {
-        setCarePriority(savedPriority);
-      } else {
-        setCarePriority("Stable");
-      }
+      setSetupChecklistManual({});
+      setRoutineChecklist({});
+      setCarePriority("Stable");
     }
   }, [activeParent?.id]);
 
@@ -668,7 +601,6 @@ function DashboardContent() {
     if (!activeParent) return;
     const next = { ...setupChecklistManual, [key]: !setupChecklistManual[key] };
     setSetupChecklistManual(next);
-    localStorage.setItem(`parents_health_setup_chk_${activeParent.id}`, JSON.stringify(next));
     showToast("✅ Onboarding checklist status updated.", "success");
   };
 
@@ -676,34 +608,16 @@ function DashboardContent() {
     if (!activeParent) return;
     const next = { ...routineChecklist, [key]: !routineChecklist[key] };
     setRoutineChecklist(next);
-    localStorage.setItem(`parents_health_routine_chk_${activeParent.id}`, JSON.stringify(next));
     showToast("📝 Care routine checklist updated.", "success");
   };
 
   const handlePriorityChange = (priority: "Stable" | "Watch" | "Urgent Follow-up") => {
     if (!activeParent) return;
     setCarePriority(priority);
-    localStorage.setItem(`parents_health_priority_${activeParent.id}`, priority);
     showToast(`⚠️ Care Priority updated to ${priority}.`, "info");
   };
 
-  useEffect(() => {
-    const saved = localStorage.getItem("parents_health_mode") as "demo" | "personal";
-    if (saved) {
-      setAppMode(saved);
-    }
-  }, []);
-
-  const loadObservations = (pId: string) => {
-    if (typeof window === "undefined") return [];
-    const raw = localStorage.getItem(`parents_health_observations_${pId}`);
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        return [];
-      }
-    }
+  const loadObservations = (_pId: string) => {
     return [];
   };
 
@@ -753,10 +667,6 @@ function DashboardContent() {
     });
     
     if (result.success) {
-      if (vitalInput.notes.trim() && result.data?.id) {
-        localStorage.setItem(`parents_health_vital_notes_${result.data.id}`, vitalInput.notes.trim());
-      }
-      
       setVitalInput({
         bpSys: "",
         bpDia: "",
@@ -786,7 +696,6 @@ function DashboardContent() {
     };
     
     const updated = [newObs, ...current];
-    localStorage.setItem(`parents_health_observations_${pId}`, JSON.stringify(updated));
     setObservations(updated);
     setObservationInput({ type: "General", severity: "Low", note: "" });
     setShowObservationModal(false);
@@ -861,13 +770,7 @@ function DashboardContent() {
     if (!activeParent) return;
     
     const pId = activeParent.id;
-    const savedAssessment = localStorage.getItem(`parents_health_assessment_data_v2_${pId}`) || localStorage.getItem("parents_health_assessment_data_v2");
-    let scAnswers: any = {};
-    if (savedAssessment) {
-      try {
-        scAnswers = JSON.parse(savedAssessment).answers || {};
-      } catch (e) {}
-    }
+    const scAnswers: any = (activeParent.scorecard_answers as any)?.answers || {};
     
     const brief = generateDoctorBrief(
       pId,
@@ -912,23 +815,9 @@ function DashboardContent() {
 
 
   const handleSystemReset = () => {
-    if (confirm("⚠️ DANGER: Wipe Parents-Health's memory? This is irreversible.")) {
-      if (confirm("Final confirmation required.")) {
-        localStorage.removeItem("parents_health_auth_v2");
-        localStorage.removeItem("parents_health_assessment_data_v2");
-        localStorage.removeItem("parents_health_history");
-        localStorage.removeItem("parents_health_latest_summary");
-        localStorage.removeItem("parents_health_active_meds");
-        localStorage.removeItem("parents_health_user_name");
-        localStorage.removeItem("parents_health_user_gender");
-        localStorage.removeItem("parents_health_user_age");
-        Object.keys(localStorage).forEach((key) => {
-          if (key.startsWith("parents_health_med_log_") || key.startsWith("parents_health_daily_log_")) {
-            localStorage.removeItem(key);
-          }
-        });
-        window.location.reload();
-      }
+    if (confirm("Reset current session?")) {
+      signOut();
+      window.location.reload();
     }
   };
 
@@ -1067,7 +956,6 @@ function DashboardContent() {
               <NavItem icon={<UserPlus size={18} strokeWidth={1.5} />} label="First Family Intake" active={activeView === "intake"} onClick={() => { setActiveView("intake"); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<Activity size={18} strokeWidth={1.5} />} label="Baseline Health Camp" active={activeView === "camp"} onClick={() => { setActiveView("camp"); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<Stethoscope size={18} strokeWidth={1.5} />} label="Family Records" active={activeView === "clinical"} onClick={() => { setActiveView("clinical"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<MessageCircle size={18} strokeWidth={1.5} />} label="WhatsApp Automation" active={activeView === "whatsapp"} onClick={() => { setActiveView("whatsapp"); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<BookOpen size={18} strokeWidth={1.5} />} label="Care Logs" active={activeView === "medicines"} onClick={() => { setActiveView("medicines"); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<Briefcase size={18} strokeWidth={1.5} />} label="Care Operations Board" active={activeView === "coordinator"} onClick={() => { setActiveView("coordinator"); setIsMobileMenuOpen(false); }} />
               <NavItem icon={<FileText size={18} strokeWidth={1.5} />} label="Reports & Records" active={activeView === "smart-reports"} onClick={() => { setActiveView("smart-reports"); setIsMobileMenuOpen(false); }} />
@@ -1183,80 +1071,6 @@ function DashboardContent() {
 
           {activeView === "dashboard" && (
             <div className="space-y-8 animate-fadeIn">
-              
-              {/* Sync Resilience & Offline Status Bar (Phase 2B.1) */}
-              <div className="p-4 md:p-5 rounded-3xl bg-white border border-[#e2ded5] shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A] shrink-0">
-                    <Database size={18} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] uppercase tracking-wider">
-                        Sandbox Data Vault
-                      </h4>
-                      <div className="flex items-center gap-1">
-                        <span className="h-2 w-2 rounded-full bg-teal-500 animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.6)]" />
-                        <span className="text-[9px] font-bold text-teal-600 uppercase tracking-widest">Active</span>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-slate-500 font-light mt-0.5 leading-none">
-                      Local-first sandbox // Saved securely in this browser cache
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 xl:gap-8 text-xs text-slate-600 font-[family-name:var(--font-inter)]">
-                  <div className="space-y-0.5">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Vault Integrity</span>
-                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
-                      <Check size={12} className="text-[#0E5E5A] stroke-[3]" /> Encrypted Client Buffer
-                    </span>
-                  </div>
-
-                  <div className="space-y-0.5">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Last Saved</span>
-                    <span className="text-[11px] font-semibold text-slate-700">
-                      {(() => {
-                        if (lastSaved === "Never") return "Never";
-                        try {
-                          const d = new Date(lastSaved);
-                          if (isNaN(d.getTime())) return lastSaved;
-                          return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " // " + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                        } catch (e) {
-                          return lastSaved;
-                        }
-                      })()}
-                    </span>
-                  </div>
-
-                  <div className="space-y-0.5">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Pending Changes</span>
-                    <span className="text-[11px] font-semibold text-slate-700">
-                      {pendingChanges === 0 ? "None (In Sync)" : `${pendingChanges} unsaved edits`}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-100 text-[#E05E1B] text-[9px] font-bold uppercase tracking-wider font-mono">
-                      <CloudOff size={10} className="stroke-[2.5]" /> Sync Status // Off
-                    </span>
-
-                    {pendingChanges > 0 && (
-                      <button
-                        onClick={() => {
-                          resetLocalPendingChanges();
-                          showToast("🔄 Simulated backup sync complete. Local pending changes updated!", "success");
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl text-[9px] font-extrabold uppercase tracking-widest text-[#0E5E5A] bg-[#0E5E5A]/5 hover:bg-[#0E5E5A]/10 border border-[#0E5E5A]/10 hover:border-[#0E5E5A]/20 transition-all flex items-center gap-1.5 shadow-sm"
-                      >
-                        Simulate Sync
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
               {/* TOP STATUS AND ANAYA AI CARDS */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
@@ -1267,8 +1081,8 @@ function DashboardContent() {
                   </div>
                   <div className="relative z-10 space-y-6">
                     <div className="flex items-center justify-between">
-                      <span className="data-label !text-[#E05E1B] !text-[8px] bg-orange-50 border border-orange-100 px-3 py-1 rounded-full uppercase tracking-widest font-bold">
-                        {appMode === "personal" ? "Ops Sandbox Mode" : "Demo Mode"}
+                      <span className="data-label !text-[#0E5E5A] !text-[8px] bg-teal-50 border border-teal-100 px-3 py-1 rounded-full uppercase tracking-widest font-bold">
+                        Active Console
                       </span>
                       <span className="text-slate-400 text-[10px] font-mono tracking-wider">{todayStr}</span>
                     </div>
@@ -1346,26 +1160,6 @@ function DashboardContent() {
                             {p}
                           </button>
                         ))}
-                      </div>
-                    </div>
-
-                    {/* WhatsApp Simulator Alerts Indicator */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-150 text-[10px] text-slate-600 space-y-1.5 relative z-10">
-                      <div className="flex items-center justify-between font-bold text-slate-700 uppercase tracking-wide">
-                        <span className="flex items-center gap-1.5">
-                          <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse" />
-                          WhatsApp Automation Monitor
-                        </span>
-                        <span className="text-[8px] text-teal-600 font-mono">SIM ACTIVE</span>
-                      </div>
-                      <div className="font-light leading-relaxed">
-                        {carePriority === "Urgent Follow-up" ? (
-                          <span className="text-red-655 font-semibold">🚨 URGENT FOLLOW-UP: Simulated WhatsApp dispatch triggered an escalation to child.</span>
-                        ) : carePriority === "Watch" ? (
-                          <span className="text-orange-655 font-semibold">⚠️ WATCH ADVISORY: System prepared warning logs for parent checkin report.</span>
-                        ) : (
-                          <span className="text-slate-555">✅ System monitoring normal checkin signals. All systems green.</span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -2045,10 +1839,9 @@ function DashboardContent() {
 
           {activeView === "smart-reports" && <SmartReport onNavigate={() => setActiveView("clinical")} />}
           {activeView === "clinical" && <ClinicalEngine />}
-          {activeView === "medicines" && <MedicationTracker onTriggerCall={() => setIsCallActive(true)} onNavigate={setActiveView} />}
+          {activeView === "medicines" && <MedicationTracker onNavigate={setActiveView} />}
           {activeView === "care-team" && <CareTeam />}
           {activeView === "clinic-hub" && <ClinicHub />}
-          {activeView === "whatsapp" && <WhatsAppDemo />}
           {activeView === "intake" && <FamilyIntake />}
           {activeView === "camp" && <BaselineCamp />}
           {activeView === "coordinator" && <CoordinatorBoard />}
@@ -2529,11 +2322,6 @@ function DashboardContent() {
           </div>
         )}
 
-        <CallOverlay
-          isOpen={isCallActive}
-          onAccept={() => { setIsCallActive(false); setActiveView("medicines"); }}
-          onDecline={() => setIsCallActive(false)}
-        />
       </ToastProvider >
     </div >
   );

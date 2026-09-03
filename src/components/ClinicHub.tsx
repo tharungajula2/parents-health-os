@@ -44,7 +44,7 @@ export function ClinicHub() {
   const parentId = activeParent?.id || "sandbox-parent-id";
   const parentName = activeParent?.name || "Parent";
 
-  // Parent-specific Finance State (stored in localStorage)
+  // Parent-specific Finance State
   const [balance, setBalance] = useState(1250);
   
   // Appts state synced with our engine consults
@@ -67,21 +67,11 @@ export function ClinicHub() {
   // Sync data whenever parent switcher triggers
   useEffect(() => {
     if (parentId) {
-      // Sync balance
-      const cachedBal = localStorage.getItem(`parents_health_bal_${parentId}`);
-      if (cachedBal) {
-        setBalance(Number(cachedBal));
-      } else {
-        const initialBal = 1250 + Math.floor(Math.random() * 500) * 10;
-        setBalance(initialBal);
-        localStorage.setItem(`parents_health_bal_${parentId}`, String(initialBal));
-      }
-
+      setBalance(1500);
       setConsults(getConsultRequests(parentId));
       setFollowups(getFollowUpTasks(parentId));
       setDoctorBrief(getLastDoctorBrief(parentId));
 
-      // Prefill first team member from team list
       const team = getCareTeam(parentId);
       if (team.length > 0) {
         const firstDoc = team.find(m => !m.isAI) || team[0];
@@ -98,9 +88,7 @@ export function ClinicHub() {
   const handleTopUp = () => {
     showToast("Opening Secure Gateway...", "info");
     setTimeout(() => {
-      const nextBal = balance + 1000;
-      setBalance(nextBal);
-      localStorage.setItem(`parents_health_bal_${parentId}`, String(nextBal));
+      setBalance(prev => prev + 1000);
       showToast("₹1,000 added to Praan Family Wallet successfully!", "success");
     }, 1200);
   };

@@ -56,7 +56,7 @@ For full instructions, schemas, and architecture maps, please refer to the detai
    Create a `.env.local` file in the root folder to define your API keys:
    ```bash
    # Gemini API Key (Required for AI report parsing, fallback mock active if empty)
-   NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+   GEMINI_API_KEY=your_gemini_api_key_here
    ```
 
 4. **Start the local server:**
@@ -72,7 +72,8 @@ For full instructions, schemas, and architecture maps, please refer to the detai
 When you are ready to transition from sandbox mode to a live database, uncomment the variables in `.env.local`:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+SUPABASE_SECRET_KEY=your_secret_key
 ```
 Upon detection of these keys, the application automatically mounts Supabase authentication and mounts the PostgreSQL data sync engines. 
 *(Note: A startup safety check in `src/lib/supabase/client.ts` blocks any connections to the protected client `trelis-life` database to protect production resources).*
