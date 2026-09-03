@@ -3,6 +3,7 @@
 -- Migration Name: 20260903120000_create_v1_schema.sql
 -- Description: Canonical 15-Table Relational Schema
 --              - Strict FK Creation Dependency Order
+--              - Explicit Unique Constraint Naming (Prevents Auto-Name Collisions)
 --              - Profiles, Families, Members, Care Recipients, Consents
 --              - Health Documents & Untrusted AI Extractions (Server-Created)
 --              - Health Conditions, Longitudinal Observations (Nullable Actor for WhatsApp)
@@ -112,13 +113,13 @@ CREATE TABLE IF NOT EXISTS public.health_conditions (
   name text NOT NULL CHECK (char_length(trim(name)) > 0),
   status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'resolved', 'managed', 'archived')),
   notes text,
-  provenance text NOT NULL DEFAULT 'manual_entry' CHECK (provenance IN ('manual_entry', 'ai_extracted', 'doctor_diagnosed')),
+  provenance text NOT NULL DEFAULT 'manual_entry' CONSTRAINT health_conditions_provenance_allowed_check CHECK (provenance IN ('manual_entry', 'ai_extracted', 'doctor_diagnosed')),
   source_extraction_id uuid REFERENCES public.document_extractions(id) ON DELETE RESTRICT,
   verified_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   verified_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT health_conditions_provenance_check CHECK (
+  CONSTRAINT health_conditions_provenance_lineage_check CHECK (
     (provenance = 'ai_extracted' AND source_extraction_id IS NOT NULL AND verified_by IS NOT NULL AND verified_at IS NOT NULL) OR
     (provenance != 'ai_extracted' AND source_extraction_id IS NULL)
   ),
@@ -204,13 +205,13 @@ CREATE TABLE IF NOT EXISTS public.medications (
   dosage text NOT NULL CHECK (char_length(trim(dosage)) > 0),
   instructions text,
   is_active boolean NOT NULL DEFAULT true,
-  provenance text NOT NULL DEFAULT 'manual_entry' CHECK (provenance IN ('manual_entry', 'ai_extracted', 'doctor_prescribed')),
+  provenance text NOT NULL DEFAULT 'manual_entry' CONSTRAINT medications_provenance_allowed_check CHECK (provenance IN ('manual_entry', 'ai_extracted', 'doctor_prescribed')),
   source_extraction_id uuid REFERENCES public.document_extractions(id) ON DELETE RESTRICT,
   verified_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
   verified_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT medications_provenance_check CHECK (
+  CONSTRAINT medications_provenance_lineage_check CHECK (
     (provenance = 'ai_extracted' AND source_extraction_id IS NOT NULL AND verified_by IS NOT NULL AND verified_at IS NOT NULL) OR
     (provenance != 'ai_extracted' AND source_extraction_id IS NULL)
   ),
