@@ -1,249 +1,278 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { NextResponse } from "next/server";
+import { createClient as createServerClient } from "../../../lib/supabase/server";
+import { createAdminClient } from "../../../lib/supabase/admin";
 
-// Secure server-side only key
-const apiKey = process.env.GEMINI_API_KEY || "";
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
-
-// Vercel / Next.js App Router Config
 export const maxDuration = 60;
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    if (!apiKey || !genAI) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY is not configured on the server." },
+        { error: "GEMINI_API_KEY is not configured on server." },
         { status: 500 }
       );
     }
 
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-    const clinicalContext = formData.get("clinicalContext") as string || "No clinical profile available.";
-    const historyContext = formData.get("historyContext") as string || "No previous reports.";
-    const mode = formData.get("mode") as string;
-
-    // --- MODE 1: HOLISTIC SUMMARY ---
-    if (mode === "summary") {
-       let modelString = "gemini-2.5-flash";
-       let model = genAI.getGenerativeModel({ model: modelString });
-       
-       const summaryPrompt = `You are "Parents Health AI", a senior medical data analyst.
-       
-       OBJECTIVE: Generate a "Holistic Health Summary" for a patient based on their Clinical Profile and Report History.
-       
-       TONE: 
-       - Reassuring, supportive, clear, and objective.
-       - Use Simple English suitable for non-medical users (explain any technical parameters in simple terms).
-       - Never diagnose or adjust medications. Maintain absolute safety.
-       
-       INPUTS:
-       1. Clinical Profile (Assessment Scores & Answers):
-       ${clinicalContext}
-       
-       2. Report History (Past Lab/Rx Analysis):
-       ${historyContext}
-       
-       TASKS:
-       1. **Synthesize:** Combine the clinical profile risks with findings from the report history.
-       2. **Filter Noise:** Focus on relevant patterns. Ignore unrelated parameters.
-       3. **Connect the Dots:** Highlight how the reports validate or complement the clinical assessment.
-       
-       OUTPUT FORMAT: You MUST return a valid JSON object matching the following structure exactly. Do not wrap in markdown other than the JSON block:
-       \`\`\`json
-       {
-         "title": "Holistic Health Summary",
-         "patientRiskProfile": "Summary of risk profile (e.g. 'Moderate Risk Diabetic')",
-         "keyFindings": [
-           "**Finding**: Simple explanation of the finding.",
-           "**Finding 2**: Simple explanation."
-         ],
-         "trendAnalysis": "A brief paragraph describing the health trajectory. Use bold for key markers.",
-         "recommendation": "One clear, supportive care-focused recommendation."
-       }
-       \`\`\`
-       `;
-
-       let result;
-       try {
-           result = await model.generateContent(summaryPrompt);
-       } catch (error: any) {
-           console.warn(`Summary with ${modelString} failed: ${error.message}. Fallback to gemini-2.5-flash-lite.`);
-           modelString = "gemini-2.5-flash-lite";
-           model = genAI.getGenerativeModel({ model: modelString });
-           result = await model.generateContent(summaryPrompt);
-       }
-
-       const text = result.response.text();
-       
-       let jsonString = text;
-       const codeBlockMatch = /```(?:json)?\s*([\s\S]*?)\s*```/i.exec(text);
-       if (codeBlockMatch) {
-            jsonString = codeBlockMatch[1];
-       } else {
-            const firstBrace = text.indexOf('{');
-            const lastBrace = text.lastIndexOf('}');
-            if (firstBrace !== -1 && lastBrace !== -1) {
-                jsonString = text.substring(firstBrace, lastBrace + 1);
-            }
-       }
-       
-       try {
-           return NextResponse.json({ result: JSON.parse(jsonString), modelUsed: modelString });
-       } catch (e) {
-           return NextResponse.json({ error: "Failed to parse Summary JSON", raw: text }, { status: 500 });
-       }
+    // 1. Authenticate Request
+    const supabase = await createServerClient();
+    if (!supabase) {
+      return NextResponse.json({ error: "Server authentication error." }, { status: 500 });
     }
 
-    // --- MODE 2: DOCUMENT ANALYSIS ---
-    if (!file) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized access." }, { status: 401 });
+    }
+
+    // 2. Parse Request Body
+    const body = await req.json().catch(() => null);
+    const documentId = body?.documentId || body?.healthDocumentId;
+
+    if (!documentId) {
+      return NextResponse.json({ error: "health_document_id is required." }, { status: 400 });
+    }
+
+    // 3. Resolve Document & Verify Authorization Boundary
+    const { data: document, error: docError } = await supabase
+      .from("health_documents")
+      .select("*, care_recipients(*)")
+      .eq("id", documentId)
+      .single();
+
+    if (docError || !document) {
+      return NextResponse.json({ error: "Health document not found." }, { status: 404 });
+    }
+
+    const familyId = document.care_recipients?.family_id;
+    if (!familyId) {
+      return NextResponse.json({ error: "Invalid document lineage." }, { status: 400 });
+    }
+
+    // Verify user is active family member of that document's family
+    const { data: member } = await supabase
+      .from("family_members")
+      .select("id, role")
+      .eq("family_id", familyId)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .single();
+
+    if (!member) {
       return NextResponse.json(
-        { error: "No file provided for document analysis" },
-        { status: 400 }
+        { error: "Forbidden: You are not authorized to analyze this family's document." },
+        { status: 403 }
       );
     }
 
-    const arrayBuffer = await file.arrayBuffer();
+    // 3.5 Duplicate Call Protection: Check if document already has pending_review or approved extraction
+    const { data: existingExtraction } = await supabase
+      .from("document_extractions")
+      .select("*")
+      .eq("health_document_id", document.id)
+      .in("review_status", ["pending_review", "approved"])
+      .order("extracted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingExtraction) {
+      return NextResponse.json({
+        success: true,
+        extractionId: existingExtraction.id,
+        extraction: existingExtraction,
+        modelUsed: existingExtraction.model_version,
+        reused: true
+      });
+    }
+
+    // 4. Download file bytes from Supabase Private Storage using Admin Client
+    const adminSupabase = createAdminClient();
+    const storageClient = adminSupabase || supabase;
+
+    const { data: fileData, error: storageErr } = await storageClient.storage
+      .from("health-documents")
+      .download(document.storage_path);
+
+    if (storageErr || !fileData) {
+      console.error("Storage download error:", storageErr);
+      return NextResponse.json(
+        { error: "Failed to retrieve document file from private storage." },
+        { status: 500 }
+      );
+    }
+
+    const arrayBuffer = await fileData.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64Data = buffer.toString("base64");
-    const mimeType = file.type || "image/png";
+    const mimeType = document.file_type || "application/pdf";
 
-    console.log(`Analyzing file: ${file.name} (${mimeType})`);
+    // 5. Initialize Official @google/genai SDK & Model Contract: gemini-3.8-flash
+    const ai = new GoogleGenAI({ apiKey });
 
-    let modelString = "gemini-2.5-flash"; 
-    let model = genAI.getGenerativeModel({ model: modelString });
-
-    const prompt = `You are Anaya's care coordination intelligence core for the Care Operations Console.
-    Your role is to analyze the attached medical document (lab report, prescription, scan, or discharge summary) and extract structured insights.
-    
-    TONE & CLINICAL SAFETY MANDATE:
-    1. NEVER diagnose, prescribe, or suggest medication adjustments.
-    2. Enforce absolute clinical safety: all findings must be presented in a comforting, highly reassuring, yet objective manner. No alarmist language.
-    3. Ensure every analysis is watermarked as an AI-generated summary and ends with a clear physician validation disclaimer.
-    4. Provide two distinct summaries: one detailed for the care coordinator/coordinator control panel, and one ultra-comforting, simplified, warm summary designed for the elderly parent (suitable for WhatsApp digestion).
-    
-    Patient Clinical Context (Profile):
-    ${clinicalContext}
- 
-    Medical History (Past Reports Summary):
-    ${historyContext}
- 
-    TASKS:
-    1. **Classify Document:** Is it a Lab Report, Prescription, Scan Report, Discharge Summary, or Other?
-    2. **Patient Name:** Extract the patient name ONLY if it is clearly visible. If not visible or ambiguous, omit it.
-    3. **Biomarker Extraction:** Extract up to 6 key test markers. For each:
-       - Provide name, value, unit, standard reference range (if visible).
-       - Evaluate status as: normal, high, low, borderline, or unknown.
-       - Provide a simple, comforting, ELI5 explanation of what that biomarker represents.
-    4. **Medication Extraction:** Identify all medications listed in the document. For each:
-       - Extract name, strength (e.g., 500mg), dosage (e.g., 1 tablet), timing (e.g., after food, before food, morning, bedtime), frequency (e.g., once daily, twice daily), duration (e.g., 5 days, chronic, ongoing).
-       - Add any special instructions (e.g., avoid dairy, take with water).
-       - Assess confidence as high, medium, or low.
-       - Set source as "from uploaded report".
-    5. **Physician Questions:** Formulate 3 intelligent, supportive questions the family/coordinator can print or ask the doctor at the next checkup.
-    6. **Red Flags:** Conservatively highlight any urgent clinical markers needing physical checkups, using extremely gentle, reassuring tone.
-    7. **Disclaimers:** Add a standard AI-generated clinical safety verification disclaimer.
- 
-    OUTPUT FORMAT: You MUST return a valid JSON object matching the following structure exactly. Do not output any prose outside this JSON block:
-    \`\`\`json
-    {
-      "reportType": "Lab Report | Prescription | Scan Report | Discharge Summary | Other",
-      "reportDate": "YYYY-MM-DD",
-      "patientName": "Name or empty string if not visible",
-      "summaryForChild": "Clear explanation of findings in simple English for the care coordinator/family.",
-      "summaryForParent": "Ultra-comforting, simplified explanation of the health status suitable for parent digestion via WhatsApp.",
-      "keyFindings": [
-        "Finding description in supportive simple language."
+    const extractionSchema = {
+      type: Type.OBJECT,
+      properties: {
+        document_type: {
+          type: Type.STRING,
+          description: "Type of document: Lab Report, Prescription, Discharge Summary, Scan Report, or Other",
+        },
+        document_date: {
+          type: Type.STRING,
+          description: "Explicit date on the document in YYYY-MM-DD format if present, else null",
+        },
+        provider_or_hospital: {
+          type: Type.STRING,
+          description: "Name of doctor, clinic, or hospital explicitly listed on document",
+        },
+        medications: {
+          type: Type.ARRAY,
+          description: "List of medications explicitly stated in document",
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING, description: "Name of medication" },
+              dosage: { type: Type.STRING, description: "Dosage/strength e.g. 500mg or 1 tablet" },
+              instructions: { type: Type.STRING, description: "Explicit instructions e.g. after meals" },
+              frequency: { type: Type.STRING, description: "Frequency e.g. once daily" },
+            },
+            required: ["name"],
+          },
+        },
+        conditions: {
+          type: Type.ARRAY,
+          description: "List of diagnoses or health conditions explicitly stated in document",
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING, description: "Condition or diagnosis name" },
+              status: { type: Type.STRING, description: "Status if explicitly mentioned e.g. active, resolved" },
+            },
+            required: ["name"],
+          },
+        },
+        measurements: {
+          type: Type.ARRAY,
+          description: "Lab measurements, vitals, or biomarkers explicitly stated in document",
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING, description: "Name of test or measurement e.g. HbA1c, Blood Glucose" },
+              value: { type: Type.STRING, description: "Value recorded e.g. 112" },
+              unit: { type: Type.STRING, description: "Unit e.g. mg/dL, mmHg" },
+              reference_range: { type: Type.STRING, description: "Explicit reference range if printed on document" },
+            },
+            required: ["name", "value"],
+          },
+        },
+        follow_up_instructions: {
+          type: Type.ARRAY,
+          description: "Explicit follow-up advice or next appointments stated in document",
+          items: { type: Type.STRING },
+        },
+        summary: {
+          type: Type.STRING,
+          description: "Conservative factual summary of document content without medical interpretation or diagnosis",
+        },
+        uncertainties: {
+          type: Type.ARRAY,
+          description: "List of unreadable, ambiguous, cropped, or blurry sections in the document",
+          items: { type: Type.STRING },
+        },
+      },
+      required: [
+        "document_type",
+        "medications",
+        "conditions",
+        "measurements",
+        "follow_up_instructions",
+        "summary",
+        "uncertainties",
       ],
-      "biomarkers": [
+    };
+
+    const prompt = `You are Parents Health OS Document Intelligence Core.
+Your role is to perform strict, factual health document extraction for family care coordination.
+
+CLINICAL SAFETY & EXTRACTION MANDATE:
+1. NEVER diagnose, prescribe, or suggest medication adjustments.
+2. NEVER infer a fact that is not explicitly supported by the document. When uncertain or ambiguous, return null or list it under uncertainties.
+3. Extract only what is explicitly written in the attached document.
+4. Keep the summary objective, calm, and reassuring. No alarmist language.`;
+
+    const geminiResponse = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: [
         {
-          "name": "Parameter Name",
-          "value": "123",
-          "unit": "mg/dL",
-          "referenceRange": "70 - 100 mg/dL",
-          "status": "normal | high | low | borderline | unknown",
-          "explanation": "ELI5 simple explainer of this metric."
-        }
-      ],
-      "medicines": [
-        {
-          "name": "Medication Name",
-          "strength": "500mg",
-          "dosage": "1 tablet",
-          "timing": "after food | before food | morning | bedtime | noon",
-          "frequency": "once daily | twice daily | thrice daily",
-          "duration": "5 days | chronic | ongoing",
-          "instruction": "Special guidelines if present",
-          "confidence": "high | medium | low",
-          "source": "from uploaded report"
-        }
-      ],
-      "possibleQuestionsForDoctor": [
-        "Question to ask"
-      ],
-      "redFlags": [
-        "Gentle warning message"
-      ],
-      "confidenceLevel": "high | medium | low",
-      "disclaimer": "AI-generated summary. Please verify with your doctor. This does not replace clinical advice."
-    }
-    \`\`\`
-    `;
-
-    const analyzeImage = async (selectedModel: any) => {
-        return await selectedModel.generateContent([
-            prompt,
+          role: "user",
+          parts: [
             {
               inlineData: {
                 data: base64Data,
                 mimeType: mimeType,
               },
             },
-        ]);
-    };
-
-    let result;
-    try {
-        result = await analyzeImage(model);
-    } catch (modelError: any) {
-        console.warn(`Primary model ${modelString} failed (${modelError.message}), attempting fallback to gemini-2.5-flash-lite`);
-        modelString = "gemini-2.5-flash-lite";
-        model = genAI.getGenerativeModel({ model: modelString });
-        result = await analyzeImage(model);
-    }
-
-    const responseText = result.response.text();
-    
-    let jsonString = responseText;
-    const codeBlockMatch = /```(?:json)?\s*([\s\S]*?)\s*```/i.exec(responseText);
-    if (codeBlockMatch) {
-        jsonString = codeBlockMatch[1];
-    } else {
-        const firstBrace = responseText.indexOf('{');
-        const lastBrace = responseText.lastIndexOf('}');
-        if (firstBrace !== -1 && lastBrace !== -1) {
-            jsonString = responseText.substring(firstBrace, lastBrace + 1);
-        }
-    }
-    
-    try {
-        const parsedResult = JSON.parse(jsonString);
-        return NextResponse.json({ result: parsedResult, modelUsed: modelString });
-    } catch (e) {
-        return NextResponse.json(
-          { error: "Failed to parse JSON response from Gemini", rawText: responseText },
-          { status: 500 }
-        );
-    }
-
-  } catch (error: any) {
-    console.error("Parents Health AI Analysis Error:", error);
-    return NextResponse.json(
-      { 
-        error: "Failed to analyze the report.", 
-        details: error.message || String(error) 
+            { text: prompt },
+          ],
+        },
+      ],
+      config: {
+        thinkingConfig: {
+          thinkingLevel: "medium" as any,
+        },
+        responseMimeType: "application/json",
+        responseSchema: extractionSchema,
       },
+    });
+
+    const responseText = geminiResponse.text || "{}";
+    let extractedData = {};
+    try {
+      extractedData = JSON.parse(responseText);
+    } catch (e) {
+      console.error("Failed to parse Gemini output JSON:", responseText);
+      extractedData = {
+        summary: responseText,
+        uncertainties: ["Output parsing required manual review."],
+        document_type: "Other",
+        medications: [],
+        conditions: [],
+        measurements: [],
+        follow_up_instructions: [],
+      };
+    }
+
+    // 6. Save as Untrusted Extraction in public.document_extractions using privileged server admin client
+    const targetAdminClient = adminSupabase || supabase;
+    const { data: extraction, error: insertErr } = await targetAdminClient
+      .from("document_extractions")
+      .insert({
+        health_document_id: document.id,
+        ai_provider: "Google Gemini",
+        model_version: "gemini-3.8-flash",
+        extracted_data: extractedData,
+        review_status: "pending_review",
+        extracted_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (insertErr || !extraction) {
+      console.error("Error creating document_extractions row:", insertErr);
+      return NextResponse.json({ error: "Failed to persist extraction record." }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      extractionId: extraction.id,
+      extraction: extraction,
+      modelUsed: "gemini-3.8-flash",
+    });
+  } catch (err: any) {
+    console.error("Parents Health AI Route Exception:", err);
+    return NextResponse.json(
+      { error: "Internal server error during document analysis.", details: err.message || String(err) },
       { status: 500 }
     );
   }

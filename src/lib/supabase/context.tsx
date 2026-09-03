@@ -48,6 +48,7 @@ interface ParentsAuthContextType {
   careRoutineEvents: EnrichedCareRoutineEvent[];
   healthObservations: TableRow<"health_observations">[];
   healthDocuments: TableRow<"health_documents">[];
+  documentExtractions: TableRow<"document_extractions">[];
   healthConditions: TableRow<"health_conditions">[];
   medicationLogs: TableRow<"medication_logs">[];
   labReports: TableRow<"lab_reports">[];
@@ -56,10 +57,14 @@ interface ParentsAuthContextType {
   
   // Actions
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   onboard: (data: OnboardData) => Promise<{ error: any }>;
   addCareRecipient: (data: { display_name: string; relationship: string; primary_language: string; phone?: string; timezone?: string }) => Promise<{ error: any; data?: any }>;
+
+  // V1 Document Intelligence Workflows
+  uploadHealthDocument: (file: File, documentType: string) => Promise<{ success: boolean; document?: any; extraction?: any; error?: any }>;
+  analyzeDocument: (documentId: string) => Promise<{ success: boolean; extraction?: any; error?: any }>;
+  reviewDocumentExtraction: (extractionId: string, status: "approved" | "rejected", reviewNotes?: string) => Promise<{ success: boolean; error?: any }>;
 
   // V1 Medication & Routine Workflows
   addRealMedication: (data: {
@@ -143,6 +148,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
 
   const [healthObservations, setHealthObservations] = useState<TableRow<"health_observations">[]>([]);
   const [healthDocuments, setHealthDocuments] = useState<TableRow<"health_documents">[]>([]);
+  const [documentExtractions, setDocumentExtractions] = useState<TableRow<"document_extractions">[]>([]);
   const [healthConditions, setHealthConditions] = useState<TableRow<"health_conditions">[]>([]);
   const [medicationLogs, setMedicationLogs] = useState<TableRow<"medication_logs">[]>([]);
   const [labReports, setLabReports] = useState<TableRow<"lab_reports">[]>([]);
@@ -383,8 +389,22 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       setMedications(activeMeds);
       setCareRoutines(activeRoutines);
       if (obsRes.data) setHealthObservations(obsRes.data as any);
-      if (docsRes.data) setHealthDocuments(docsRes.data as any);
+      const loadedDocs = (docsRes.data || []) as TableRow<"health_documents">[];
+      setHealthDocuments(loadedDocs);
       if (condsRes.data) setHealthConditions(condsRes.data as any);
+
+      if (loadedDocs.length > 0) {
+        const docIds = loadedDocs.map((d) => d.id);
+        const { data: extractionsData } = await supabase
+          .from("document_extractions")
+          .select("*")
+          .in("health_document_id", docIds)
+          .order("extracted_at", { ascending: false });
+        if (extractionsData) setDocumentExtractions(extractionsData as any);
+        else setDocumentExtractions([]);
+      } else {
+        setDocumentExtractions([]);
+      }
 
       // 2. Fetch Medication Schedules
       let medScheds: TableRow<"medication_schedules">[] = [];
@@ -756,40 +776,123 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
     }
   };
 
+  // --- V1 DOCUMENT INTELLIGENCE WORKFLOWS ---
+  const uploadHealthDocument = async (file: File, documentType: string) => {
+    if (!supabase || !activeCareRecipient || !user) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${activeCareRecipient.id}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+
+      // Upload file to private storage bucket
+      const { data: storageData, error: uploadErr } = await supabase.storage
+        .from("health-documents")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false
+        });
+
+      if (uploadErr || !storageData) {
+        console.error("Storage upload error:", uploadErr);
+        return { success: false, error: uploadErr || { message: "Failed to upload document to private storage." } };
+      }
+
+      // Insert record into public.health_documents
+      const { data: docData, error: docErr } = await supabase
+        .from("health_documents")
+        .insert({
+          care_recipient_id: activeCareRecipient.id,
+          storage_path: storageData.path,
+          filename: file.name,
+          file_type: file.type || "application/pdf",
+          document_type: documentType || "Other"
+        })
+        .select()
+        .single();
+
+      if (docErr || !docData) {
+        console.error("Error creating health_documents record:", docErr);
+        return { success: false, error: docErr };
+      }
+
+      // Trigger Gemini 3.8 Flash extraction via /api/analyze
+      const analyzeRes = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId: docData.id })
+      });
+
+      const analyzeResult = await analyzeRes.json();
+      await fetchParentRecords(activeCareRecipient.id);
+
+      return {
+        success: true,
+        document: docData,
+        extraction: analyzeResult?.extraction
+      };
+    } catch (err: any) {
+      console.error("Exception uploading health document:", err);
+      return { success: false, error: err };
+    }
+  };
+
+  const analyzeDocument = async (documentId: string) => {
+    if (!supabase || !activeCareRecipient) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+    try {
+      const analyzeRes = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId })
+      });
+
+      const analyzeResult = await analyzeRes.json();
+      if (!analyzeRes.ok || analyzeResult.error) {
+        return { success: false, error: { message: analyzeResult.error || "Analysis failed." } };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true, extraction: analyzeResult.extraction };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
+  };
+
+  const reviewDocumentExtraction = async (extractionId: string, status: "approved" | "rejected", reviewNotes?: string) => {
+    if (!supabase || !activeCareRecipient || !user) {
+      return { success: false, error: { message: "No active user or care recipient selected." } };
+    }
+    try {
+      const { error } = await supabase
+        .from("document_extractions")
+        .update({
+          review_status: status,
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+          review_notes: reviewNotes || null
+        })
+        .eq("id", extractionId);
+
+      if (error) {
+        console.error("Error reviewing document extraction:", error);
+        return { success: false, error };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
+  };
+
   // --- AUTH ACTIONS ---
   const signIn = async (email: string, password: string) => {
     if (isSupabaseEnabled && supabase) {
       setIsLoading(true);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      setIsLoading(false);
-      return { error };
-    } else {
-      return { error: { message: "Backend configuration unavailable. Please configure Supabase environment variables." } };
-    }
-  };
-
-  const signUp = async (email: string, password: string, fullName: string, phone: string) => {
-    if (isSupabaseEnabled && supabase) {
-      setIsLoading(true);
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            phone: phone
-          }
-        }
-      });
-      if (data?.user) {
-        await supabase
-          .from("profiles")
-          .update({
-            full_name: fullName,
-            phone: phone
-          })
-          .eq("id", data.user.id);
-      }
       setIsLoading(false);
       return { error };
     } else {
@@ -1197,6 +1300,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         careRoutineEvents,
         healthObservations,
         healthDocuments,
+        documentExtractions,
         healthConditions,
         medicationLogs,
         labReports,
@@ -1204,11 +1308,14 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         whatsappMessages,
 
         signIn,
-        signUp,
         signOut,
         onboard,
         addCareRecipient,
         
+        uploadHealthDocument,
+        analyzeDocument,
+        reviewDocumentExtraction,
+
         addRealMedication,
         deactivateMedication,
         addRealCareRoutine,

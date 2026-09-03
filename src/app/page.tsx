@@ -17,7 +17,6 @@ import {
   LogOut,
   ArrowRight,
   LogIn,
-  UserPlus,
   Loader2,
   AlertTriangle,
   Pill,
@@ -27,15 +26,16 @@ import {
   Globe,
   PhoneCall,
   Clock,
-  Thermometer,
-  Weight as WeightIcon,
-  Stethoscope,
-  FileSpreadsheet
+  FileUp,
+  BrainCircuit,
+  ThumbsUp,
+  ThumbsDown,
+  AlertCircle
 } from "lucide-react";
 import { useParentsAuth } from "../lib/supabase/context";
 import { ToastProvider, useToast } from "../components/ui/Toast";
 
-// Helper: Title case formatting for display names (e.g. satyanarayana -> Satyanarayana)
+// Helper: Title case formatting for display names
 function formatName(name?: string | null): string {
   if (!name) return "";
   return name
@@ -45,7 +45,7 @@ function formatName(name?: string | null): string {
     .join(" ");
 }
 
-// Format 24-hr time string (e.g. "08:00" -> "08:00 AM")
+// Format 24-hr time string
 function formatTime12(timeStr?: string | null): string {
   if (!timeStr) return "";
   const parts = timeStr.split(":");
@@ -87,7 +87,7 @@ function formatObservationValue(obs?: any): string {
   return obs.value_text || obs.notes || "Observation recorded";
 }
 
-// Human-readable timestamp formatter (e.g. "Today, 8:10 AM", "Yesterday, 7:45 AM", "Sep 1, 10:30 AM")
+// Human-readable timestamp formatter
 function formatObservedTime(dateIso?: string | null): string {
   if (!dateIso) return "";
   const obsDate = new Date(dateIso);
@@ -113,15 +113,12 @@ export default function AppHome() {
     parents,
     onboard,
     signIn,
-    signUp,
     signOut
   } = useParentsAuth();
 
-  const [mode, setMode] = useState<"landing" | "login" | "signup" | "onboarding">("landing");
+  const [mode, setMode] = useState<"landing" | "login">("landing");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
   const [authError, setAuthError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -140,18 +137,8 @@ export default function AppHome() {
     setAuthError("");
     setIsSubmitting(true);
     try {
-      if (mode === "login") {
-        const { error } = await signIn(email, password);
-        if (error) setAuthError(error.message || "Invalid credentials. Please try again.");
-      } else {
-        if (!fullName || !phone) {
-          setAuthError("All fields are required.");
-          setIsSubmitting(false);
-          return;
-        }
-        const { error } = await signUp(email, password, fullName, phone);
-        if (error) setAuthError(error.message || "Failed to create account. Try another email.");
-      }
+      const { error } = await signIn(email, password);
+      if (error) setAuthError(error.message || "Invalid credentials. Please try again.");
     } catch (err) {
       setAuthError("An unexpected error occurred. Please try again.");
     } finally {
@@ -263,10 +250,10 @@ export default function AppHome() {
           className="w-full max-w-md relative z-10"
         >
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold tracking-tight text-[#1C2826] font-[family-name:var(--font-outfit)]">
-              {mode === "login" ? "Welcome back" : "Create your account"}
+            <h2 className="text-2xl font-bold tracking-tight text-[#1C2826] font-[family-name:var(--font-outfit)] uppercase">
+              PARENTS HEALTH OS
             </h2>
-            <p className="text-slate-500 text-xs mt-1 font-light">Parents Health OS Console</p>
+            <p className="text-slate-500 text-xs mt-1 font-light">Private family care access</p>
           </div>
 
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#EFECE6] shadow-sm space-y-4">
@@ -278,39 +265,12 @@ export default function AppHome() {
             )}
 
             <form onSubmit={handleAuthSubmit} className="space-y-4">
-              {mode === "signup" && (
-                <>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Your Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Tharun Kumar Gajula"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-3.5 py-3 quiet-input text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Your Phone Number</label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="e.g. +91 99999 99999"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-3.5 py-3 quiet-input text-xs"
-                    />
-                  </div>
-                </>
-              )}
-
               <div>
-                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Email Address</label>
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Email</label>
                 <input
                   type="email"
                   required
-                  placeholder="e.g. tharun@parentshealth.in"
+                  placeholder="Enter authorized email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-3.5 py-3 quiet-input text-xs"
@@ -318,7 +278,7 @@ export default function AppHome() {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Security Password</label>
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Password</label>
                 <input
                   type="password"
                   required
@@ -336,27 +296,13 @@ export default function AppHome() {
               >
                 {isSubmitting ? (
                   <Loader2 size={16} className="animate-spin" />
-                ) : mode === "login" ? (
-                  <>
-                    <LogIn size={16} /> Enter Console
-                  </>
                 ) : (
                   <>
-                    <UserPlus size={16} /> Create Account
+                    <LogIn size={16} /> SIGN IN
                   </>
                 )}
               </button>
             </form>
-
-            <div className="mt-6 text-center border-t border-slate-100 pt-4 flex items-center justify-between text-xs text-slate-500">
-              <span>{mode === "login" ? "Need an account?" : "Already registered?"}</span>
-              <button
-                onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                className="text-[#0E5E5A] font-semibold hover:underline"
-              >
-                {mode === "login" ? "Register Here" : "Log In"}
-              </button>
-            </div>
           </div>
 
           <button
@@ -523,6 +469,7 @@ function DashboardContent() {
     careRoutineEvents,
     healthObservations,
     healthDocuments,
+    documentExtractions,
     healthConditions,
     addRealMedication,
     deactivateMedication,
@@ -531,6 +478,9 @@ function DashboardContent() {
     respondToMedicationEvent,
     respondToCareRoutineEvent,
     addHealthObservation,
+    uploadHealthDocument,
+    analyzeDocument,
+    reviewDocumentExtraction,
     signOut
   } = useParentsAuth();
   const { showToast } = useToast();
@@ -541,6 +491,7 @@ function DashboardContent() {
   const [showAddMedModal, setShowAddMedModal] = useState(false);
   const [showAddRoutineModal, setShowAddRoutineModal] = useState(false);
   const [showAddObsModal, setShowAddObsModal] = useState(false);
+  const [showUploadDocModal, setShowUploadDocModal] = useState(false);
 
   // Forms
   const [familyForm, setFamilyForm] = useState({
@@ -583,6 +534,12 @@ function DashboardContent() {
   });
   const [isSubmittingObs, setIsSubmittingObs] = useState(false);
   const [obsError, setObsError] = useState("");
+
+  // Document Upload Form
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docType, setDocType] = useState("Lab Report");
+  const [isSubmittingDoc, setIsSubmittingDoc] = useState(false);
+  const [docError, setDocError] = useState("");
 
   const currentRecipient = activeCareRecipient || (careRecipients.length > 0 ? careRecipients[0] : null);
 
@@ -766,6 +723,31 @@ function DashboardContent() {
     }
   };
 
+  const handleUploadDocSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docFile) {
+      setDocError("Please select a document file.");
+      return;
+    }
+    setDocError("");
+    setIsSubmittingDoc(true);
+    try {
+      const res = await uploadHealthDocument(docFile, docType);
+      if (!res.success) {
+        setDocError(res.error?.message || "Failed to upload health document.");
+      } else {
+        showToast(`✅ Document uploaded & analyzed with Gemini 3.8 Flash.`, "success");
+        setDocFile(null);
+        setDocType("Lab Report");
+        setShowUploadDocModal(false);
+      }
+    } catch (err) {
+      setDocError("An error occurred while uploading document.");
+    } finally {
+      setIsSubmittingDoc(false);
+    }
+  };
+
   const hour = new Date().getHours();
   const timeGreeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const firstName = profile?.full_name ? formatName(profile.full_name.split(" ")[0]) : "Caregiver";
@@ -936,8 +918,21 @@ function DashboardContent() {
             onSelectRecipient={(id) => selectActiveParent(id)}
             healthObservations={healthObservations}
             healthDocuments={healthDocuments}
+            documentExtractions={documentExtractions}
             healthConditions={healthConditions}
             onAddObservation={() => setShowAddObsModal(true)}
+            onUploadDocument={() => setShowUploadDocModal(true)}
+            onAnalyzeDocument={async (docId) => {
+              showToast("⚡ Triggering Gemini 3.8 Flash analysis...", "info");
+              const res = await analyzeDocument(docId);
+              if (res.success) showToast("✅ Gemini 3.8 Flash analysis complete.", "success");
+              else showToast(res.error?.message || "Analysis failed.", "error");
+            }}
+            onReviewExtraction={async (extractionId, status) => {
+              const res = await reviewDocumentExtraction(extractionId, status);
+              if (res.success) showToast(`✅ Review status updated to: ${status}`, "success");
+              else showToast(res.error?.message || "Failed to update review status.", "error");
+            }}
           />
         )}
 
@@ -1445,7 +1440,6 @@ function DashboardContent() {
                   </select>
                 </div>
 
-                {/* Conditional Fields based on observation category */}
                 {obsForm.category === "blood_pressure" && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -1609,6 +1603,110 @@ function DashboardContent() {
                     ) : (
                       <>
                         <Plus size={14} /> Save Observation
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: Upload Document & Gemini 3.8 Flash Intelligence */}
+      <AnimatePresence>
+        {showUploadDocModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-md bg-white rounded-[2.5rem] p-6 sm:p-7 shadow-2xl border border-[#EFECE6] space-y-5"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+                    Upload Health Document
+                  </h3>
+                  <p className="text-xs text-slate-500 font-light mt-0.5">
+                    Privately upload document for {formatName(currentRecipient?.display_name)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowUploadDocModal(false)}
+                  className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {docError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700">
+                  {docError}
+                </div>
+              )}
+
+              <form onSubmit={handleUploadDocSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Select Document File (PDF or Image) *
+                  </label>
+                  <input
+                    type="file"
+                    required
+                    accept="application/pdf,image/png,image/jpeg,image/webp"
+                    onChange={(e) => setDocFile(e.target.files?.[0] || null)}
+                    className="w-full px-3.5 py-2.5 quiet-input text-xs file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-[#0E5E5A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Document Category *
+                  </label>
+                  <select
+                    value={docType}
+                    onChange={(e) => setDocType(e.target.value)}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
+                  >
+                    <option value="Lab Report">Lab Report / Blood Test</option>
+                    <option value="Prescription">Doctor Prescription</option>
+                    <option value="Discharge Summary">Discharge Summary</option>
+                    <option value="Scan Report">Scan / Radiology Report</option>
+                    <option value="Other">Other Document</option>
+                  </select>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-teal-50/60 border border-teal-100 text-xs space-y-1">
+                  <div className="flex items-center gap-2 text-[#0E5E5A] font-semibold">
+                    <Sparkles size={14} />
+                    <span>Gemini 3.8 Flash Intelligence</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-light">
+                    Documents are stored in private encrypted storage. Gemini 3.8 Flash will extract structured facts for caregiver review.
+                  </p>
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadDocModal(false)}
+                    className="px-4 py-3 rounded-2xl border border-[#EFECE6] text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingDoc}
+                    className="px-6 py-3 rounded-2xl bg-[#0E5E5A] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#0C4E4B] flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    {isSubmittingDoc ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" /> Analyzing with Gemini...
+                      </>
+                    ) : (
+                      <>
+                        <FileUp size={14} /> Upload & Extract
                       </>
                     )}
                   </button>
@@ -2340,16 +2438,24 @@ function RecordsView({
   onSelectRecipient,
   healthObservations,
   healthDocuments,
+  documentExtractions,
   healthConditions,
-  onAddObservation
+  onAddObservation,
+  onUploadDocument,
+  onAnalyzeDocument,
+  onReviewExtraction
 }: {
   careRecipients: any[];
   currentRecipient: any;
   onSelectRecipient: (id: string) => void;
   healthObservations: any[];
   healthDocuments: any[];
+  documentExtractions: any[];
   healthConditions: any[];
   onAddObservation: () => void;
+  onUploadDocument: () => void;
+  onAnalyzeDocument: (docId: string) => void;
+  onReviewExtraction: (extractionId: string, status: "approved" | "rejected") => void;
 }) {
   const name = formatName(currentRecipient?.display_name) || "Care Recipient";
 
@@ -2439,31 +2545,211 @@ function RecordsView({
         )}
       </div>
 
-      {/* Documents */}
+      {/* Documents & AI Extraction Review */}
       <div className="quiet-card p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-[#EFECE6] pb-3">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-[#1C2826] font-[family-name:var(--font-outfit)]">
-            Documents
-          </h3>
-          <button className="px-3 py-1.5 rounded-2xl border border-[#EFECE6] text-[#0E5E5A] font-semibold text-xs hover:bg-teal-50 transition-colors">
-            + Upload document
+          <div className="flex items-center gap-2">
+            <FileText size={18} className="text-[#0E5E5A]" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#1C2826] font-[family-name:var(--font-outfit)]">
+              Health Documents & AI Extractions
+            </h3>
+          </div>
+          <button
+            onClick={onUploadDocument}
+            className="px-3.5 py-1.5 rounded-2xl bg-[#0E5E5A] text-white font-semibold text-xs hover:bg-[#0C4E4B] transition-colors flex items-center gap-1 shadow-sm"
+          >
+            <Plus size={14} /> Upload document
           </button>
         </div>
 
         {healthDocuments.length === 0 ? (
-          <p className="text-xs text-slate-500 font-light py-2">
-            No documents uploaded yet.
-          </p>
+          <div className="p-6 text-center space-y-2">
+            <p className="text-xs text-slate-500 font-light">No documents uploaded for {name}.</p>
+            <button
+              onClick={onUploadDocument}
+              className="text-xs font-semibold text-[#0E5E5A] hover:underline"
+            >
+              + Upload first document
+            </button>
+          </div>
         ) : (
-          <div className="space-y-2">
-            {healthDocuments.map((doc) => (
-              <div key={doc.id} className="p-3.5 rounded-2xl bg-[#F7F5F0] text-xs flex justify-between items-center">
-                <div>
-                  <p className="font-semibold text-slate-800">{doc.filename}</p>
-                  <p className="text-slate-500 text-[11px]">{doc.document_type}</p>
+          <div className="space-y-4">
+            {healthDocuments.map((doc) => {
+              const extraction = documentExtractions.find((e) => e.health_document_id === doc.id);
+              const data = extraction?.extracted_data as any;
+
+              return (
+                <div key={doc.id} className="p-4 rounded-2xl bg-[#F7F5F0] border border-[#EAE6DF] space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-[#0E5E5A]" />
+                        <h4 className="font-bold text-slate-800 text-sm">{doc.filename}</h4>
+                        <span className="px-2 py-0.5 rounded-full bg-white text-slate-600 font-medium text-[10px] border border-[#EAE6DF]">
+                          {doc.document_type}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Uploaded on {new Date(doc.uploaded_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
+                    </div>
+
+                    {!extraction && (
+                      <button
+                        onClick={() => onAnalyzeDocument(doc.id)}
+                        className="px-3 py-1.5 rounded-xl bg-teal-50 text-[#0E5E5A] hover:bg-teal-100 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-teal-200"
+                      >
+                        <Sparkles size={14} /> Analyze (Gemini 3.8 Flash)
+                      </button>
+                    )}
+                  </div>
+
+                  {/* AI Extraction Section */}
+                  {extraction && (
+                    <div className="p-4 rounded-2xl bg-white border border-slate-200 space-y-3 shadow-inner">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <BrainCircuit size={16} className="text-[#0E5E5A]" />
+                          <span className="font-bold text-xs text-slate-800 uppercase tracking-wider">
+                            AI Extraction
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            • {extraction.ai_provider} ({extraction.model_version})
+                          </span>
+                        </div>
+
+                        {/* Review Status Badge */}
+                        <div>
+                          {extraction.review_status === "pending_review" ? (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-100 text-[#D95D28] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+                              <AlertCircle size={12} /> AI EXTRACTED — REVIEW REQUIRED
+                            </span>
+                          ) : extraction.review_status === "approved" ? (
+                            <span className="px-2.5 py-1 rounded-full bg-teal-50 text-[#0E5E5A] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+                              <Check size={12} /> APPROVED BY CAREGIVER
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+                              <X size={12} /> REJECTED
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Extracted Factual Content */}
+                      <div className="space-y-2 text-xs text-slate-700">
+                        {data?.summary && (
+                          <div className="space-y-0.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Factual Summary</span>
+                            <p className="font-medium text-slate-800 leading-relaxed">{data.summary}</p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                          {data?.document_type && (
+                            <div>
+                              <span className="text-slate-400 block">Doc Type:</span>
+                              <strong className="text-slate-800">{data.document_type}</strong>
+                            </div>
+                          )}
+                          {data?.document_date && (
+                            <div>
+                              <span className="text-slate-400 block">Doc Date:</span>
+                              <strong className="text-slate-800">{data.document_date}</strong>
+                            </div>
+                          )}
+                          {data?.provider_or_hospital && (
+                            <div className="col-span-2">
+                              <span className="text-slate-400 block">Provider / Hospital:</span>
+                              <strong className="text-slate-800">{data.provider_or_hospital}</strong>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Extracted Medications */}
+                        {data?.medications?.length > 0 && (
+                          <div className="pt-2 space-y-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                              Extracted Medications
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {data.medications.map((m: any, idx: number) => (
+                                <span key={idx} className="px-2.5 py-1 rounded-xl bg-teal-50 text-[#0E5E5A] font-semibold text-[11px] border border-teal-100">
+                                  {m.name} {m.dosage ? `(${m.dosage})` : ""}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Extracted Measurements / Lab Markers */}
+                        {data?.measurements?.length > 0 && (
+                          <div className="pt-2 space-y-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                              Extracted Measurements / Markers
+                            </span>
+                            <div className="space-y-1">
+                              {data.measurements.map((m: any, idx: number) => (
+                                <div key={idx} className="flex justify-between items-center p-2 rounded-xl bg-slate-50 text-[11px]">
+                                  <span className="font-semibold text-slate-800">{m.name}</span>
+                                  <span className="font-bold text-[#0E5E5A]">{m.value} {m.unit || ""}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Extracted Conditions */}
+                        {data?.conditions?.length > 0 && (
+                          <div className="pt-2 space-y-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                              Extracted Health Conditions
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {data.conditions.map((c: any, idx: number) => (
+                                <span key={idx} className="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 font-semibold text-[11px]">
+                                  {c.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Uncertainties */}
+                        {data?.uncertainties?.length > 0 && (
+                          <div className="pt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-800 space-y-1">
+                            <span className="font-bold block">Uncertainties / Ambiguities:</span>
+                            <ul className="list-disc list-inside space-y-0.5">
+                              {data.uncertainties.map((u: any, idx: number) => (
+                                <li key={idx}>{u}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Human Review Actions */}
+                      {extraction.review_status === "pending_review" && (
+                        <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => onReviewExtraction(extraction.id, "rejected")}
+                            className="px-3 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1 transition-colors"
+                          >
+                            <ThumbsDown size={14} /> Reject
+                          </button>
+                          <button
+                            onClick={() => onReviewExtraction(extraction.id, "approved")}
+                            className="px-4 py-1.5 rounded-xl bg-[#0E5E5A] text-white hover:bg-[#0C4E4B] text-xs font-semibold flex items-center gap-1 shadow-sm transition-all"
+                          >
+                            <ThumbsUp size={14} /> Approve Extraction
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
