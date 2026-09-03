@@ -106,7 +106,7 @@ export async function POST(req: Request) {
     const arrayBuffer = await fileData.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64Data = buffer.toString("base64");
-    const mimeType = document.file_type || "application/pdf";
+    const mimeType = document.mime_type || "application/pdf";
 
     // 5. Initialize Official @google/genai SDK & Model Contract: gemini-3.8-flash
     const ai = new GoogleGenAI({ apiKey });

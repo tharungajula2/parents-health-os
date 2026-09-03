@@ -799,6 +799,14 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         return { success: false, error: uploadErr || { message: "Failed to upload document to private storage." } };
       }
 
+      const normalizeDocumentType = (typeStr: string) => {
+        const lower = (typeStr || "").toLowerCase().replace(/\s+/g, "_");
+        if (["lab_report", "prescription", "discharge_summary", "other"].includes(lower)) {
+          return lower;
+        }
+        return "other";
+      };
+
       // Insert record into public.health_documents
       const { data: docData, error: docErr } = await supabase
         .from("health_documents")
@@ -806,8 +814,9 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
           care_recipient_id: activeCareRecipient.id,
           storage_path: storageData.path,
           filename: file.name,
-          file_type: file.type || "application/pdf",
-          document_type: documentType || "Other"
+          mime_type: file.type || "application/pdf",
+          document_type: normalizeDocumentType(documentType),
+          uploaded_by: user.id
         })
         .select()
         .single();

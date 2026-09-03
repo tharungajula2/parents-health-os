@@ -58,6 +58,17 @@ function formatTime12(timeStr?: string | null): string {
   return `${hours.toString().padStart(2, "0")}:${minutes} ${ampm}`;
 }
 
+// Document Type Label Formatter
+function formatDocumentTypeLabel(docType?: string | null): string {
+  switch (docType) {
+    case "lab_report": return "Lab Report";
+    case "prescription": return "Prescription";
+    case "discharge_summary": return "Discharge Summary";
+    case "other": return "Other";
+    default: return docType || "Document";
+  }
+}
+
 // Observation Category Labels
 function formatObservationCategoryLabel(cat?: string | null): string {
   switch (cat) {
@@ -2585,8 +2596,8 @@ function RecordsView({
                       <div className="flex items-center gap-2">
                         <FileText size={16} className="text-[#0E5E5A]" />
                         <h4 className="font-bold text-slate-800 text-sm">{doc.filename}</h4>
-                        <span className="px-2 py-0.5 rounded-full bg-white text-slate-600 font-medium text-[10px] border border-[#EAE6DF]">
-                          {doc.document_type}
+                        <span className="px-2 py-0.5 rounded-full bg-white text-slate-600 font-medium text-[10px] border border-[#EAE6DF] capitalize">
+                          {formatDocumentTypeLabel(doc.document_type)}
                         </span>
                       </div>
                       <p className="text-[10px] text-slate-400 mt-0.5">
