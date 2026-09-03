@@ -14,6 +14,20 @@ interface OnboardData {
   language: string;
 }
 
+export type EnrichedMedicationEvent = TableRow<"medication_events"> & {
+  medication_name?: string;
+  dosage?: string;
+  instructions?: string;
+  local_time?: string;
+};
+
+export type EnrichedCareRoutineEvent = TableRow<"care_routine_events"> & {
+  routine_name?: string;
+  category?: string;
+  description?: string;
+  local_time?: string;
+};
+
 interface ParentsAuthContextType {
   isSupabaseEnabled: boolean;
   isAuthenticated: boolean;
@@ -21,31 +35,71 @@ interface ParentsAuthContextType {
   user: any | null;
   profile: TableRow<"profiles"> | null;
   family: TableRow<"families"> | null;
+  careRecipients: TableRow<"care_recipients">[];
+  activeCareRecipient: TableRow<"care_recipients"> | null;
   parents: TableRow<"parents">[];
   activeParent: TableRow<"parents"> | null;
   vitals: TableRow<"vitals">[];
   medications: TableRow<"medications">[];
+  medicationSchedules: TableRow<"medication_schedules">[];
+  medicationEvents: EnrichedMedicationEvent[];
+  careRoutines: TableRow<"care_routines">[];
+  careRoutineSchedules: TableRow<"care_routine_schedules">[];
+  careRoutineEvents: EnrichedCareRoutineEvent[];
+  healthObservations: TableRow<"health_observations">[];
+  healthDocuments: TableRow<"health_documents">[];
+  healthConditions: TableRow<"health_conditions">[];
   medicationLogs: TableRow<"medication_logs">[];
   labReports: TableRow<"lab_reports">[];
   aiConversations: TableRow<"ai_conversations">[];
   whatsappMessages: TableRow<"whatsapp_messages">[];
-  
-  // Legacy telemetry stubs for UI stability
-  lastSaved: string;
-  pendingChanges: number;
-  resetLocalPendingChanges: () => void;
-  pendingSyncCount: number;
-  lastSyncEvent: any | null;
-  simulateCloudSyncAction: () => void;
-  dismissSyncQueueAction: () => void;
   
   // Actions
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   onboard: (data: OnboardData) => Promise<{ error: any }>;
+  addCareRecipient: (data: { display_name: string; relationship: string; primary_language: string; phone?: string; timezone?: string }) => Promise<{ error: any; data?: any }>;
+
+  // V1 Medication & Routine Workflows
+  addRealMedication: (data: {
+    name: string;
+    dosage: string;
+    instructions?: string;
+    local_time: string;
+    applicable_days?: string[];
+    start_date?: string;
+    end_date?: string;
+  }) => Promise<{ success: boolean; data?: any; error?: any }>;
+  deactivateMedication: (medicationId: string) => Promise<{ success: boolean; error?: any }>;
   
-  // Data Mutators
+  addRealCareRoutine: (data: {
+    name: string;
+    category: string;
+    description?: string;
+    local_time: string;
+    applicable_days?: string[];
+    start_date?: string;
+    end_date?: string;
+  }) => Promise<{ success: boolean; data?: any; error?: any }>;
+  deactivateCareRoutine: (routineId: string) => Promise<{ success: boolean; error?: any }>;
+
+  respondToMedicationEvent: (eventId: string, status: "taken" | "skipped" | "snoozed") => Promise<{ success: boolean; error?: any }>;
+  respondToCareRoutineEvent: (eventId: string, status: "completed" | "partial" | "skipped" | "snoozed") => Promise<{ success: boolean; error?: any }>;
+
+  // V1 Health Observation Workflows
+  addHealthObservation: (data: {
+    category: "blood_pressure" | "blood_glucose" | "weight" | "body_temperature" | "pulse_oximetry" | "heart_rate" | "symptom_notes" | "other";
+    observed_at?: string;
+    value_numeric?: number | null;
+    value_sys?: number | null;
+    value_dia?: number | null;
+    value_text?: string | null;
+    unit?: string | null;
+    notes?: string | null;
+  }) => Promise<{ success: boolean; data?: any; error?: any }>;
+
+  // Legacy Mutators
   addVital: (data: { bp_sys: number; bp_dia: number; sugar: number; weight: number; source?: string }) => Promise<{ success: boolean; data?: any; error?: any }>;
   addMedication: (data: { name: string; dosage: string; timing: string; instructions: string }) => Promise<{ success: boolean; data?: any; error?: any }>;
   toggleMedicationLog: (medicationId: string, taken: boolean, logDate: string) => Promise<{ success: boolean; error?: any }>;
@@ -73,12 +127,23 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
   // Core Domain State
   const [profile, setProfile] = useState<TableRow<"profiles"> | null>(null);
   const [family, setFamily] = useState<TableRow<"families"> | null>(null);
+  const [careRecipients, setCareRecipients] = useState<TableRow<"care_recipients">[]>([]);
+  const [activeCareRecipient, setActiveCareRecipient] = useState<TableRow<"care_recipients"> | null>(null);
   const [parents, setParents] = useState<TableRow<"parents">[]>([]);
   const [activeParent, setActiveParent] = useState<TableRow<"parents"> | null>(null);
   
   // Health & Care Logs State
   const [vitals, setVitals] = useState<TableRow<"vitals">[]>([]);
   const [medications, setMedications] = useState<TableRow<"medications">[]>([]);
+  const [medicationSchedules, setMedicationSchedules] = useState<TableRow<"medication_schedules">[]>([]);
+  const [medicationEvents, setMedicationEvents] = useState<EnrichedMedicationEvent[]>([]);
+  const [careRoutines, setCareRoutines] = useState<TableRow<"care_routines">[]>([]);
+  const [careRoutineSchedules, setCareRoutineSchedules] = useState<TableRow<"care_routine_schedules">[]>([]);
+  const [careRoutineEvents, setCareRoutineEvents] = useState<EnrichedCareRoutineEvent[]>([]);
+
+  const [healthObservations, setHealthObservations] = useState<TableRow<"health_observations">[]>([]);
+  const [healthDocuments, setHealthDocuments] = useState<TableRow<"health_documents">[]>([]);
+  const [healthConditions, setHealthConditions] = useState<TableRow<"health_conditions">[]>([]);
   const [medicationLogs, setMedicationLogs] = useState<TableRow<"medication_logs">[]>([]);
   const [labReports, setLabReports] = useState<TableRow<"lab_reports">[]>([]);
   const [aiConversations, setAiConversations] = useState<TableRow<"ai_conversations">[]>([]);
@@ -114,10 +179,20 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
           setIsAuthenticated(false);
           setProfile(null);
           setFamily(null);
+          setCareRecipients([]);
+          setActiveCareRecipient(null);
           setParents([]);
           setActiveParent(null);
           setVitals([]);
           setMedications([]);
+          setMedicationSchedules([]);
+          setMedicationEvents([]);
+          setCareRoutines([]);
+          setCareRoutineSchedules([]);
+          setCareRoutineEvents([]);
+          setHealthObservations([]);
+          setHealthDocuments([]);
+          setHealthConditions([]);
           setMedicationLogs([]);
           setLabReports([]);
           setAiConversations([]);
@@ -155,37 +230,68 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
       }
       
       if (profileData) {
-        setProfile(profileData);
-      } else {
-        const { data: newProfile } = await supabase
-          .from("profiles")
-          .insert({ id: userId, role: "child" })
-          .select()
-          .single();
-        if (newProfile) setProfile(newProfile);
+        setProfile(profileData as any);
       }
 
       // 2. Fetch Family Membership
-      const { data: memberData } = await supabase
+      const { data: memberData, error: memberErr } = await supabase
         .from("family_members")
         .select("*, families(*)")
-        .eq("profile_id", userId);
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      if (memberErr) {
+        console.error("Error fetching family membership:", memberErr);
+      }
 
       if (memberData && memberData.length > 0) {
         const primaryMember = memberData[0];
         setFamily(primaryMember.families as any);
 
-        // 3. Fetch Family Parents
-        const { data: parentList } = await supabase
-          .from("parents")
+        // 3. Fetch Care Recipients
+        const { data: recipientList, error: recipientErr } = await supabase
+          .from("care_recipients")
           .select("*")
-          .eq("family_id", primaryMember.family_id);
+          .eq("family_id", primaryMember.family_id)
+          .order("created_at", { ascending: true });
 
-        if (parentList && parentList.length > 0) {
-          setParents(parentList);
-          const active = parentList[0];
-          setActiveParent(active);
-          fetchParentRecords(active.id);
+        if (recipientErr) {
+          console.error("Error fetching care recipients:", recipientErr);
+        }
+
+        if (recipientList && recipientList.length > 0) {
+          setCareRecipients(recipientList as any);
+          const mappedParents = recipientList.map((r: any) => ({
+            id: r.id,
+            family_id: r.family_id,
+            name: r.display_name,
+            relationship: r.relationship,
+            phone: r.phone,
+            language: r.primary_language,
+            primary_conditions: [],
+            risk_level: "Healthy Baseline",
+            health_index: 90,
+            scorecard_answers: null,
+            created_at: r.created_at,
+            updated_at: r.updated_at
+          }));
+          setParents(mappedParents as any);
+
+          let activeRec = activeCareRecipient;
+          if (!activeRec || !recipientList.some((r: any) => r.id === activeRec?.id)) {
+            activeRec = recipientList[0] as any;
+          }
+          setActiveCareRecipient(activeRec);
+          setActiveParent(mappedParents.find((p: any) => p.id === activeRec?.id) as any || mappedParents[0] as any);
+
+          if (activeRec) {
+            await fetchParentRecords(activeRec.id);
+          }
+        } else {
+          setCareRecipients([]);
+          setParents([]);
+          setActiveCareRecipient(null);
+          setActiveParent(null);
         }
       }
     } catch (e) {
@@ -195,50 +301,177 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
     }
   };
 
+  const ensureTodayEvents = async (
+    recipientId: string,
+    activeMeds: TableRow<"medications">[],
+    medScheds: TableRow<"medication_schedules">[],
+    activeRoutines: TableRow<"care_routines">[],
+    routineScheds: TableRow<"care_routine_schedules">[]
+  ) => {
+    if (!supabase) return;
+
+    const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const daysOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const dayName = daysOfWeek[new Date().getDay()];
+
+    // A. Ensure Medication Events for Today
+    for (const sched of medScheds) {
+      if (!sched.is_active) continue;
+      if (sched.start_date > todayStr) continue;
+      if (sched.end_date && sched.end_date < todayStr) continue;
+      if (!sched.applicable_days.includes(dayName)) continue;
+
+      const timePart = sched.local_time.length === 5 ? `${sched.local_time}:00` : sched.local_time;
+      const dueAt = `${todayStr}T${timePart}+05:30`;
+
+      const { data: existing } = await supabase
+        .from("medication_events")
+        .select("id")
+        .eq("schedule_id", sched.id)
+        .eq("due_at", dueAt);
+
+      if (!existing || existing.length === 0) {
+        await supabase.from("medication_events").insert({
+          schedule_id: sched.id,
+          due_at: dueAt,
+          status: "pending"
+        });
+      }
+    }
+
+    // B. Ensure Care Routine Events for Today
+    for (const sched of routineScheds) {
+      if (!sched.is_active) continue;
+      if (sched.start_date > todayStr) continue;
+      if (sched.end_date && sched.end_date < todayStr) continue;
+      if (!sched.applicable_days.includes(dayName)) continue;
+
+      const timePart = sched.local_time.length === 5 ? `${sched.local_time}:00` : sched.local_time;
+      const dueAt = `${todayStr}T${timePart}+05:30`;
+
+      const { data: existing } = await supabase
+        .from("care_routine_events")
+        .select("id")
+        .eq("schedule_id", sched.id)
+        .eq("due_at", dueAt);
+
+      if (!existing || existing.length === 0) {
+        await supabase.from("care_routine_events").insert({
+          schedule_id: sched.id,
+          due_at: dueAt,
+          status: "pending"
+        });
+      }
+    }
+  };
+
   const fetchParentRecords = async (parentId: string) => {
     if (!supabase) return;
     try {
-      const { data: vitalsList } = await supabase
-        .from("vitals")
-        .select("*")
-        .eq("parent_id", parentId)
-        .order("measured_at", { ascending: false });
-      if (vitalsList) setVitals(vitalsList);
+      // 1. Fetch Medications & Care Routines for active parent
+      const [medsRes, routinesRes, obsRes, docsRes, condsRes] = await Promise.all([
+        supabase.from("medications").select("*").eq("care_recipient_id", parentId).eq("is_active", true),
+        supabase.from("care_routines").select("*").eq("care_recipient_id", parentId).eq("is_active", true),
+        supabase.from("health_observations").select("*").eq("care_recipient_id", parentId).order("observed_at", { ascending: false }),
+        supabase.from("health_documents").select("*").eq("care_recipient_id", parentId).order("uploaded_at", { ascending: false }),
+        supabase.from("health_conditions").select("*").eq("care_recipient_id", parentId)
+      ]);
 
-      const { data: meds } = await supabase
-        .from("medications")
-        .select("*")
-        .eq("parent_id", parentId)
-        .eq("is_active", true);
-      if (meds) setMedications(meds);
+      const activeMeds = (medsRes.data || []) as TableRow<"medications">[];
+      const activeRoutines = (routinesRes.data || []) as TableRow<"care_routines">[];
 
-      const { data: medLogs } = await supabase
-        .from("medication_logs")
-        .select("*")
-        .eq("parent_id", parentId);
-      if (medLogs) setMedicationLogs(medLogs);
+      setMedications(activeMeds);
+      setCareRoutines(activeRoutines);
+      if (obsRes.data) setHealthObservations(obsRes.data as any);
+      if (docsRes.data) setHealthDocuments(docsRes.data as any);
+      if (condsRes.data) setHealthConditions(condsRes.data as any);
 
-      const { data: reports } = await supabase
-        .from("lab_reports")
-        .select("*")
-        .eq("parent_id", parentId)
-        .order("report_date", { ascending: false });
-      if (reports) setLabReports(reports);
+      // 2. Fetch Medication Schedules
+      let medScheds: TableRow<"medication_schedules">[] = [];
+      if (activeMeds.length > 0) {
+        const medIds = activeMeds.map((m) => m.id);
+        const { data: sData } = await supabase
+          .from("medication_schedules")
+          .select("*")
+          .in("medication_id", medIds)
+          .eq("is_active", true);
+        if (sData) medScheds = sData as any;
+      }
+      setMedicationSchedules(medScheds);
 
-      const { data: aiConvs } = await supabase
-        .from("ai_conversations")
-        .select("*")
-        .eq("parent_id", parentId)
-        .order("created_at", { ascending: true });
-      if (aiConvs) setAiConversations(aiConvs);
+      // 3. Fetch Care Routine Schedules
+      let routineScheds: TableRow<"care_routine_schedules">[] = [];
+      if (activeRoutines.length > 0) {
+        const routineIds = activeRoutines.map((r) => r.id);
+        const { data: rData } = await supabase
+          .from("care_routine_schedules")
+          .select("*")
+          .in("routine_id", routineIds)
+          .eq("is_active", true);
+        if (rData) routineScheds = rData as any;
+      }
+      setCareRoutineSchedules(routineScheds);
 
-      const { data: whatsappMsgs } = await supabase
-        .from("whatsapp_messages")
-        .select("*")
-        .eq("parent_id", parentId)
-        .order("created_at", { ascending: true });
-      if (whatsappMsgs) setWhatsappMessages(whatsappMsgs);
+      // 4. Generate Today's Events
+      await ensureTodayEvents(parentId, activeMeds, medScheds, activeRoutines, routineScheds);
 
+      // 5. Fetch Today's Medication Events
+      if (medScheds.length > 0) {
+        const schedIds = medScheds.map((s) => s.id);
+        const { data: mEvents } = await supabase
+          .from("medication_events")
+          .select("*")
+          .in("schedule_id", schedIds)
+          .order("due_at", { ascending: true });
+
+        if (mEvents) {
+          const enriched = mEvents.map((ev: any) => {
+            const sched = medScheds.find((s) => s.id === ev.schedule_id);
+            const med = activeMeds.find((m) => m.id === sched?.medication_id);
+            return {
+              ...ev,
+              medication_name: med?.name || "Medication",
+              dosage: med?.dosage || "",
+              instructions: med?.instructions || "",
+              local_time: sched?.local_time || ""
+            };
+          });
+          setMedicationEvents(enriched);
+        } else {
+          setMedicationEvents([]);
+        }
+      } else {
+        setMedicationEvents([]);
+      }
+
+      // 6. Fetch Today's Routine Events
+      if (routineScheds.length > 0) {
+        const rSchedIds = routineScheds.map((s) => s.id);
+        const { data: rEvents } = await supabase
+          .from("care_routine_events")
+          .select("*")
+          .in("schedule_id", rSchedIds)
+          .order("due_at", { ascending: true });
+
+        if (rEvents) {
+          const enrichedR = rEvents.map((ev: any) => {
+            const sched = routineScheds.find((s) => s.id === ev.schedule_id);
+            const routine = activeRoutines.find((r) => r.id === sched?.routine_id);
+            return {
+              ...ev,
+              routine_name: routine?.name || "Care Routine",
+              category: routine?.category || "other",
+              description: routine?.description || "",
+              local_time: sched?.local_time || ""
+            };
+          });
+          setCareRoutineEvents(enrichedR);
+        } else {
+          setCareRoutineEvents([]);
+        }
+      } else {
+        setCareRoutineEvents([]);
+      }
     } catch (e) {
       console.error("Failed to load parent metrics:", e);
     }
@@ -250,7 +483,280 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
     }
   };
 
-  // --- ACTIONS ---
+  // --- V1 MEDICATION WORKFLOWS ---
+  const addRealMedication = async (data: {
+    name: string;
+    dosage: string;
+    instructions?: string;
+    local_time: string;
+    applicable_days?: string[];
+    start_date?: string;
+    end_date?: string;
+  }) => {
+    if (!supabase || !activeCareRecipient) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+
+    try {
+      const { data: medData, error: medErr } = await supabase
+        .from("medications")
+        .insert({
+          care_recipient_id: activeCareRecipient.id,
+          name: data.name.trim(),
+          dosage: data.dosage.trim(),
+          instructions: data.instructions?.trim() || null,
+          provenance: "manual_entry",
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (medErr || !medData) {
+        console.error("Error creating medication:", medErr);
+        return { success: false, error: medErr || { message: "Failed to create medication." } };
+      }
+
+      const days = data.applicable_days || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+      const startDate = data.start_date || new Date().toISOString().split("T")[0];
+
+      const { error: schedErr } = await supabase
+        .from("medication_schedules")
+        .insert({
+          medication_id: medData.id,
+          local_time: data.local_time,
+          timezone: "Asia/Kolkata",
+          applicable_days: days,
+          start_date: startDate,
+          end_date: data.end_date || null,
+          is_active: true
+        });
+
+      if (schedErr) {
+        console.error("Error creating medication schedule:", schedErr);
+        return { success: false, error: schedErr };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true, data: medData };
+    } catch (err: any) {
+      console.error("Exception creating medication:", err);
+      return { success: false, error: err };
+    }
+  };
+
+  const deactivateMedication = async (medicationId: string) => {
+    if (!supabase || !activeCareRecipient) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+    try {
+      const { error } = await supabase
+        .from("medications")
+        .update({ is_active: false })
+        .eq("id", medicationId);
+
+      if (error) {
+        console.error("Error deactivating medication:", error);
+        return { success: false, error };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
+  };
+
+  // --- V1 CARE ROUTINE WORKFLOWS ---
+  const addRealCareRoutine = async (data: {
+    name: string;
+    category: string;
+    description?: string;
+    local_time: string;
+    applicable_days?: string[];
+    start_date?: string;
+    end_date?: string;
+  }) => {
+    if (!supabase || !activeCareRecipient) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+
+    try {
+      const { data: routineData, error: routineErr } = await supabase
+        .from("care_routines")
+        .insert({
+          care_recipient_id: activeCareRecipient.id,
+          name: data.name.trim(),
+          category: data.category,
+          description: data.description?.trim() || null,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (routineErr || !routineData) {
+        console.error("Error creating care routine:", routineErr);
+        return { success: false, error: routineErr || { message: "Failed to create care routine." } };
+      }
+
+      const days = data.applicable_days || ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+      const startDate = data.start_date || new Date().toISOString().split("T")[0];
+
+      const { error: schedErr } = await supabase
+        .from("care_routine_schedules")
+        .insert({
+          routine_id: routineData.id,
+          local_time: data.local_time,
+          timezone: "Asia/Kolkata",
+          applicable_days: days,
+          start_date: startDate,
+          end_date: data.end_date || null,
+          is_active: true
+        });
+
+      if (schedErr) {
+        console.error("Error creating care routine schedule:", schedErr);
+        return { success: false, error: schedErr };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true, data: routineData };
+    } catch (err: any) {
+      console.error("Exception creating care routine:", err);
+      return { success: false, error: err };
+    }
+  };
+
+  const deactivateCareRoutine = async (routineId: string) => {
+    if (!supabase || !activeCareRecipient) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+    try {
+      const { error } = await supabase
+        .from("care_routines")
+        .update({ is_active: false })
+        .eq("id", routineId);
+
+      if (error) {
+        console.error("Error deactivating care routine:", error);
+        return { success: false, error };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
+  };
+
+  // --- EVENT RESPONSE WORKFLOWS ---
+  const respondToMedicationEvent = async (eventId: string, status: "taken" | "skipped" | "snoozed") => {
+    if (!supabase || !activeCareRecipient) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+    try {
+      const { error } = await supabase
+        .from("medication_events")
+        .update({
+          status,
+          responded_at: new Date().toISOString(),
+          response_source: "caregiver"
+        })
+        .eq("id", eventId);
+
+      if (error) {
+        console.error("Error responding to medication event:", error);
+        return { success: false, error };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
+  };
+
+  const respondToCareRoutineEvent = async (eventId: string, status: "completed" | "partial" | "skipped" | "snoozed") => {
+    if (!supabase || !activeCareRecipient) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+    try {
+      const { error } = await supabase
+        .from("care_routine_events")
+        .update({
+          status,
+          responded_at: new Date().toISOString(),
+          response_source: "caregiver"
+        })
+        .eq("id", eventId);
+
+      if (error) {
+        console.error("Error responding to care routine event:", error);
+        return { success: false, error };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err };
+    }
+  };
+
+  const addHealthObservation = async (data: {
+    category: "blood_pressure" | "blood_glucose" | "weight" | "body_temperature" | "pulse_oximetry" | "heart_rate" | "symptom_notes" | "other";
+    observed_at?: string;
+    value_numeric?: number | null;
+    value_sys?: number | null;
+    value_dia?: number | null;
+    value_text?: string | null;
+    unit?: string | null;
+    notes?: string | null;
+  }) => {
+    if (!supabase || !activeCareRecipient || !user) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+
+    try {
+      const payload: any = {
+        care_recipient_id: activeCareRecipient.id,
+        category: data.category,
+        observed_at: data.observed_at || new Date().toISOString(),
+        source: "caregiver",
+        recorded_by: user.id,
+        notes: data.notes || null
+      };
+
+      if (data.category === "blood_pressure") {
+        payload.value_sys = data.value_sys;
+        payload.value_dia = data.value_dia;
+        payload.unit = "mmHg";
+      } else if (data.category === "symptom_notes") {
+        payload.value_text = data.value_text;
+      } else {
+        payload.value_numeric = data.value_numeric;
+        payload.unit = data.unit || null;
+        if (data.value_text) payload.value_text = data.value_text;
+      }
+
+      const { data: obsData, error } = await supabase
+        .from("health_observations")
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error || !obsData) {
+        console.error("Error creating health observation:", error);
+        return { success: false, error: error || { message: "Failed to record health observation." } };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true, data: obsData };
+    } catch (err: any) {
+      console.error("Exception creating health observation:", err);
+      return { success: false, error: err };
+    }
+  };
+
+  // --- AUTH ACTIONS ---
   const signIn = async (email: string, password: string) => {
     if (isSupabaseEnabled && supabase) {
       setIsLoading(true);
@@ -275,15 +781,14 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
           }
         }
       });
-      if (data.user) {
+      if (data?.user) {
         await supabase
           .from("profiles")
-          .insert({
-            id: data.user.id,
+          .update({
             full_name: fullName,
-            phone: phone,
-            role: "child"
-          });
+            phone: phone
+          })
+          .eq("id", data.user.id);
       }
       setIsLoading(false);
       return { error };
@@ -305,6 +810,14 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
     setActiveParent(null);
     setVitals([]);
     setMedications([]);
+    setMedicationSchedules([]);
+    setMedicationEvents([]);
+    setCareRoutines([]);
+    setCareRoutineSchedules([]);
+    setCareRoutineEvents([]);
+    setHealthObservations([]);
+    setHealthDocuments([]);
+    setHealthConditions([]);
     setMedicationLogs([]);
     setLabReports([]);
     setAiConversations([]);
@@ -316,62 +829,75 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
     if (isSupabaseEnabled && supabase && user) {
       setIsLoading(true);
       try {
-        const { data: familyObj, error: famErr } = await supabase
-          .from("families")
-          .insert({ name: data.familyName })
-          .select()
-          .single();
+        let familyId: string;
 
-        if (famErr) throw famErr;
-
-        await supabase
+        const { data: existingMembers } = await supabase
           .from("family_members")
-          .insert({
-            family_id: familyObj.id,
-            profile_id: user.id,
-            role: "owner"
-          });
+          .select("family_id")
+          .eq("user_id", user.id)
+          .eq("status", "active");
 
-        const { data: parentObj, error: parentErr } = await supabase
-          .from("parents")
+        if (existingMembers && existingMembers.length > 0) {
+          familyId = existingMembers[0].family_id;
+        } else {
+          const { data: familyObj, error: famErr } = await supabase
+            .from("families")
+            .insert({ name: data.familyName, created_by: user.id })
+            .select()
+            .single();
+
+          if (famErr || !familyObj) {
+            setIsLoading(false);
+            return { error: famErr || { message: "Failed to create family network." } };
+          }
+
+          familyId = familyObj.id;
+
+          await supabase.from("family_members").insert({
+            family_id: familyId,
+            user_id: user.id,
+            role: "owner",
+            status: "active"
+          });
+        }
+
+        const { data: recipient, error: recErr } = await supabase
+          .from("care_recipients")
           .insert({
-            family_id: familyObj.id,
-            name: data.parentName,
+            family_id: familyId,
+            display_name: data.parentName.trim(),
             relationship: data.relationship,
-            phone: data.parentPhone,
-            language: data.language,
-            risk_level: "Healthy Baseline",
-            health_index: 90
+            primary_language: data.language,
+            phone: data.parentPhone ? data.parentPhone.trim() : null,
+            timezone: "Asia/Kolkata"
           })
           .select()
           .single();
 
-        if (parentErr) throw parentErr;
+        if (recErr || !recipient) {
+          setIsLoading(false);
+          return { error: recErr || { message: "Failed to create care recipient record." } };
+        }
 
-        await supabase
-          .from("consents")
-          .insert({
-            parent_id: parentObj.id,
-            granted_by_profile_id: user.id,
-            consent_type: "geriatric_health_data_processing",
-            consent_version: "PHOS_v1.0",
-            ip_address: "127.0.0.1",
-            is_granted: true
-          });
+        await supabase.from("consents").insert({
+          care_recipient_id: recipient.id,
+          consent_type: "family_care_coordination",
+          status: "granted",
+          recorded_by: user.id,
+          recorded_at: new Date().toISOString()
+        });
 
         await fetchSupabaseData(user.id);
         return { error: null };
-      } catch (err) {
-        console.error("Onboarding failed:", err);
+      } catch (err: any) {
         setIsLoading(false);
         return { error: err };
       }
     } else {
-      return { error: { message: "Backend configuration unavailable. Please configure Supabase environment variables." } };
+      return { error: { message: "Backend configuration unavailable." } };
     }
   };
 
-  // --- MUTATORS ---
   const addVital = async (data: { bp_sys: number; bp_dia: number; sugar: number; weight: number; source?: string }) => {
     if (isSupabaseEnabled && supabase && activeParent && user) {
       const { data: vital, error } = await supabase
@@ -398,27 +924,12 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
   };
 
   const addMedication = async (data: { name: string; dosage: string; timing: string; instructions: string }) => {
-    if (isSupabaseEnabled && supabase && activeParent) {
-      const { data: med, error } = await supabase
-        .from("medications")
-        .insert({
-          parent_id: activeParent.id,
-          name: data.name,
-          dosage: data.dosage,
-          timing: data.timing,
-          instructions: data.instructions,
-          is_active: true
-        })
-        .select()
-        .single();
-
-      if (med) {
-        setMedications(prev => [...prev, med]);
-        return { success: true, data: med };
-      }
-      return { success: false, error };
-    }
-    return { success: false, error: "Backend configuration unavailable." };
+    return addRealMedication({
+      name: data.name,
+      dosage: data.dosage,
+      instructions: data.instructions,
+      local_time: "08:00"
+    });
   };
 
   const toggleMedicationLog = async (medicationId: string, taken: boolean, logDate: string) => {
@@ -429,11 +940,8 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
           parent_id: activeParent.id,
           medication_id: medicationId,
           log_date: logDate,
-          taken,
-          taken_at: taken ? new Date().toISOString() : null,
-          source: "web_dashboard"
+          taken
         });
-      
       if (!error) {
         await refreshData();
         return { success: true };
@@ -444,22 +952,20 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
   };
 
   const addLabReport = async (data: { report_date: string; report_type: string; summary: string; biomarkers: any; full_analysis_markdown: string }) => {
-    if (isSupabaseEnabled && supabase && activeParent && user) {
+    if (isSupabaseEnabled && supabase && activeParent) {
       const { data: report, error } = await supabase
         .from("lab_reports")
         .insert({
           parent_id: activeParent.id,
           report_date: data.report_date,
           report_type: data.report_type,
-          storage_path: "lab-reports-bucket/uploaded-report.pdf",
           summary: data.summary,
           biomarkers: data.biomarkers,
-          full_analysis_markdown: data.full_analysis_markdown,
-          uploaded_by: user.id
+          full_analysis_markdown: data.full_analysis_markdown
         })
         .select()
         .single();
-      
+
       if (report) {
         setLabReports(prev => [report, ...prev]);
         return { success: true, data: report };
@@ -470,12 +976,11 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
   };
 
   const deleteLabReport = async (reportId: string) => {
-    if (isSupabaseEnabled && supabase && user) {
+    if (isSupabaseEnabled && supabase) {
       const { error } = await supabase
         .from("lab_reports")
         .delete()
         .eq("id", reportId);
-      
       if (!error) {
         setLabReports(prev => prev.filter(r => r.id !== reportId));
         return { success: true };
@@ -492,8 +997,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         .insert({
           parent_id: activeParent.id,
           user_message: userMessage,
-          ai_response: aiResponse,
-          source: "dashboard"
+          ai_response: aiResponse
         });
       if (!error) {
         await refreshData();
@@ -505,18 +1009,14 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
   };
 
   const updateScorecard = async (answers: any, scores: any) => {
-    if (isSupabaseEnabled && supabase && activeParent && user) {
+    if (isSupabaseEnabled && supabase && activeParent) {
       try {
-        const scorecard_answers = { answers, scores };
-        const risk_level = scores.riskLevel || "Healthy Baseline";
-        const health_index = Math.max(0, 100 - (scores.total || 0));
-
         const { data: updatedParent, error } = await supabase
           .from("parents")
           .update({
-            scorecard_answers,
-            risk_level,
-            health_index
+            scorecard_answers: answers,
+            risk_level: scores.riskLevel,
+            health_index: scores.healthIndex
           })
           .eq("id", activeParent.id)
           .select()
@@ -537,7 +1037,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
   };
 
   const resetScorecard = async () => {
-    if (isSupabaseEnabled && supabase && activeParent && user) {
+    if (isSupabaseEnabled && supabase && activeParent) {
       try {
         const { data: updatedParent, error } = await supabase
           .from("parents")
@@ -611,13 +1111,67 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
     return { success: false, error: "Backend configuration unavailable." };
   };
 
+  const addCareRecipient = async (data: {
+    display_name: string;
+    relationship: string;
+    primary_language: string;
+    phone?: string;
+    timezone?: string;
+  }) => {
+    if (isSupabaseEnabled && supabase && user && family) {
+      try {
+        const { data: recipient, error } = await supabase
+          .from("care_recipients")
+          .insert({
+            family_id: family.id,
+            display_name: data.display_name.trim(),
+            relationship: data.relationship.trim(),
+            primary_language: data.primary_language || "English",
+            phone: data.phone?.trim() || null,
+            timezone: data.timezone || "Asia/Kolkata",
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error inserting care recipient:", error);
+          return { error };
+        }
+
+        if (recipient) {
+          await supabase.from("consents").insert({
+            care_recipient_id: recipient.id,
+            consent_type: "family_care_coordination",
+            status: "granted",
+            recorded_by: user.id,
+            recorded_at: new Date().toISOString(),
+          });
+
+          await fetchSupabaseData(user.id);
+          selectActiveParent(recipient.id);
+        }
+
+        return { error: null, data: recipient };
+      } catch (err: any) {
+        console.error("Failed to add care recipient:", err);
+        return { error: err };
+      }
+    } else {
+      return { error: { message: "Backend or active family connection unavailable." } };
+    }
+  };
+
   const selectActiveParent = (parentId: string) => {
     const parent = parents.find(p => p.id === parentId);
     if (parent) {
       setActiveParent(parent);
-      if (isSupabaseEnabled) {
-        fetchParentRecords(parentId);
-      }
+    }
+    const recipient = careRecipients.find(r => r.id === parentId);
+    if (recipient) {
+      setActiveCareRecipient(recipient);
+    }
+    if (isSupabaseEnabled) {
+      fetchParentRecords(parentId);
     }
   };
 
@@ -630,28 +1184,39 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         user,
         profile,
         family,
+        careRecipients,
+        activeCareRecipient,
         parents,
         activeParent,
         vitals,
         medications,
+        medicationSchedules,
+        medicationEvents,
+        careRoutines,
+        careRoutineSchedules,
+        careRoutineEvents,
+        healthObservations,
+        healthDocuments,
+        healthConditions,
         medicationLogs,
         labReports,
         aiConversations,
         whatsappMessages,
-        
-        lastSaved: "Cloud Storage Only",
-        pendingChanges: 0,
-        resetLocalPendingChanges: () => {},
-        pendingSyncCount: 0,
-        lastSyncEvent: null,
-        simulateCloudSyncAction: () => {},
-        dismissSyncQueueAction: () => {},
 
         signIn,
         signUp,
         signOut,
         onboard,
+        addCareRecipient,
         
+        addRealMedication,
+        deactivateMedication,
+        addRealCareRoutine,
+        deactivateCareRoutine,
+        respondToMedicationEvent,
+        respondToCareRoutineEvent,
+        addHealthObservation,
+
         addVital,
         addMedication,
         toggleMedicationLog,

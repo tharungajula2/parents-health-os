@@ -72,12 +72,12 @@ export function MedicationTracker({ onNavigate }: MedicationTrackerProps) {
             return medications.map(m => ({
                 name: m.name,
                 dosage: m.dosage || "1 tab",
-                timing: m.timing || "Morning",
+                timing: (m as any).timing || "Morning",
                 type: "Chronic",
                 status: (m.is_active ? "Active" : "Archived") as "Active" | "Archived",
                 relationToFood: "After Food",
                 remarks: m.instructions || "",
-                slots: [m.timing as any || "Morning"]
+                slots: [(m as any).timing as any || "Morning"]
             }));
         }
         return localMeds;

@@ -1,17 +1,116 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Stethoscope, FileText, BookOpen, Users, Lock, ArrowRight, Activity, Bell, MessageCircle, Calendar, AlertTriangle, ShieldCheck, Heart, UserPlus, LogIn, Loader2, Sparkles, LayoutDashboard, Smartphone } from "lucide-react";
-import Link from "next/link";
+import {
+  Heart,
+  Users,
+  Home as HomeIcon,
+  Activity,
+  FileText,
+  User,
+  Plus,
+  ChevronDown,
+  Check,
+  X,
+  ShieldCheck,
+  LogOut,
+  ArrowRight,
+  LogIn,
+  UserPlus,
+  Loader2,
+  AlertTriangle,
+  Pill,
+  Calendar,
+  Sparkles,
+  CheckCircle2,
+  Globe,
+  PhoneCall,
+  Clock,
+  Thermometer,
+  Weight as WeightIcon,
+  Stethoscope,
+  FileSpreadsheet
+} from "lucide-react";
 import { useParentsAuth } from "../lib/supabase/context";
+import { ToastProvider, useToast } from "../components/ui/Toast";
 
-export default function Home() {
-  const { 
-    isSupabaseEnabled, 
-    isAuthenticated, 
-    isLoading, 
-    parents, 
+// Helper: Title case formatting for display names (e.g. satyanarayana -> Satyanarayana)
+function formatName(name?: string | null): string {
+  if (!name) return "";
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
+// Format 24-hr time string (e.g. "08:00" -> "08:00 AM")
+function formatTime12(timeStr?: string | null): string {
+  if (!timeStr) return "";
+  const parts = timeStr.split(":");
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  return `${hours.toString().padStart(2, "0")}:${minutes} ${ampm}`;
+}
+
+// Observation Category Labels
+function formatObservationCategoryLabel(cat?: string | null): string {
+  switch (cat) {
+    case "blood_pressure": return "Blood Pressure";
+    case "blood_glucose": return "Blood Glucose";
+    case "weight": return "Weight";
+    case "body_temperature": return "Body Temperature";
+    case "pulse_oximetry": return "SpO2 (Pulse Oximetry)";
+    case "heart_rate": return "Heart Rate";
+    case "symptom_notes": return "Symptom / Health Note";
+    default: return "Health Observation";
+  }
+}
+
+// Observation Value Formatter
+function formatObservationValue(obs?: any): string {
+  if (!obs) return "";
+  if (obs.category === "blood_pressure") {
+    return `${obs.value_sys} / ${obs.value_dia} ${obs.unit || "mmHg"}`;
+  }
+  if (obs.category === "symptom_notes") {
+    return obs.value_text || obs.notes || "Note logged";
+  }
+  if (obs.value_numeric !== null && obs.value_numeric !== undefined) {
+    return `${obs.value_numeric} ${obs.unit || ""}`.trim();
+  }
+  return obs.value_text || obs.notes || "Observation recorded";
+}
+
+// Human-readable timestamp formatter (e.g. "Today, 8:10 AM", "Yesterday, 7:45 AM", "Sep 1, 10:30 AM")
+function formatObservedTime(dateIso?: string | null): string {
+  if (!dateIso) return "";
+  const obsDate = new Date(dateIso);
+  const now = new Date();
+  const isToday = obsDate.toDateString() === now.toDateString();
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = obsDate.toDateString() === yesterday.toDateString();
+
+  const timeStr = obsDate.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true });
+
+  if (isToday) return `Today, ${timeStr}`;
+  if (isYesterday) return `Yesterday, ${timeStr}`;
+  return `${obsDate.toLocaleDateString("en-IN", { month: "short", day: "numeric" })}, ${timeStr}`;
+}
+
+export default function AppHome() {
+  const {
+    isSupabaseEnabled,
+    isAuthenticated,
+    isLoading,
+    parents,
     onboard,
     signIn,
     signUp,
@@ -25,7 +124,7 @@ export default function Home() {
   const [phone, setPhone] = useState("");
   const [authError, setAuthError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Onboarding Form
   const [onboardForm, setOnboardForm] = useState({
     familyName: "",
@@ -35,8 +134,6 @@ export default function Home() {
     language: "English"
   });
   const [consentChecked, setConsentChecked] = useState(false);
-
-
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,11 +162,11 @@ export default function Home() {
   const handleOnboardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!consentChecked) {
-      alert("⚠️ You must certify that you have obtained parental consent to proceed.");
+      alert("⚠️ You must certify permission and consent to proceed.");
       return;
     }
-    if (!onboardForm.familyName || !onboardForm.parentName || !onboardForm.parentPhone) {
-      alert("Please fill out all onboarding details.");
+    if (!onboardForm.familyName || !onboardForm.parentName) {
+      alert("Please fill out required onboarding details.");
       return;
     }
     setAuthError("");
@@ -77,10 +174,10 @@ export default function Home() {
     try {
       const { error } = await onboard(onboardForm);
       if (error) {
-        setAuthError(error.message || "Failed to establish digital care link. Please try again.");
+        setAuthError(error.message || "Failed to establish family care link.");
       }
     } catch (err) {
-      setAuthError("An unexpected error occurred during onboarding.");
+      setAuthError("An unexpected error occurred during setup.");
     } finally {
       setIsSubmitting(false);
     }
@@ -88,191 +185,160 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#FAF9F6] relative">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#0E5E5A]/5 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#E05E1B]/5 blur-[120px]" />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#FAF8F5] relative">
         <motion.div
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ repeat: Infinity, duration: 1.5 }}
-          className="h-16 w-16 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A] mb-4 shadow-inner"
+          animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
+          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          className="h-16 w-16 rounded-2xl bg-white border border-[#EFECE6] flex items-center justify-center text-[#0E5E5A] mb-4 shadow-sm"
         >
-          <Activity size={32} className="animate-pulse" />
+          <Heart size={28} className="fill-[#0E5E5A]/10 text-[#0E5E5A]" />
         </motion.div>
-        <p className="data-label text-[#0E5E5A] animate-pulse !tracking-[0.25em] text-xs">First Family Care Console // Loading</p>
+        <p className="text-[#0E5E5A] uppercase tracking-[0.25em] text-[10px] font-semibold">
+          Parents Health OS
+        </p>
       </div>
     );
   }
 
-  // Not logged in
+  // 1. Landing & Auth
   if (!isAuthenticated) {
     if (mode === "landing") {
       return (
-        <div className="flex min-h-screen items-center justify-center p-6 md:p-12 bg-[#FAF9F6] relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#E05E1B]/5 blur-[140px] rounded-full -mr-32 -mt-32" />
-          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#0E5E5A]/5 blur-[140px] rounded-full -ml-32 -mb-32" />
+        <div className="flex min-h-screen flex-col items-center justify-between p-6 md:p-12 bg-[#FAF8F5] relative overflow-hidden">
+          <div className="w-full max-w-xl mx-auto my-auto text-center space-y-8 py-8 relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#EFECE6] shadow-sm"
+            >
+              <span className="h-2 w-2 rounded-full bg-[#D95D28] animate-pulse" />
+              <span className="text-[#0E5E5A] uppercase tracking-widest text-[9px] font-bold">
+                FAMILY CARE OS // V1 REAL
+              </span>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-5xl relative z-10 py-6"
-          >
-            <div className="text-center mb-12">
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white border border-[#e2ded5] shadow-sm mb-8"
-              >
-                <div className="h-1.5 w-1.5 rounded-full bg-[#E05E1B] animate-pulse" />
-                <span className="data-label text-[#0E5E5A]/80 uppercase tracking-widest text-[9px]">FIRST FAMILY CARE CONSOLE // ACTIVE INTERACTIVE PROTOTYPE</span>
-              </motion.div>
-              
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter mb-6 font-[family-name:var(--font-outfit)]">
-                <span className="text-gradient">First Family Care Console</span>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="space-y-4"
+            >
+              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight font-[family-name:var(--font-outfit)] text-[#1C2826] leading-tight">
+                Quiet family care for your parents.
               </h1>
-              
-              <p className="text-base md:text-lg text-slate-600 font-light max-w-3xl mx-auto leading-relaxed mb-10 font-[family-name:var(--font-inter)]">
-                A warm, family-first operating console for <span className="text-[#0E5E5A] font-semibold">Indian Eldercare</span>. Adult children coordinate daily care, parents remain in their comfort zone on WhatsApp, and Anaya care automation handles routine reminders and check-ins (never as a general AI assistant, but as targeted automation). Operates as a secure, local sandbox prototype.
+              <p className="text-sm sm:text-base text-slate-600 font-light max-w-md mx-auto leading-relaxed">
+                A warm, calm operating console for adult children coordinating care for Amma and Papa.
               </p>
-            </div>
+            </motion.div>
 
-            {/* Core App Modules Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 px-4 md:px-0 max-w-4xl mx-auto">
-              <ModuleBrief 
-                icon={<UserPlus className="text-[#0E5E5A]" size={20} strokeWidth={1.5} />}
-                title="First Family Intake"
-                desc="Register elder parents, document daily schedules, emergency contacts, and log digital consent."
-              />
-              <ModuleBrief 
-                icon={<Activity className="text-[#0E5E5A]" size={20} strokeWidth={1.5} />}
-                title="Baseline Health Camp"
-                desc="Log and track quick community health camp metrics to instantly establish a vitals baseline."
-              />
-              <ModuleBrief 
-                icon={<MessageCircle className="text-[#0E5E5A]" size={20} strokeWidth={1.5} />}
-                title="WhatsApp Care Automation"
-                desc="Anaya coordinates reminders, tracks check-in responses, and routes concerns to children."
-              />
-              <ModuleBrief 
-                icon={<FileText className="text-[#0E5E5A]" size={20} strokeWidth={1.5} />}
-                title="Doctor-Ready Brief"
-                desc="Generate clinical consultation summaries ready for doctor review and care decisions."
-              />
-            </div>
-
-            <div className="flex flex-col items-center gap-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="pt-4"
+            >
               <button
                 onClick={() => setMode("login")}
-                className="group relative flex items-center gap-6 rounded-2xl bg-[#0E5E5A] hover:bg-[#0c4e4b] text-white px-12 py-5 font-bold text-base transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-teal-900/10 active:scale-95 animate-bounce-subtle mb-4"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-2xl bg-[#0E5E5A] hover:bg-[#0C4E4B] text-white px-8 py-4 font-semibold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95"
               >
-                <span className="font-[family-name:var(--font-outfit)] uppercase tracking-[0.2em] text-[11px]">Establish Care Link</span>
-                <ArrowRight size={16} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
+                <span>Enter Family Console</span>
+                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
               </button>
+            </motion.div>
+          </div>
 
-              <div className="flex flex-col items-center gap-2">
-                <p className="data-label text-slate-400 text-[10px] uppercase tracking-widest font-bold text-center">
-                  An interactive elder-care prototype designed & built by <span className="text-slate-500">Tharun Gajula</span>
-                </p>
-                <div className="h-px w-12 bg-[#e2ded5]" />
-              </div>
-            </div>
-          </motion.div>
+          <footer className="text-center text-[10px] text-slate-400 font-medium tracking-wider uppercase">
+            Parents Health OS // Real Supabase Persistence
+          </footer>
         </div>
       );
     }
 
-    // Login/Signup Form
     return (
-      <div className="flex min-h-screen items-center justify-center p-4 bg-[#FAF9F6] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#E05E1B]/5 blur-[120px] rounded-full -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#0E5E5A]/5 blur-[120px] rounded-full -ml-32 -mb-32" />
-
+      <div className="flex min-h-screen items-center justify-center p-4 bg-[#FAF8F5] relative">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md relative z-10"
         >
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-800 font-[family-name:var(--font-outfit)] uppercase">
-              {mode === "login" ? "Welcome Back" : "Register Account"}
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold tracking-tight text-[#1C2826] font-[family-name:var(--font-outfit)]">
+              {mode === "login" ? "Welcome back" : "Create your account"}
             </h2>
-            <p className="text-slate-500 text-xs mt-1.5">PARENTS HEALTH OS // SANDBOX / SIMULATED DATA ONLY</p>
+            <p className="text-slate-500 text-xs mt-1 font-light">Parents Health OS Console</p>
           </div>
 
-          <div className="glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-xl bg-white/70 backdrop-blur-md">
-
-
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#EFECE6] shadow-sm space-y-4">
             {authError && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex gap-3 text-[11px] text-red-800 font-light">
-                <AlertTriangle size={18} className="shrink-0 text-red-500" />
+              <div className="p-3 bg-red-50 border border-red-200 rounded-2xl flex gap-2 text-xs text-red-800">
+                <AlertTriangle size={16} className="shrink-0 text-red-500 mt-0.5" />
                 <div>{authError}</div>
               </div>
             )}
 
-            <form onSubmit={handleAuthSubmit} className="space-y-5">
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
               {mode === "signup" && (
                 <>
                   <div>
-                    <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Your Full Name</label>
+                    <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Your Full Name</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Amit Sharma"
+                      placeholder="e.g. Tharun Kumar Gajula"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
+                      className="w-full px-3.5 py-3 quiet-input text-xs"
                     />
                   </div>
                   <div>
-                    <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Your Phone Number</label>
+                    <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Your Phone Number</label>
                     <input
                       type="tel"
                       required
                       placeholder="e.g. +91 99999 99999"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
+                      className="w-full px-3.5 py-3 quiet-input text-xs"
                     />
                   </div>
                 </>
               )}
 
-
-
               <div>
-                <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Email Address</label>
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Email Address</label>
                 <input
                   type="email"
                   required
-                  placeholder="e.g. child@parentshealth.in"
+                  placeholder="e.g. tharun@parentshealth.in"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
+                  className="w-full px-3.5 py-3 quiet-input text-xs"
                 />
               </div>
 
               <div>
-                <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Security Password</label>
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Security Password</label>
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
+                  className="w-full px-3.5 py-3 quiet-input text-xs"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-4 bg-[#0E5E5A] text-white font-bold rounded-xl text-xs uppercase tracking-widest hover:bg-[#0c4e4b] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full py-3.5 bg-[#0E5E5A] text-white font-semibold rounded-2xl text-xs uppercase tracking-widest hover:bg-[#0C4E4B] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : mode === "login" ? (
                   <>
-                    <LogIn size={16} /> Enter Dashboard
+                    <LogIn size={16} /> Enter Console
                   </>
                 ) : (
                   <>
@@ -282,13 +348,11 @@ export default function Home() {
               </button>
             </form>
 
-            <div className="mt-8 text-center border-t border-[#e2ded5] pt-6 flex items-center justify-between text-[11px] text-slate-500">
-              <span>
-                {mode === "login" ? "Need an account?" : "Already registered?"}
-              </span>
+            <div className="mt-6 text-center border-t border-slate-100 pt-4 flex items-center justify-between text-xs text-slate-500">
+              <span>{mode === "login" ? "Need an account?" : "Already registered?"}</span>
               <button
                 onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                className="text-[#0E5E5A] font-bold hover:underline"
+                className="text-[#0E5E5A] font-semibold hover:underline"
               >
                 {mode === "login" ? "Register Here" : "Log In"}
               </button>
@@ -297,7 +361,7 @@ export default function Home() {
 
           <button
             onClick={() => setMode("landing")}
-            className="w-full text-center text-xs text-slate-400 mt-6 hover:text-slate-600 transition-colors"
+            className="w-full text-center text-xs text-slate-400 mt-4 hover:text-slate-600"
           >
             ← Back to Home
           </button>
@@ -306,58 +370,55 @@ export default function Home() {
     );
   }
 
-  // Logged in but needs onboarding (first family member creation)
+  // 2. Initial Setup for First Care Recipient
   if (parents.length === 0) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4 bg-[#FAF9F6] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#E05E1B]/5 blur-[120px] rounded-full -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#0E5E5A]/5 blur-[120px] rounded-full -ml-32 -mb-32" />
-
+      <div className="flex min-h-screen items-center justify-center p-4 bg-[#FAF8F5] relative">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-2xl relative z-10"
+          className="w-full max-w-lg relative z-10"
         >
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-800 font-[family-name:var(--font-outfit)] uppercase">
-              Configure Parents Health OS
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold tracking-tight text-[#1C2826] font-[family-name:var(--font-outfit)]">
+              Welcome to Parents Health OS
             </h2>
-            <p className="text-slate-550 text-[10px] mt-1.5 tracking-wider uppercase">Setup Family circle & DPDP Consent Logging</p>
+            <p className="text-slate-500 text-xs mt-1 font-light">Set up your family circle & first parent recipient</p>
           </div>
 
-          <div className="glass-card p-8 md:p-10 rounded-[3rem] border-[#e2ded5] shadow-xl bg-white/70 backdrop-blur-md">
-            <form onSubmit={handleOnboardSubmit} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Family Network Circle Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Sharma Family Care"
-                    value={onboardForm.familyName}
-                    onChange={(e) => setOnboardForm(prev => ({ ...prev, familyName: e.target.value }))}
-                    className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
-                  />
-                </div>
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#EFECE6] shadow-sm">
+            <form onSubmit={handleOnboardSubmit} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Family Network Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sharma Family Circle"
+                  value={onboardForm.familyName}
+                  onChange={(e) => setOnboardForm(prev => ({ ...prev, familyName: e.target.value }))}
+                  className="w-full px-3.5 py-3 quiet-input text-xs"
+                />
+              </div>
 
-                <div>
-                  <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Elder Parent's Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Rajesh Sharma"
-                    value={onboardForm.parentName}
-                    onChange={(e) => setOnboardForm(prev => ({ ...prev, parentName: e.target.value }))}
-                    className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
-                  />
-                </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Elder Parent's Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Satyanarayana"
+                  value={onboardForm.parentName}
+                  onChange={(e) => setOnboardForm(prev => ({ ...prev, parentName: e.target.value }))}
+                  className="w-full px-3.5 py-3 quiet-input text-xs"
+                />
+              </div>
 
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Parent Relationship</label>
+                  <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Relationship *</label>
                   <select
                     value={onboardForm.relationship}
                     onChange={(e) => setOnboardForm(prev => ({ ...prev, relationship: e.target.value }))}
-                    className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs text-slate-650"
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
                   >
                     <option value="Father">Father</option>
                     <option value="Mother">Mother</option>
@@ -367,23 +428,11 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Parent WhatsApp Number</label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="e.g. +91 98480 22338"
-                    value={onboardForm.parentPhone}
-                    onChange={(e) => setOnboardForm(prev => ({ ...prev, parentPhone: e.target.value }))}
-                    className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="data-label text-[9px] text-slate-500 mb-1.5 block uppercase tracking-wider">Preferred Check-In Language</label>
+                  <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Primary Language *</label>
                   <select
                     value={onboardForm.language}
                     onChange={(e) => setOnboardForm(prev => ({ ...prev, language: e.target.value }))}
-                    className="w-full px-4 py-3.5 rounded-xl border border-[#e2ded5] bg-[#FAF9F6]/40 focus:border-[#0E5E5A] focus:outline-none transition-all text-xs text-slate-650"
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
                   >
                     <option value="English">English</option>
                     <option value="Telugu">Telugu (తెలుగు)</option>
@@ -393,51 +442,49 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* DPDPA 2023 DIGITAL CONSENT BOX */}
-              <div className="p-6 bg-teal-50/50 border border-teal-100/60 rounded-[2rem] space-y-4">
-                <div className="flex gap-3 items-start">
-                  <ShieldCheck className="text-[#0E5E5A] shrink-0 mt-0.5" size={20} />
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-800 uppercase font-[family-name:var(--font-outfit)] tracking-wider">DPDP Act 2023 Readiness & Consent Simulation</h4>
-                    <p className="text-[10px] text-slate-600 leading-relaxed font-light mt-1 font-[family-name:var(--font-inter)]">
-                      This sandbox runs in educational readiness mode. Your data is stored locally in this browser. Optional AI report analysis may send uploaded report content to the configured Gemini API for processing. Under live production sync, data residency is planned for Mumbai (AP-SOUTH-1) regional servers.
-                    </p>
-                  </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Parent Phone (Optional)</label>
+                <input
+                  type="tel"
+                  placeholder="e.g. +91 98480 22338"
+                  value={onboardForm.parentPhone}
+                  onChange={(e) => setOnboardForm(prev => ({ ...prev, parentPhone: e.target.value }))}
+                  className="w-full px-3.5 py-3 quiet-input text-xs"
+                />
+              </div>
+
+              <div className="p-4 bg-teal-50/60 border border-teal-100 rounded-2xl space-y-2">
+                <div className="flex gap-2 items-start">
+                  <ShieldCheck className="text-[#0E5E5A] shrink-0 mt-0.5" size={18} />
+                  <p className="text-xs text-slate-600 leading-relaxed font-light">
+                    I confirm permission to store and manage health records for this family member securely.
+                  </p>
                 </div>
-                
-                <label className="flex items-start gap-3.5 cursor-pointer pt-2 group select-none">
+                <label className="flex items-center gap-2 cursor-pointer pt-1">
                   <input
                     type="checkbox"
                     checked={consentChecked}
                     onChange={(e) => setConsentChecked(e.target.checked)}
-                    className="h-4.5 w-4.5 rounded border-[#e2ded5] bg-white accent-[#0E5E5A] focus:ring-0 cursor-pointer mt-0.5 shrink-0"
+                    className="h-4 w-4 rounded border-slate-300 text-[#0E5E5A] focus:ring-0 cursor-pointer"
                   />
-                  <span className="text-[10px] text-slate-600 leading-relaxed font-normal group-hover:text-slate-800 transition-colors">
-                    I certify that <span className="font-semibold text-slate-800">I have obtained consent</span> from my parent to simulate clinical checks, receive mock/optional WhatsApp check-ins through Anaya, and allow Parents Health OS to parse diagnostic insights.
-                  </span>
+                  <span className="text-xs font-semibold text-slate-700">I certify permission</span>
                 </label>
               </div>
 
-              <div className="flex items-center justify-between gap-6 border-t border-[#e2ded5] pt-6">
+              <div className="flex items-center justify-between gap-4 pt-2">
                 <button
                   type="button"
                   onClick={signOut}
-                  className="px-6 py-4 border border-[#e2ded5] hover:bg-slate-50 text-slate-500 font-bold rounded-xl text-[10px] uppercase tracking-widest transition-all"
+                  className="px-4 py-3 border border-[#EFECE6] text-slate-500 font-semibold rounded-2xl text-xs uppercase"
                 >
-                  Cancel & Log Out
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-10 py-4 bg-[#0E5E5A] hover:bg-[#0c4e4b] text-white font-bold rounded-xl text-[10px] uppercase tracking-widest transition-all flex items-center gap-3 disabled:opacity-50"
+                  className="px-6 py-3 bg-[#0E5E5A] hover:bg-[#0C4E4B] text-white font-semibold rounded-2xl text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-50"
                 >
-                  {isSubmitting ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <>
-                      Establish Care Link <ArrowRight size={14} />
-                    </>
-                  )}
+                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <>Save & Continue <ArrowRight size={14} /></>}
                 </button>
               </div>
             </form>
@@ -447,65 +494,9 @@ export default function Home() {
     );
   }
 
+  // 3. Real Mobile-First Dashboard Console
   return <DashboardShell />;
 }
-
-
-function ModuleBrief({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
-  return (
-    <div className="glass-card group p-6 md:p-8 rounded-[2rem] transition-all hover:bg-white hover:border-[#0E5E5A]/20 text-left flex flex-col justify-between h-full min-h-[140px]">
-      <div>
-        <div className="h-10 w-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform text-[#0E5E5A]">
-          {icon}
-        </div>
-        <h3 className="text-xs md:text-sm font-[family-name:var(--font-outfit)] font-bold text-slate-800 mb-2 uppercase tracking-wider">{title}</h3>
-        <p className="text-[11px] md:text-xs text-slate-500 font-normal leading-relaxed font-[family-name:var(--font-inter)]">{desc}</p>
-      </div>
-    </div>
-  );
-}
-
-import { SmartReport } from "../components/SmartReport";
-import { ClinicalEngine } from "../components/ClinicalEngine";
-import { MedicationTracker } from "../components/MedicationTracker";
-import { CareTeam } from "../components/CareTeam";
-import { HeaderIcons } from "../components/HeaderIcons";
-import { ActivityFeed } from "../components/ActivityFeed";
-import { ToastProvider, useToast } from "../components/ui/Toast";
-import { FamilyIntake } from "../components/FamilyIntake";
-import { BaselineCamp } from "../components/BaselineCamp";
-import { CoordinatorBoard } from "../components/CoordinatorBoard";
-import { 
-  Trash2, 
-  Plus, 
-  Clock, 
-  TrendingUp, 
-  PlusCircle, 
-  Check, 
-  CheckSquare,
-  Pill, 
-  Footprints, 
-  Smile, 
-  Printer, 
-  X, 
-  Download, 
-  Upload, 
-  Play, 
-  Briefcase,
-  Database,
-  CloudOff,
-  Save
-} from "lucide-react";
-import { ClinicHub } from "../components/ClinicHub";
-import { SettingsAndBackup } from "../components/SettingsAndBackup";
-import { generateCarePlan } from "../utils/carePlanEngine";
-import { 
-  getConsultRequests, 
-  saveConsultRequest, 
-  updateConsultStatus, 
-  generateDoctorBrief 
-} from "../utils/careTeamEngine";
-
 
 function DashboardShell() {
   return (
@@ -516,1866 +507,2072 @@ function DashboardShell() {
 }
 
 function DashboardContent() {
-  const { 
-    parents, 
-    profile, 
-    user, 
-    signOut, 
-    activeParent, 
+  const {
+    profile,
+    user,
+    family,
+    careRecipients,
+    activeCareRecipient,
+    parents,
+    activeParent,
     selectActiveParent,
-    vitals,
+    addCareRecipient,
     medications,
-    medicationLogs,
-    labReports,
-    addVital,
-    addMedication,
-    toggleMedicationLog,
-    isSupabaseEnabled,
-    lastSaved,
-    pendingChanges,
-    resetLocalPendingChanges
+    medicationEvents,
+    careRoutines,
+    careRoutineEvents,
+    healthObservations,
+    healthDocuments,
+    healthConditions,
+    addRealMedication,
+    deactivateMedication,
+    addRealCareRoutine,
+    deactivateCareRoutine,
+    respondToMedicationEvent,
+    respondToCareRoutineEvent,
+    addHealthObservation,
+    signOut
   } = useParentsAuth();
-  
-  const [activeView, setActiveView] = useState("dashboard");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isParentDropdownOpen, setIsParentDropdownOpen] = useState(false);
-  
-  // Modals / Quick Actions State
-  const [showVitalsModal, setShowVitalsModal] = useState(false);
-  const [showObservationModal, setShowObservationModal] = useState(false);
-  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
-  const [showMedicationModal, setShowMedicationModal] = useState(false);
-  const [showDoctorBriefModal, setShowDoctorBriefModal] = useState(false);
-  
-  // Form Inputs
-  const [vitalInput, setVitalInput] = useState({
-    bpSys: "",
-    bpDia: "",
-    sugar: "",
-    weight: "",
-    notes: ""
-  });
-  
-  const [observationInput, setObservationInput] = useState({
-    type: "General",
-    severity: "Low" as "Low" | "Medium" | "High",
-    note: ""
-  });
-  
-  const [appointmentInput, setAppointmentInput] = useState({
-    doctorName: "",
-    specialty: "",
-    date: "",
-    time: "",
-    reason: "",
-    mode: "in-person" as "in-person" | "video" | "phone" | "whatsapp"
-  });
-  
-  const [medicationInput, setMedicationInput] = useState({
-    name: "",
-    dosage: "",
-    timing: "Morning",
-    instructions: ""
-  });
-
-  const [generatedBrief, setGeneratedBrief] = useState<any>(null);
-  const [carePriority, setCarePriority] = useState<"Stable" | "Watch" | "Urgent Follow-up">("Stable");
-  
-  // Dynamic Lists (Observations, Appointments)
-  const [observations, setObservations] = useState<any[]>([]);
-  const [appointments, setAppointments] = useState<any[]>([]);
-
-  // Onboarding & Routine checklist manual overrides
-  const [setupChecklistManual, setSetupChecklistManual] = useState<Record<string, boolean>>({});
-  const [routineChecklist, setRoutineChecklist] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (activeParent) {
-      setSetupChecklistManual({});
-      setRoutineChecklist({});
-      setCarePriority("Stable");
-    }
-  }, [activeParent?.id]);
-
-  const toggleSetupChecklist = (key: string) => {
-    if (!activeParent) return;
-    const next = { ...setupChecklistManual, [key]: !setupChecklistManual[key] };
-    setSetupChecklistManual(next);
-    showToast("✅ Onboarding checklist status updated.", "success");
-  };
-
-  const toggleRoutineChecklist = (key: string) => {
-    if (!activeParent) return;
-    const next = { ...routineChecklist, [key]: !routineChecklist[key] };
-    setRoutineChecklist(next);
-    showToast("📝 Care routine checklist updated.", "success");
-  };
-
-  const handlePriorityChange = (priority: "Stable" | "Watch" | "Urgent Follow-up") => {
-    if (!activeParent) return;
-    setCarePriority(priority);
-    showToast(`⚠️ Care Priority updated to ${priority}.`, "info");
-  };
-
-  const loadObservations = (_pId: string) => {
-    return [];
-  };
-
-  useEffect(() => {
-    if (activeParent) {
-      setObservations(loadObservations(activeParent.id));
-      setAppointments(getConsultRequests(activeParent.id));
-    }
-  }, [activeParent?.id]);
   const { showToast } = useToast();
 
-  const checkVitalThresholds = (bpSys?: number, bpDia?: number, sugar?: number) => {
-    const alerts: string[] = [];
-    if (bpSys && bpDia && bpSys > 0 && bpDia > 0) {
-      if (bpSys >= 140 || bpDia >= 90 || bpSys < 90) {
-        alerts.push("⚠️ Blood pressure: This value is outside the usual reference range used by this app. Please review with a qualified doctor if this is unexpected, repeated, or accompanied by symptoms. This app does not diagnose.");
-      }
-    }
-    if (sugar && sugar > 0) {
-      if (sugar > 125 || sugar < 70) {
-        alerts.push("⚠️ Blood glucose: This value is outside the usual reference range used by this app. Please review with a qualified doctor if this is unexpected, repeated, or accompanied by symptoms. This app does not diagnose.");
-      }
-    }
-    return alerts;
-  };
+  const [activeTab, setActiveTab] = useState<"home" | "family" | "care" | "records" | "profile">("home");
+  const [isRecipientMenuOpen, setIsRecipientMenuOpen] = useState(false);
+  const [showAddFamilyModal, setShowAddFamilyModal] = useState(false);
+  const [showAddMedModal, setShowAddMedModal] = useState(false);
+  const [showAddRoutineModal, setShowAddRoutineModal] = useState(false);
+  const [showAddObsModal, setShowAddObsModal] = useState(false);
 
-  const handleSaveVital = async (e: React.FormEvent) => {
+  // Forms
+  const [familyForm, setFamilyForm] = useState({
+    display_name: "",
+    relationship: "Mother",
+    primary_language: "English",
+    phone: "",
+    timezone: "Asia/Kolkata"
+  });
+  const [isSubmittingFamily, setIsSubmittingFamily] = useState(false);
+  const [familyError, setFamilyError] = useState("");
+
+  const [medForm, setMedForm] = useState({
+    name: "",
+    dosage: "",
+    instructions: "",
+    local_time: "08:00",
+    start_date: new Date().toISOString().split("T")[0]
+  });
+  const [isSubmittingMed, setIsSubmittingMed] = useState(false);
+  const [medError, setMedError] = useState("");
+
+  const [routineForm, setRoutineForm] = useState({
+    name: "",
+    category: "exercise",
+    description: "",
+    local_time: "07:00",
+    start_date: new Date().toISOString().split("T")[0]
+  });
+  const [isSubmittingRoutine, setIsSubmittingRoutine] = useState(false);
+  const [routineError, setRoutineError] = useState("");
+
+  const [obsForm, setObsForm] = useState({
+    category: "blood_pressure" as "blood_pressure" | "blood_glucose" | "weight" | "body_temperature" | "pulse_oximetry" | "heart_rate" | "symptom_notes" | "other",
+    value_sys: "128",
+    value_dia: "82",
+    value_numeric: "",
+    value_text: "",
+    notes: ""
+  });
+  const [isSubmittingObs, setIsSubmittingObs] = useState(false);
+  const [obsError, setObsError] = useState("");
+
+  const currentRecipient = activeCareRecipient || (careRecipients.length > 0 ? careRecipients[0] : null);
+
+  const handleAddFamilySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeParent) return;
-    
-    const sys = Number(vitalInput.bpSys) || 0;
-    const dia = Number(vitalInput.bpDia) || 0;
-    const sugar = Number(vitalInput.sugar) || 0;
-    const weight = Number(vitalInput.weight) || 0;
-    
-    if (!sys && !dia && !sugar && !weight) {
-      showToast("Please enter at least one measurement.", "error");
+    if (!familyForm.display_name.trim()) {
+      setFamilyError("Display name is required.");
       return;
     }
-    
-    const result = await addVital({
-      bp_sys: sys,
-      bp_dia: dia,
-      sugar: sugar,
-      weight: weight,
-      source: "manual"
-    });
-    
-    if (result.success) {
-      setVitalInput({
-        bpSys: "",
-        bpDia: "",
-        sugar: "",
-        weight: "",
-        notes: ""
+    setFamilyError("");
+    setIsSubmittingFamily(true);
+    try {
+      const formattedDisplayName = formatName(familyForm.display_name);
+      const { error } = await addCareRecipient({
+        display_name: formattedDisplayName,
+        relationship: familyForm.relationship,
+        primary_language: familyForm.primary_language,
+        phone: familyForm.phone,
+        timezone: "Asia/Kolkata"
       });
-      setShowVitalsModal(false);
-      showToast("Vitals logged successfully!", "success");
-    } else {
-      showToast("Failed to save vitals.", "error");
+      if (error) {
+        setFamilyError(error.message || "Failed to add family member.");
+      } else {
+        showToast(`✅ ${formattedDisplayName} added to family circle.`, "success");
+        setFamilyForm({
+          display_name: "",
+          relationship: "Mother",
+          primary_language: "English",
+          phone: "",
+          timezone: "Asia/Kolkata"
+        });
+        setShowAddFamilyModal(false);
+      }
+    } catch (err) {
+      setFamilyError("An error occurred while adding family member.");
+    } finally {
+      setIsSubmittingFamily(false);
     }
   };
 
-  const handleSaveObservation = (e: React.FormEvent) => {
+  const handleAddMedSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeParent || !observationInput.note.trim()) return;
-    
-    const pId = activeParent.id;
-    const current = loadObservations(pId);
-    const newObs = {
-      id: `obs-${Date.now()}`,
-      type: observationInput.type,
-      severity: observationInput.severity,
-      note: observationInput.note.trim(),
-      timestamp: new Date().toISOString()
-    };
-    
-    const updated = [newObs, ...current];
-    setObservations(updated);
-    setObservationInput({ type: "General", severity: "Low", note: "" });
-    setShowObservationModal(false);
-    showToast("Daily observation logged successfully!", "success");
-  };
-
-  const handleSaveAppointment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activeParent || !appointmentInput.doctorName.trim()) return;
-    
-    const pId = activeParent.id;
-    const newReq: any = {
-      id: `req-${Date.now()}`,
-      parentId: pId,
-      doctorName: appointmentInput.doctorName.trim(),
-      specialty: appointmentInput.specialty.trim(),
-      status: "confirmed",
-      mode: appointmentInput.mode,
-      scheduledAt: `${appointmentInput.date}T${appointmentInput.time || "12:00"}:00`,
-      reason: appointmentInput.reason.trim(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    saveConsultRequest(pId, newReq);
-    setAppointments(getConsultRequests(pId));
-    setAppointmentInput({
-      doctorName: "",
-      specialty: "",
-      date: "",
-      time: "",
-      reason: "",
-      mode: "in-person"
-    });
-    setShowAppointmentModal(false);
-    showToast("Doctor consultation scheduled successfully!", "success");
-  };
-
-  const handleUpdateAppointment = (reqId: string, status: any) => {
-    if (!activeParent) return;
-    updateConsultStatus(activeParent.id, reqId, status);
-    setAppointments(getConsultRequests(activeParent.id));
-    showToast(`Appointment status updated to ${status}.`, "success");
-  };
-
-  const handleSaveMedication = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activeParent || !medicationInput.name.trim()) return;
-    
-    const result = await addMedication({
-      name: medicationInput.name.trim(),
-      dosage: medicationInput.dosage.trim(),
-      timing: medicationInput.timing,
-      instructions: medicationInput.instructions.trim()
-    });
-    
-    if (result.success) {
-      setMedicationInput({
-        name: "",
-        dosage: "",
-        timing: "Morning",
-        instructions: ""
+    if (!medForm.name.trim() || !medForm.dosage.trim() || !medForm.local_time) {
+      setMedError("Medication name, dosage, and time are required.");
+      return;
+    }
+    setMedError("");
+    setIsSubmittingMed(true);
+    try {
+      const { success, error } = await addRealMedication({
+        name: medForm.name,
+        dosage: medForm.dosage,
+        instructions: medForm.instructions,
+        local_time: medForm.local_time,
+        start_date: medForm.start_date
       });
-      setShowMedicationModal(false);
-      showToast("Medication added to active routine!", "success");
-    } else {
-      showToast("Failed to add medication. Please try again.", "error");
-    }
-  };
 
-  const handleGenerateDashboardBrief = () => {
-    if (!activeParent) return;
-    
-    const pId = activeParent.id;
-    const scAnswers: any = (activeParent.scorecard_answers as any)?.answers || {};
-    
-    const brief = generateDoctorBrief(
-      pId,
-      activeParent.name,
-      scAnswers,
-      medications,
-      vitals,
-      labReports
-    );
-    
-    setGeneratedBrief(brief);
-    setShowDoctorBriefModal(true);
-  };
-
-  const handleExportBackup = () => {
-    if (!activeParent) return;
-    const pId = activeParent.id;
-    
-    const backupData: any = {
-      parentId: pId,
-      parentName: activeParent.name,
-      exportTimestamp: new Date().toISOString(),
-      observations: loadObservations(pId),
-      appointments: getConsultRequests(pId),
-      medications: medications,
-      vitals: vitals,
-      medicationLogs: medicationLogs
-    };
-    
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `parents_health_backup_${activeParent.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showToast("Care records backup JSON exported successfully!", "success");
-  };
-
-
-  const handleSystemReset = () => {
-    if (confirm("Reset current session?")) {
-      signOut();
-      window.location.reload();
-    }
-  };
-
-  const primaryParentName = activeParent?.name || parents[0]?.name || "Geriatric Profile";
-
-  // Helper calculations for Today Care Dashboard
-  const todayStr = new Date().toISOString().split("T")[0];
-  const activeMeds = medications.filter(m => m.is_active !== false);
-  const todayMedsStatus = activeMeds.map(med => {
-    const isTaken = medicationLogs.some(
-      log => log.medication_id === med.id && log.log_date === todayStr && log.taken
-    );
-    return {
-      ...med,
-      taken: isTaken
-    };
-  });
-  
-  const totalMeds = todayMedsStatus.length;
-  const takenMeds = todayMedsStatus.filter(m => m.taken).length;
-  const adherencePct = totalMeds > 0 ? Math.round((takenMeds / totalMeds) * 100) : 0;
-  
-  const sortedVitals = [...vitals].sort((a, b) => {
-    return new Date(b.measured_at || b.created_at || 0).getTime() - new Date(a.measured_at || a.created_at || 0).getTime();
-  });
-  const latestVital = sortedVitals[0];
-  const vitalAlerts = latestVital ? checkVitalThresholds(latestVital.bp_sys ?? undefined, latestVital.bp_dia ?? undefined, latestVital.sugar ?? undefined) : [];
-
-  const getMedTimingGroup = (med: any) => {
-    const t = (med.timing || "").toLowerCase();
-    if (t.includes("morning") || t.includes("breakfast") || t.includes("am")) return "Morning";
-    if (t.includes("noon") || t.includes("lunch") || t.includes("pm")) return "Noon";
-    if (t.includes("evening") || t.includes("after 6") || t.includes("tea")) return "Evening";
-    if (t.includes("night") || t.includes("sleep") || t.includes("bedtime")) return "Night";
-    return "Morning"; // fallback
-  };
-
-  const groupedMeds = {
-    Morning: todayMedsStatus.filter(m => getMedTimingGroup(m) === "Morning"),
-    Noon: todayMedsStatus.filter(m => getMedTimingGroup(m) === "Noon"),
-    Evening: todayMedsStatus.filter(m => getMedTimingGroup(m) === "Evening"),
-    Night: todayMedsStatus.filter(m => getMedTimingGroup(m) === "Night")
-  };
-
-  const getAnayaSummary = () => {
-    const pName = activeParent?.name?.split(' ')[0] || 'Parent';
-    let summary = `Anaya care automation has executed routine check-ins for ${pName}. This system sends daily reminders, tracks responses, and escalates missed tasks to human coordinators. `;
-    
-    if (totalMeds === 0) {
-      summary += "No medications are scheduled in the routine yet. ";
-    } else if (takenMeds === totalMeds) {
-      summary += `Fabulous job! All ${totalMeds} scheduled medications for today have been completed (${adherencePct}% adherence). `;
-    } else {
-      summary += `${pName} has completed ${takenMeds} of ${totalMeds} medications scheduled for today (${adherencePct}% adherence). `;
-      const pendingMeds = todayMedsStatus.filter(m => !m.taken);
-      if (pendingMeds.length > 0) {
-        summary += `⚠️ Please remember to take scheduled medications: ${pendingMeds.map(m => m.name).join(", ")}. `;
+      if (!success) {
+        setMedError(error?.message || "Failed to record medication in database.");
+      } else {
+        showToast(`✅ Medication ${medForm.name} saved.`, "success");
+        setMedForm({
+          name: "",
+          dosage: "",
+          instructions: "",
+          local_time: "08:00",
+          start_date: new Date().toISOString().split("T")[0]
+        });
+        setShowAddMedModal(false);
       }
+    } catch (err) {
+      setMedError("An error occurred while saving medication.");
+    } finally {
+      setIsSubmittingMed(false);
     }
-    
-    if (latestVital) {
-      const bpStr = (latestVital.bp_sys && latestVital.bp_dia) ? `Blood Pressure is ${latestVital.bp_sys}/${latestVital.bp_dia} mmHg` : "";
-      const sugarStr = latestVital.sugar ? `Blood Sugar is ${latestVital.sugar} mg/dL` : "";
-      const weightStr = latestVital.weight ? `Weight is ${latestVital.weight} kg` : "";
-      const vitalsParts = [bpStr, sugarStr, weightStr].filter(Boolean);
-      
-      if (vitalsParts.length > 0) {
-        summary += `Latest physiological vitals: ${vitalsParts.join(", ")}. `;
-      }
-      
-      if (vitalAlerts.length > 0) {
-        summary += "Notice: Some physiological readings are outside target thresholds. Please check the clinical warnings below. ";
-      }
-    } else {
-      summary += `No vitals have been logged today. I highly recommend recording ${pName}'s physical vitals to establish a stable wellness baseline. `;
-    }
-    
-    if (observations.length > 0) {
-      const todayObs = observations.filter(o => o.timestamp?.split("T")[0] === todayStr);
-      if (todayObs.length > 0) {
-        summary += `We have logged ${todayObs.length} subjective observations today. `;
-      }
-    }
-    
-    if (appointments.length > 0) {
-      const upcoming = appointments.filter(a => a.status === "confirmed" || a.status === "pending" || a.status === "requested");
-      if (upcoming.length > 0) {
-        summary += `There is 1 upcoming doctor consultation scheduled for ${pName}: Dr. ${upcoming[0].doctorName} (${upcoming[0].specialty}) at ${new Date(upcoming[0].scheduledAt).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' })}. `;
-      }
-    }
-    
-    return summary;
   };
 
+  const handleAddRoutineSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!routineForm.name.trim() || !routineForm.local_time) {
+      setRoutineError("Routine name and time are required.");
+      return;
+    }
+    setRoutineError("");
+    setIsSubmittingRoutine(true);
+    try {
+      const { success, error } = await addRealCareRoutine({
+        name: routineForm.name,
+        category: routineForm.category,
+        description: routineForm.description,
+        local_time: routineForm.local_time,
+        start_date: routineForm.start_date
+      });
+
+      if (!success) {
+        setRoutineError(error?.message || "Failed to record care routine in database.");
+      } else {
+        showToast(`✅ Care routine ${routineForm.name} saved.`, "success");
+        setRoutineForm({
+          name: "",
+          category: "exercise",
+          description: "",
+          local_time: "07:00",
+          start_date: new Date().toISOString().split("T")[0]
+        });
+        setShowAddRoutineModal(false);
+      }
+    } catch (err) {
+      setRoutineError("An error occurred while saving routine.");
+    } finally {
+      setIsSubmittingRoutine(false);
+    }
+  };
+
+  const handleAddObsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setObsError("");
+    setIsSubmittingObs(true);
+    try {
+      let payload: any = {
+        category: obsForm.category,
+        notes: obsForm.notes
+      };
+
+      if (obsForm.category === "blood_pressure") {
+        const sys = parseFloat(obsForm.value_sys);
+        const dia = parseFloat(obsForm.value_dia);
+        if (isNaN(sys) || isNaN(dia)) {
+          setObsError("Please enter valid Systolic and Diastolic numbers.");
+          setIsSubmittingObs(false);
+          return;
+        }
+        payload.value_sys = sys;
+        payload.value_dia = dia;
+      } else if (obsForm.category === "symptom_notes") {
+        if (!obsForm.value_text.trim()) {
+          setObsError("Please enter a symptom description or note.");
+          setIsSubmittingObs(false);
+          return;
+        }
+        payload.value_text = obsForm.value_text.trim();
+      } else {
+        const val = parseFloat(obsForm.value_numeric);
+        if (isNaN(val)) {
+          setObsError("Please enter a valid numeric observation value.");
+          setIsSubmittingObs(false);
+          return;
+        }
+        payload.value_numeric = val;
+
+        let unit = "";
+        if (obsForm.category === "blood_glucose") unit = "mg/dL";
+        else if (obsForm.category === "weight") unit = "kg";
+        else if (obsForm.category === "body_temperature") unit = "°F";
+        else if (obsForm.category === "pulse_oximetry") unit = "%";
+        else if (obsForm.category === "heart_rate") unit = "bpm";
+        payload.unit = unit;
+
+        if (obsForm.value_text) payload.value_text = obsForm.value_text;
+      }
+
+      const { success, error } = await addHealthObservation(payload);
+      if (!success) {
+        setObsError(error?.message || "Failed to record health observation in database.");
+      } else {
+        showToast(`✅ Health observation saved.`, "success");
+        setShowAddObsModal(false);
+        setObsForm({
+          category: "blood_pressure",
+          value_sys: "128",
+          value_dia: "82",
+          value_numeric: "",
+          value_text: "",
+          notes: ""
+        });
+      }
+    } catch (err) {
+      setObsError("An error occurred while saving health observation.");
+    } finally {
+      setIsSubmittingObs(false);
+    }
+  };
+
+  const hour = new Date().getHours();
+  const timeGreeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const firstName = profile?.full_name ? formatName(profile.full_name.split(" ")[0]) : "Caregiver";
+  const familyTitle = family?.name ? `${formatName(family.name)} Family` : "Family Circle";
 
   return (
-    <div className="flex min-h-screen relative text-slate-800 bg-[#FAF9F6]">
-      <ToastProvider>
-        {/* MOBILE HEADER */}
-        <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#0E5E5A] text-white z-40 flex items-center justify-between px-4">
-          <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-teal-100 hover:bg-white/5 rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-[#E05E1B] shadow-[0_0_8px_rgba(224,94,27,0.6)]" />
-            <span className="font-bold tracking-tight text-white">First Family Care Console</span>
-          </div>
-          <div className="w-10"></div>
-        </div>
-
-        {/* Sidebar Backdrop (Mobile) */}
-        {isMobileMenuOpen && (
-          <div 
-            className="fixed inset-0 bg-[#122321]/60 backdrop-blur-sm z-40 md:hidden"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-        )}
-
-        {/* Sidebar */}
-        <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#0A4B48] text-white transform transition-transform duration-500 ease-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:inset-auto flex flex-col justify-between`}>
-          <div>
-            <div className="flex h-20 md:h-24 items-center justify-between px-6 md:px-8 mb-4 md:mb-6">
-              <div className="flex items-center gap-3 md:gap-4 cursor-pointer" onClick={() => { setActiveView("dashboard"); setIsMobileMenuOpen(false); }}>
-                <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-gradient-to-br from-[#E05E1B] to-[#D97706] flex items-center justify-center text-white font-black shadow-lg shadow-amber-500/20 text-sm md:text-base">
-                  F
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-[family-name:var(--font-outfit)] font-black text-white text-base md:text-lg leading-tight tracking-tight uppercase">First Family</span>
-                  <span className="data-label text-teal-200 !text-[7px] md:!text-[8px] uppercase !tracking-[0.2em]">Care Console</span>
-                </div>
-              </div>
+    <div className="min-h-screen bg-[#FAF8F5] text-[#1C2826] pb-28 font-[family-name:var(--font-inter)] antialiased">
+      {/* Quiet Top Navigation Header */}
+      <header className="sticky top-0 z-30 bg-[#FAF8F5]/90 backdrop-blur-md border-b border-[#EFECE6] px-4 py-3">
+        <div className="max-w-md md:max-w-2xl mx-auto flex items-center justify-between gap-3">
+          {/* Brand Logo & Name */}
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-2xl bg-[#0E5E5A] text-white flex items-center justify-center shadow-sm shrink-0">
+              <Heart size={18} fill="white" className="text-white" />
             </div>
-
-            <nav className="p-4 px-6 space-y-2">
-              <NavItem icon={<LayoutDashboard size={18} strokeWidth={1.5} />} label="Command Center" active={activeView === "dashboard"} onClick={() => { setActiveView("dashboard"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<UserPlus size={18} strokeWidth={1.5} />} label="First Family Intake" active={activeView === "intake"} onClick={() => { setActiveView("intake"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Activity size={18} strokeWidth={1.5} />} label="Baseline Health Camp" active={activeView === "camp"} onClick={() => { setActiveView("camp"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Stethoscope size={18} strokeWidth={1.5} />} label="Family Records" active={activeView === "clinical"} onClick={() => { setActiveView("clinical"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<BookOpen size={18} strokeWidth={1.5} />} label="Care Logs" active={activeView === "medicines"} onClick={() => { setActiveView("medicines"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Briefcase size={18} strokeWidth={1.5} />} label="Care Operations Board" active={activeView === "coordinator"} onClick={() => { setActiveView("coordinator"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<FileText size={18} strokeWidth={1.5} />} label="Reports & Records" active={activeView === "smart-reports"} onClick={() => { setActiveView("smart-reports"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Users size={18} strokeWidth={1.5} />} label="Doctor Briefs" active={activeView === "care-team"} onClick={() => { setActiveView("care-team"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<Calendar size={18} strokeWidth={1.5} />} label="Consults" active={activeView === "clinic-hub"} onClick={() => { setActiveView("clinic-hub"); setIsMobileMenuOpen(false); }} />
-              <NavItem icon={<ShieldCheck size={18} strokeWidth={1.5} />} label="Settings & Backup" active={activeView === "settings"} onClick={() => { setActiveView("settings"); setIsMobileMenuOpen(false); }} />
-            </nav>
+            <div>
+              <h1 className="text-xs font-bold font-[family-name:var(--font-outfit)] tracking-tight text-[#0E5E5A]">
+                PARENTS HEALTH OS
+              </h1>
+              <p className="text-[10px] text-slate-500 font-medium truncate max-w-[140px]">
+                {familyTitle}
+              </p>
+            </div>
           </div>
 
-          <div className="p-6 border-t border-white/5 space-y-6">
-            {/* User Profile Summary Card */}
-            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-teal-900 border border-teal-850 flex items-center justify-center font-bold text-xs uppercase text-teal-150 shadow-inner">
-                  {profile?.full_name?.charAt(0) || "U"}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] font-bold truncate text-white uppercase font-[family-name:var(--font-outfit)] tracking-wider">
-                    {profile?.full_name || "Family Monitor"}
-                  </span>
-                  <span className="text-[8px] text-teal-200/50 truncate font-light font-[family-name:var(--font-inter)]">
-                    {user?.email || "active-staff"}
-                  </span>
-                </div>
-              </div>
-              <button 
-                onClick={signOut} 
-                className="w-full text-center py-2.5 bg-white/5 hover:bg-red-500/10 hover:text-red-300 rounded-xl text-[8px] font-black uppercase tracking-wider text-teal-100 transition-colors"
+          {/* Care Recipient Switcher Popover */}
+          {careRecipients.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setIsRecipientMenuOpen(!isRecipientMenuOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white border border-[#EFECE6] shadow-sm hover:border-[#0E5E5A]/30 transition-all text-xs font-semibold text-slate-700"
               >
-                Log Out
-              </button>
-            </div>
-
-            <button onClick={handleSystemReset} className="group flex w-full items-center gap-5 rounded-xl px-5 py-3 text-[9px] font-bold uppercase tracking-[0.3em] text-teal-200/40 hover:bg-red-500/10 hover:text-red-300 transition-all font-[family-name:var(--font-outfit)]">
-              <Trash2 size={14} strokeWidth={1.5} className="opacity-80" /> RESET SYSTEM
-            </button>
-          </div>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-4 pt-20 md:p-6 md:p-10 lg:p-6 md:p-12 overflow-x-hidden relative">
-          <header className="mb-10 md:mb-16 flex flex-col sm:flex-row sm:items-center justify-between gap-6 md:gap-8">
-            <div className="flex items-center gap-4 md:gap-6">
-               <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl md:rounded-3xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A] shadow-inner">
-                <Users size={24} strokeWidth={1.5} />
-              </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight flex flex-col md:flex-row md:items-center relative">
-                  {parents.length > 1 ? (
-                    <div className="relative inline-block">
-                      <button
-                        onClick={() => setIsParentDropdownOpen(!isParentDropdownOpen)}
-                        className="flex items-center gap-2 text-[#0E5E5A] hover:opacity-90 bg-white/40 border border-[#e2ded5] px-4 py-2 rounded-2xl transition-all shadow-sm font-semibold text-xs md:text-sm"
-                      >
-                        <span className="truncate max-w-[150px] md:max-w-none">{primaryParentName}</span>
-                        <svg className={`h-4 w-4 transition-transform duration-350 ${isParentDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      <AnimatePresence>
-                        {isParentDropdownOpen && (
-                          <>
-                            <div className="fixed inset-0 z-10" onClick={() => setIsParentDropdownOpen(false)} />
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 10 }}
-                              className="absolute left-0 mt-2 w-64 glass-card p-3 rounded-2xl border-[#e2ded5] shadow-2xl bg-white/90 backdrop-blur-md z-20 space-y-1"
-                            >
-                              <div className="px-3 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 mb-2">Switch Parent Context</div>
-                              {parents.map((p) => (
-                                <button
-                                  key={p.id}
-                                  onClick={() => {
-                                    selectActiveParent(p.id);
-                                    setIsParentDropdownOpen(false);
-                                  }}
-                                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between transition-all ${
-                                    (activeParent?.id || parents[0]?.id) === p.id
-                                      ? 'bg-[#0E5E5A]/10 text-[#0E5E5A] font-bold'
-                                      : 'hover:bg-slate-50 text-slate-600 font-normal'
-                                  }`}
-                                >
-                                  <span>{p.name}</span>
-                                  {(activeParent?.id || parents[0]?.id) === p.id && (
-                                    <div className="h-1.5 w-1.5 rounded-full bg-[#E05E1B]" />
-                                  )}
-                                </button>
-                              ))}
-                            </motion.div>
-                          </>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ) : (
-                    <span className="truncate max-w-[150px] md:max-w-none text-[#0E5E5A]">{primaryParentName}</span>
-                  )}
-                  <span className="hidden md:inline text-slate-350 font-light mx-4">/</span>
-                  <span className="text-slate-500 font-medium text-sm md:text-base md:mt-0 mt-1 uppercase md:normal-case">CARE OPERATIONS OVERVIEW</span>
-                </h1>
-                <div className="flex items-center gap-3 mt-1.5 md:mt-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#E05E1B] animate-pulse shadow-[0_0_10px_rgba(224,94,27,0.5)]" />
-                  <p className="data-label text-slate-555 text-[8px] md:text-[10px] !tracking-[0.2em] uppercase">FAMILY ROUTINE STATUS // CONNECTED</p>
+                <div className="h-5 w-5 rounded-full bg-teal-50 text-[#0E5E5A] font-bold text-[10px] flex items-center justify-center uppercase shrink-0">
+                  {currentRecipient?.display_name ? currentRecipient.display_name.charAt(0) : "P"}
                 </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4 md:gap-8 self-end sm:self-auto">
-              <HeaderIcons />
-            </div>
-          </header>
+                <span className="truncate max-w-[100px] md:max-w-[160px] font-medium text-slate-800">
+                  {formatName(currentRecipient?.display_name) || "Select Parent"}
+                </span>
+                <ChevronDown size={14} className={`text-slate-400 transition-transform ${isRecipientMenuOpen ? "rotate-180" : ""}`} />
+              </button>
 
-
-          {activeView === "dashboard" && (
-            <div className="space-y-8 animate-fadeIn">
-              {/* TOP STATUS AND ANAYA AI CARDS */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* CARE STATUS WIDGET */}
-                <div className="lg:col-span-1 p-8 rounded-[2.5rem] bg-white border border-[#e2ded5] shadow-sm flex flex-col justify-between relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-8 opacity-[0.03] transition-transform duration-1000 group-hover:scale-110">
-                    <Heart size={180} className="text-[#0E5E5A]" />
-                  </div>
-                  <div className="relative z-10 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <span className="data-label !text-[#0E5E5A] !text-[8px] bg-teal-50 border border-teal-100 px-3 py-1 rounded-full uppercase tracking-widest font-bold">
-                        Active Console
-                      </span>
-                      <span className="text-slate-400 text-[10px] font-mono tracking-wider">{todayStr}</span>
+              <AnimatePresence>
+                {isRecipientMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                    className="absolute right-0 mt-2 w-64 bg-white rounded-3xl border border-[#EFECE6] shadow-xl p-2 z-50 space-y-1"
+                  >
+                    <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                      Switch Care Recipient
                     </div>
-                    
-                    <div>
-                      <h3 className="text-3xl font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight uppercase">
-                        Today's Operations Status
-                      </h3>
-                      <p className="text-sm text-slate-500 font-light mt-1 font-[family-name:var(--font-inter)] leading-relaxed">
-                        Daily operations view for <span className="font-semibold text-slate-700">{activeParent?.name || primaryParentName}</span>.
-                      </p>
-                    </div>
-
-                    {/* Progress Circle & Metrics */}
-                    <div className="flex items-center gap-6 py-2">
-                      <div className="relative h-20 w-20 flex items-center justify-center shrink-0">
-                        {/* SVG Progress Circle */}
-                        <svg className="absolute inset-0 transform -rotate-90" viewBox="0 0 36 36">
-                          <path
-                            className="text-slate-100"
-                            strokeWidth="3.5"
-                            stroke="currentColor"
-                            fill="none"
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          />
-                          <path
-                            className="text-[#0E5E5A] transition-all duration-1000 ease-out"
-                            strokeWidth="3.5"
-                            strokeDasharray={`${adherencePct}, 100`}
-                            strokeLinecap="round"
-                            stroke="currentColor"
-                            fill="none"
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          />
-                        </svg>
-                        <span className="text-lg font-bold text-slate-800 font-[family-name:var(--font-outfit)]">{adherencePct}%</span>
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-slate-700">Medication Adherence</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 font-light">{takenMeds} of {totalMeds} pills recorded today</div>
-                        {totalMeds > 0 && takenMeds === totalMeds && (
-                          <div className="text-[10px] text-teal-600 font-semibold mt-1 flex items-center gap-1">
-                            <Check size={10} className="stroke-[3]" /> Perfect adherence!
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Care Priority Selector */}
-                    <div className="pt-3 border-t border-slate-100 space-y-2 relative z-10">
-                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        <span>Care Priority Status</span>
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
-                          carePriority === "Urgent Follow-up" ? "bg-red-100 text-red-700 border border-red-200" :
-                          carePriority === "Watch" ? "bg-orange-100 text-orange-700 border border-orange-200" :
-                          "bg-teal-100 text-teal-700 border border-teal-200"
-                        }`}>
-                          {carePriority}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {(["Stable", "Watch", "Urgent Follow-up"] as const).map(p => (
+                    <div className="py-1 max-h-56 overflow-y-auto space-y-1">
+                      {careRecipients.map((rec) => {
+                        const isSelected = rec.id === currentRecipient?.id;
+                        const formattedRecName = formatName(rec.display_name);
+                        return (
                           <button
-                            key={p}
-                            type="button"
-                            onClick={() => handlePriorityChange(p)}
-                            className={`py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border ${
-                              carePriority === p
-                                ? p === "Urgent Follow-up" ? "bg-red-500 border-red-500 text-white shadow-sm font-extrabold" :
-                                  p === "Watch" ? "bg-orange-500 border-orange-500 text-white shadow-sm font-extrabold" :
-                                  "bg-[#0E5E5A] border-[#0E5E5A] text-white shadow-sm font-extrabold"
-                                : "bg-slate-50 border-slate-200 text-slate-655 hover:bg-slate-100"
+                            key={rec.id}
+                            onClick={() => {
+                              selectActiveParent(rec.id);
+                              setIsRecipientMenuOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2.5 rounded-2xl text-xs flex items-center justify-between transition-colors ${
+                              isSelected ? "bg-teal-50/80 text-[#0E5E5A] font-bold" : "hover:bg-slate-50 text-slate-700"
                             }`}
                           >
-                            {p}
+                            <div className="flex items-center gap-2.5">
+                              <div className={`h-7 w-7 rounded-full flex items-center justify-center font-bold text-xs ${isSelected ? "bg-[#0E5E5A] text-white" : "bg-slate-100 text-slate-600"}`}>
+                                {formattedRecName.charAt(0)}
+                              </div>
+                              <div>
+                                <span className="block font-semibold">{formattedRecName}</span>
+                                <span className="text-[10px] text-slate-400 font-normal">{rec.relationship} • {rec.primary_language}</span>
+                              </div>
+                            </div>
+                            {isSelected && <Check size={14} className="text-[#0E5E5A] shrink-0" />}
                           </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between text-[11px] text-slate-500 font-light relative z-10">
-                    <span>Vitals Logged: <strong className="text-slate-700 font-semibold">{latestVital ? "Logged Today" : "Pending Today"}</strong></span>
-                    <span>Observations: <strong className="text-slate-700 font-semibold">{observations.filter(o => o.timestamp?.split("T")[0] === todayStr).length}</strong></span>
-                  </div>
-                </div>
-
-                {/* DYNAMIC LOCAL ANAYA CARE COMPANION SUMMARY CARD */}
-                <div className="lg:col-span-1 p-8 rounded-[2.5rem] bg-gradient-to-br from-[#0E5E5A] to-[#0A4B48] text-white shadow-xl flex flex-col justify-between relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-8 opacity-[0.03] transition-transform duration-1000 group-hover:scale-110">
-                    <Activity size={180} className="text-white" />
-                  </div>
-                  <div className="relative z-10 space-y-6">
-                    <div className="flex items-center gap-3">
-                      {/* Anaya Avatar with animated aura */}
-                      <div className="relative h-12 w-12 rounded-2xl bg-teal-100/10 border border-white/20 flex items-center justify-center text-teal-300 shadow-inner group-hover:rotate-6 transition-transform shrink-0">
-                        <div className="absolute inset-0 rounded-2xl bg-teal-400/20 animate-ping opacity-60" />
-                        <MessageCircle size={22} className="relative z-10" />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-white font-[family-name:var(--font-outfit)] uppercase tracking-wide">Anaya Care Automation</h4>
-                        <p className="text-[8px] text-teal-200/70 tracking-widest font-mono uppercase">ROUTINE CHECK-IN & ESCALATION SUMMARY</p>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-md">
-                      <p className="text-white-only opacity-90 font-light leading-relaxed text-xs font-[family-name:var(--font-inter)]">
-                        "{getAnayaSummary()}"
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* PROMINENT SAFETY DISCLAIMER */}
-                  <div className="mt-6 pt-4 border-t border-white/10 flex items-start gap-3 relative z-10">
-                    <div className="h-5 w-5 rounded-md bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-[#E05E1B] shrink-0 mt-0.5">
-                      <AlertTriangle size={12} className="stroke-[2.5]" />
-                    </div>
-                    <p className="text-[9px] text-white-only opacity-75 leading-relaxed font-light">
-                      <strong className="text-white-only font-semibold">Safety Notice:</strong> Anaya supports wellness tracking, reminders, and operational summaries. It does not diagnose, prescribe, or replace a registered medical professional.
-                    </p>
-                  </div>
-                </div>
-
-                {/* FAMILY SNAPSHOT VIEW CARD */}
-                <div className="lg:col-span-1 p-8 rounded-[2.5rem] bg-slate-50 border border-[#e2ded5] shadow-sm flex flex-col justify-between relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-8 opacity-[0.03] transition-transform duration-1000 group-hover:scale-110">
-                    <Smartphone size={180} className="text-[#0E5E5A]" />
-                  </div>
-                  <div className="relative z-10 space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A] shrink-0 group-hover:rotate-6 transition-transform">
-                        <Smartphone size={22} />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-800 font-[family-name:var(--font-outfit)] uppercase tracking-wide">Family Snapshot View</h4>
-                        <p className="text-[8px] text-teal-600 tracking-widest font-mono uppercase">Planned Child-Facing Surface</p>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-slate-600 font-light leading-relaxed font-[family-name:var(--font-inter)]">
-                      The full console is designed for the care operations team. Adult children would receive a simpler family update surface: parent status, medicine confirmation, latest vitals, coordinator note, doctor brief access, and request-a-call action.
-                    </p>
-                  </div>
-                  
-                  <div className="pt-4 border-t border-slate-200 mt-6 flex items-center justify-between text-[10px] text-slate-400 font-medium uppercase tracking-wider relative z-10">
-                    <span>Scope: Planned Update</span>
-                    <span className="text-[#0E5E5A] font-bold">Future Release</span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* QUICK ACTIONS TOOLBAR */}
-              <div className="glass-card p-6 rounded-[2rem] border-[#e2ded5] shadow-sm">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-[#E05E1B]" />
-                    <h4 className="text-xs font-bold text-slate-500 font-[family-name:var(--font-outfit)] tracking-wider uppercase">Coordinator Actions</h4>
-                  </div>
-                  
-                  {/* Grid of Action Buttons */}
-                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3">
-                    
-                    <button 
-                      onClick={() => setShowVitalsModal(true)}
-                      className="px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-[#0E5E5A]/5 hover:bg-[#0E5E5A]/10 text-[#0E5E5A] border border-[#0E5E5A]/10 hover:border-[#0E5E5A]/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Activity size={12} />
-                      Log Vitals
-                    </button>
-                    
-                    <button 
-                      onClick={() => setShowObservationModal(true)}
-                      className="px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-[#0E5E5A]/5 hover:bg-[#0E5E5A]/10 text-[#0E5E5A] border border-[#0E5E5A]/10 hover:border-[#0E5E5A]/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Smile size={12} />
-                      Log Observation
-                    </button>
-                    
-                    <button 
-                      onClick={() => setShowAppointmentModal(true)}
-                      className="px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-[#0E5E5A]/5 hover:bg-[#0E5E5A]/10 text-[#0E5E5A] border border-[#0E5E5A]/10 hover:border-[#0E5E5A]/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Calendar size={12} />
-                      Schedule Consult
-                    </button>
-                    
-                    <button 
-                      onClick={() => setShowMedicationModal(true)}
-                      className="px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-[#0E5E5A]/5 hover:bg-[#0E5E5A]/10 text-[#0E5E5A] border border-[#0E5E5A]/10 hover:border-[#0E5E5A]/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Pill size={12} />
-                      Add Medication
-                    </button>
-                    
-                    <button 
-                      onClick={handleGenerateDashboardBrief}
-                      className="px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-[#E05E1B]/10 hover:bg-[#E05E1B]/20 text-[#E05E1B] border border-[#E05E1B]/20 transition-all flex items-center justify-center gap-2 col-span-2 sm:col-span-1"
-                    >
-                      <Printer size={12} />
-                      Doctor Brief
-                    </button>
-                    
-                    <button 
-                      onClick={handleExportBackup}
-                      className="px-5 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250 transition-all flex items-center justify-center gap-2 col-span-2 sm:col-span-1"
-                    >
-                      <Download size={12} />
-                      Export Backup
-                    </button>
-                    
-                  </div>
-                </div>
-              </div>
-
-              {/* CLINICAL OVERSIGHT & NEXT ACTION WORKFLOWS */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* NEXT BEST ACTION */}
-                <div className="glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-sm flex flex-col justify-between space-y-6">
-                  <div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="h-10 w-10 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#E05E1B]">
-                        <Play size={20} className="fill-[#E05E1B]/10" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight uppercase">Next Best Action</h3>
-                        <p className="text-[10px] text-slate-500 font-light mt-0.5 tracking-wider">AUTOMATED TRIAGE ACTION & ESCALATION WORKFLOW</p>
-                      </div>
-                    </div>
-
-                    <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`h-2.5 w-2.5 rounded-full ${
-                          carePriority === "Urgent Follow-up" ? "bg-red-500 animate-pulse" :
-                          carePriority === "Watch" ? "bg-orange-500 animate-pulse" :
-                          "bg-teal-500"
-                        }`} />
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-600">
-                          Triage Workflow Level: {carePriority}
-                        </span>
-                      </div>
-
-                      <p className="text-sm font-semibold text-slate-700 leading-relaxed font-[family-name:var(--font-inter)]">
-                        {carePriority === "Urgent Follow-up" ? (
-                          "Urgent Follow-up Protocol Active: Open the Care Operations Board to verify priority alerts and coordinate medical validation."
-                        ) : carePriority === "Watch" ? (
-                          "Active Routine Watch: Open WhatsApp Automation to trigger routine check-ins and log evening baseline vitals."
-                        ) : (
-                          "Routine Maintenance: Open Baseline Health Camp to register attendees and establish a vitals benchmark."
-                        )}
-                      </p>
-
-                      <div className="pt-2">
-                        <button
-                          onClick={() => {
-                            if (carePriority === "Urgent Follow-up") {
-                              setActiveView("coordinator");
-                            } else if (carePriority === "Watch") {
-                              setActiveView("whatsapp");
-                            } else {
-                              setActiveView("camp");
-                            }
-                          }}
-                          className={`w-full py-3.5 rounded-xl text-[10px] font-bold uppercase tracking-wider text-white shadow-md transition-all text-center flex items-center justify-center gap-2 ${
-                            carePriority === "Urgent Follow-up" ? "bg-red-600 hover:bg-red-755" :
-                            carePriority === "Watch" ? "bg-orange-500 hover:bg-orange-655" :
-                            "bg-[#0E5E5A] hover:bg-[#0c4e4b]"
-                          }`}
-                        >
-                          Execute Workflow Action <ArrowRight size={12} className="stroke-[3]" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-[9px] text-slate-400 font-light font-mono tracking-wider">
-                    ESC-TRIG: {carePriority === "Urgent Follow-up" ? "COORDINATOR_MEDICAL_LINK" : carePriority === "Watch" ? "FAMILY_SMS_SANDBOX" : "ROUTINE_TELEMETRY"}
-                  </div>
-                </div>
-
-                {/* DOCTOR BRIEF PREVIEW */}
-                <div className="glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-sm flex flex-col justify-between space-y-6">
-                  <div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A]">
-                        <Printer size={20} />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight uppercase">Doctor Briefs</h3>
-                        <p className="text-[10px] text-slate-500 font-light mt-0.5 tracking-wider">LIVE COMPACT PREVIEW OF CONSULTATION SUMMARY</p>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-slate-50/50 border border-slate-150 text-[11px] text-slate-600 font-mono space-y-2 max-h-[14rem] overflow-y-auto">
-                      <div className="font-bold text-[9px] text-[#0E5E5A] uppercase tracking-wider">Operations Data Snapshot</div>
-                      <div className="whitespace-pre-line text-slate-700 leading-normal text-[10px]">
-                        - Parent Name: {activeParent?.name || primaryParentName}
-                        - Current Triage Status: {carePriority} Priority
-                        - Vitals Baseline: {latestVital ? `SYS ${latestVital.bp_sys} / DIA ${latestVital.bp_dia} mmHg, Glucose ${latestVital.sugar || "--"} mg/dL` : "No vitals logged today"}
-                        - Adherence Tracker: {adherencePct}% Compliance ({takenMeds} of {totalMeds} pills)
-                        - Latest Care Observations: {observations.length > 0 ? observations[0].note : "No active logs entered."}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleGenerateDashboardBrief}
-                    className="w-full py-3.5 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-[#E05E1B]/10 hover:bg-[#E05E1B]/20 text-[#E05E1B] border border-[#E05E1B]/20 transition-all text-center flex items-center justify-center gap-2"
-                  >
-                    <Printer size={12} /> Generate & Print Doctor Brief
-                  </button>
-                </div>
-              </div>
-
-              {/* STABILIZATION ONBOARDING & DAILY CARE CHECKS */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {/* FIRST SETUP CHECKLIST CARD */}
-                <div className="glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-sm flex flex-col justify-between space-y-6">
-                  <div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="h-10 w-10 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#E05E1B]">
-                        <CheckSquare size={20} />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight uppercase">First-Time Setup Status</h3>
-                        <p className="text-[10px] text-slate-500 font-light mt-0.5 tracking-wider">PREPARE THE APP FOR GENUINE PERSONAL FAMILY USE</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {[
-                        { id: "profile", label: `Configure Parent Profile (${activeParent?.name || 'Amma/Papa'})`, checked: !!activeParent },
-                        { id: "emergency", label: "Add Emergency Care Contacts", checked: true }, // Default emergency config setup
-                        { id: "doctor", label: "Link Primary Consultation Doctor", checked: appointments.length > 0 || setupChecklistManual["doctor"] },
-                        { id: "medications", label: `Input Active Medications List (${medications.length} Added)`, checked: medications.length > 0 },
-                        { id: "vitals", label: "Log Initial Vitals baseline measurements", checked: vitals.length > 0 },
-                        { id: "appointment", label: "Schedule upcoming care consults", checked: appointments.length > 0 },
-                        { id: "backup", label: "Trigger first portable data backup", checked: setupChecklistManual["backup"] }
-                      ].map((item, idx) => (
-                        <div 
-                          key={idx}
-                          onClick={() => toggleSetupChecklist(item.id)}
-                          className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 border border-slate-100/50 cursor-pointer transition-all group"
-                        >
-                          <div className={`h-5 w-5 rounded-md flex items-center justify-center transition-all ${item.checked ? 'bg-[#0E5E5A] text-white border-transparent' : 'border border-slate-300 bg-white group-hover:border-slate-400'}`}>
-                            {item.checked && <Check size={12} className="stroke-[3]" />}
-                          </div>
-                          <span className={`text-[11px] font-medium leading-none transition-all ${item.checked ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
-                            {item.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* DATA RESIDENCY BANNER */}
-                  <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-100 flex items-start gap-2.5 text-[10px] text-slate-600 font-light leading-relaxed">
-                    <AlertTriangle size={14} className="text-[#E05E1B] shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="font-semibold text-slate-800">Secure Offline Sandbox:</strong> Data is saved 100% locally in this browser. To protect your records from loss, please export a backup regularly.
-                    </div>
-                  </div>
-                </div>
-
-                {/* DAILY CAREGIVER ROUTINE CHECKLIST CARD */}
-                <div className="glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-sm space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A]">
-                      <Activity size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight uppercase">Daily Caregiver Routine</h3>
-                      <p className="text-[10px] text-slate-500 font-light mt-0.5 tracking-wider">DAILY CHECKLIST STRATEGIES FOR CONTINUOUS TRACKING</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Morning bucket */}
-                    <div className="space-y-4">
-                      <div className="text-[10px] font-extrabold text-[#E05E1B] uppercase tracking-widest bg-orange-50 px-3 py-1 rounded-full border border-orange-100 inline-block">
-                        ☀️ Morning Routine
-                      </div>
-                      <div className="space-y-2.5">
-                        {[
-                          { id: "morning_meds", label: "Check morning pills intake" },
-                          { id: "morning_vitals", label: "Log baseline vitals if needed" },
-                          { id: "morning_observations", label: "Note qualitative symptoms/behavior" }
-                        ].map((item, idx) => {
-                          const isChecked = !!routineChecklist[item.id];
-                          return (
-                            <div 
-                              key={idx}
-                              onClick={() => toggleRoutineChecklist(item.id)}
-                              className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-slate-50 border border-slate-100/50 cursor-pointer transition-all group"
-                            >
-                              <div className={`h-4.5 w-4.5 rounded flex items-center justify-center transition-all ${isChecked ? 'bg-[#0E5E5A] text-white border-transparent' : 'border border-slate-350 bg-white group-hover:border-slate-400'}`}>
-                                {isChecked && <Check size={10} className="stroke-[3]" />}
-                              </div>
-                              <span className={`text-[10px] font-medium leading-none transition-all ${isChecked ? 'text-slate-400 line-through' : 'text-slate-600'}`}>
-                                {item.label}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Evening bucket */}
-                    <div className="space-y-4">
-                      <div className="text-[10px] font-extrabold text-[#0E5E5A] uppercase tracking-widest bg-teal-50 px-3 py-1 rounded-full border border-teal-100 inline-block">
-                        🌙 Evening Routine
-                      </div>
-                      <div className="space-y-2.5">
-                        {[
-                          { id: "evening_meds", label: "Review afternoon/evening meds" },
-                          { id: "evening_obs", label: "Add sleep, mood, or food intake logs" },
-                          { id: "evening_appointments", label: "Verify upcoming consultations" },
-                          { id: "evening_backup", label: "Export and download daily backup" }
-                        ].map((item, idx) => {
-                          const isChecked = !!routineChecklist[item.id];
-                          return (
-                            <div 
-                              key={idx}
-                              onClick={() => toggleRoutineChecklist(item.id)}
-                              className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-slate-50 border border-slate-100/50 cursor-pointer transition-all group"
-                            >
-                              <div className={`h-4.5 w-4.5 rounded flex items-center justify-center transition-all ${isChecked ? 'bg-[#0E5E5A] text-white border-transparent' : 'border border-slate-350 bg-white group-hover:border-slate-400'}`}>
-                                {isChecked && <Check size={10} className="stroke-[3]" />}
-                              </div>
-                              <span className={`text-[10px] font-medium leading-none transition-all ${isChecked ? 'text-slate-400 line-through' : 'text-slate-600'}`}>
-                                {item.label}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* MEDICATION TIMELINE & ACTIVE INTAKE */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* DAILY MEDICATIONS TIMELINE CHECKLIST */}
-                <div className="lg:col-span-2 glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-sm space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A]">
-                        <Pill size={20} />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight uppercase">Daily Medications</h3>
-                        <p className="text-[10px] text-slate-500 font-light mt-0.5 tracking-wider">TAP MEDICINE TO TOGGLE TODAY'S COMPLIANCE STATUS</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setShowMedicationModal(true)}
-                      className="px-4 py-2 rounded-xl text-[9px] font-extrabold uppercase tracking-widest text-[#0E5E5A] bg-[#0E5E5A]/5 hover:bg-[#0E5E5A]/10 border border-[#0E5E5A]/10 transition-all flex items-center gap-1.5"
-                    >
-                      <Plus size={11} className="stroke-[3]" /> Add New
-                    </button>
-                  </div>
-
-                  {totalMeds === 0 ? (
-                    <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs font-light">
-                      No active medications added to routine. Use the quick actions toolbar or add buttons to create daily trackers.
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {(["Morning", "Noon", "Evening", "Night"] as const).map(slot => {
-                        const meds = groupedMeds[slot];
-                        if (meds.length === 0) return null;
-                        
-                        return (
-                          <div key={slot} className="space-y-3">
-                            <h4 className="text-xs font-bold text-slate-400 font-[family-name:var(--font-outfit)] uppercase tracking-wider flex items-center gap-2">
-                              <Clock size={12} className="text-[#E05E1B]" /> {slot} Scheduled
-                            </h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {meds.map(med => (
-                                <div 
-                                  key={med.id}
-                                  onClick={() => toggleMedicationLog(med.id, !med.taken, todayStr)}
-                                  className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group ${
-                                    med.taken 
-                                      ? "bg-teal-50/50 border-teal-200/80" 
-                                      : "bg-white border-[#e2ded5] hover:border-teal-200 hover:bg-slate-50/30"
-                                  }`}
-                                >
-                                  <div className="space-y-1 pr-3">
-                                    <div className={`font-semibold text-sm transition-colors ${med.taken ? "text-teal-800 line-through opacity-70" : "text-slate-800"}`}>
-                                      {med.name}
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 font-light flex items-center gap-1.5">
-                                      <span>Dosage: {med.dosage}</span>
-                                      {med.instructions && (
-                                        <>
-                                          <span className="text-slate-300">•</span>
-                                          <span className="truncate max-w-[120px]">{med.instructions}</span>
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Compliance Toggle Box */}
-                                  <div className={`h-6 w-6 rounded-lg border transition-all flex items-center justify-center shrink-0 ${
-                                    med.taken 
-                                      ? "bg-teal-600 border-teal-600 text-white" 
-                                      : "border-slate-300 text-transparent group-hover:border-teal-500"
-                                  }`}>
-                                    <Check size={14} className="stroke-[3]" />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
                         );
                       })}
                     </div>
-                  )}
-                </div>
-
-                {/* TODAY'S PHYSIOLOGICAL VITALS PANEL */}
-                <div className="lg:col-span-1 glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-sm flex flex-col justify-between">
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#E05E1B]">
-                          <Activity size={20} />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight uppercase">Physiological Vitals</h3>
-                          <p className="text-[10px] text-slate-500 font-light mt-0.5 tracking-wider">LATEST LOGGED METRICS & CLINICAL WARNS</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* VITAL CARDS GRID */}
-                    <div className="grid grid-cols-2 gap-3">
-                      
-                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Blood Pressure</span>
-                        <span className="text-lg font-bold text-slate-800 block mt-1">
-                          {latestVital?.bp_sys && latestVital?.bp_dia ? `${latestVital.bp_sys}/${latestVital.bp_dia}` : "-- / --"}
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-light">mmHg</span>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Blood Sugar</span>
-                        <span className="text-lg font-bold text-slate-800 block mt-1">
-                          {latestVital?.sugar ? `${latestVital.sugar}` : "--"}
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-light">mg/dL</span>
-                      </div>
-
-                      <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Body Weight</span>
-                        <span className="text-lg font-bold text-slate-800 block mt-1">
-                          {latestVital?.weight ? `${latestVital.weight}` : "--"}
-                        </span>
-                        <span className="text-[9px] text-slate-500 font-light">kg</span>
-                      </div>
-
-                      <button 
-                        onClick={() => setShowVitalsModal(true)}
-                        className="p-4 rounded-2xl bg-teal-50 border border-teal-100 text-center hover:bg-teal-100/50 transition-all flex flex-col items-center justify-center text-[#0E5E5A] group animate-pulse"
+                    <div className="border-t border-slate-100 pt-1">
+                      <button
+                        onClick={() => {
+                          setIsRecipientMenuOpen(false);
+                          setShowAddFamilyModal(true);
+                        }}
+                        className="w-full text-left px-3 py-2.5 rounded-2xl text-xs font-semibold text-[#0E5E5A] hover:bg-teal-50 flex items-center gap-2 transition-colors"
                       >
-                        <PlusCircle size={22} className="group-hover:scale-115 transition-transform text-[#E05E1B]" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider mt-2">Log New Vitals</span>
+                        <Plus size={14} /> Add family member
                       </button>
-
                     </div>
-
-                    {/* PHYSIOLOGICAL REFERENCE RANGE NOTIFICATION */}
-                    {vitalAlerts.length > 0 ? (
-                      <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 space-y-2">
-                        <div className="flex items-center gap-2 text-xs font-bold text-[#E05E1B]">
-                          <AlertTriangle size={14} className="stroke-[2.5]" /> REFERENCE RANGE NOTIFICATION
-                        </div>
-                        <ul className="space-y-1.5">
-                          {vitalAlerts.map((alert, i) => (
-                            <li key={i} className="text-[10px] text-slate-700 leading-relaxed font-light list-disc list-inside">
-                              {alert.replace("⚠️ ", "")}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : latestVital ? (
-                      <div className="p-4 rounded-2xl bg-teal-50/30 border border-teal-100 flex items-center gap-2 text-[10px] text-[#0E5E5A] font-light leading-relaxed">
-                        <Check size={14} className="stroke-[3]" /> All recorded physiological metrics are currently within the usual reference range.
-                      </div>
-                    ) : null}
-
-                  </div>
-
-                  {/* Quick Vitals Log info */}
-                  <div className="pt-4 border-t border-slate-150 mt-4 text-[10px] text-slate-400 font-light flex items-center justify-between">
-                    <span>Source: {latestVital?.source || "None"}</span>
-                    <span>Logged: {latestVital?.measured_at ? new Date(latestVital.measured_at).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' }) : "Never"}</span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* TIMELINE OF OBSERVATIONS & SCHEDULED APPOINTMENTS */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* CARE TIMELINE & OBSERVATIONS LOG */}
-                <div className="lg:col-span-2 glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-sm space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A]">
-                        <Smile size={20} />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight uppercase">Caregiver Observations</h3>
-                        <p className="text-[10px] text-slate-500 font-light mt-0.5 tracking-wider">TIMELINE OF DAILY SYMPTOMATIC & GENERAL BEHAVIORAL LOGS</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setShowObservationModal(true)}
-                      className="px-4 py-2 rounded-xl text-[9px] font-extrabold uppercase tracking-widest text-[#0E5E5A] bg-[#0E5E5A]/5 hover:bg-[#0E5E5A]/10 border border-[#0E5E5A]/10 transition-all flex items-center gap-1.5"
-                    >
-                      <Plus size={11} className="stroke-[3]" /> Add Observation
-                    </button>
-                  </div>
-
-                  {observations.length === 0 ? (
-                    <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs font-light">
-                      No observational logs entered for this parent profile yet. Log behavioral patterns or clinical warnings.
-                    </div>
-                  ) : (
-                    <div className="space-y-4 max-h-[22rem] overflow-y-auto pr-2">
-                      {observations.slice(0, 5).map(obs => (
-                        <div key={obs.id} className="p-5 rounded-2xl bg-white border border-[#e2ded5] hover:border-teal-100 transition-all relative overflow-hidden group">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                              <span className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                                obs.severity === "High" 
-                                  ? "bg-red-50 text-red-700 border border-red-100" 
-                                  : obs.severity === "Medium"
-                                  ? "bg-orange-50 text-orange-700 border border-orange-100"
-                                  : "bg-slate-100 text-slate-600 border border-slate-200"
-                              }`}>
-                                {obs.severity} Severity
-                              </span>
-                              <span className="text-[10px] text-[#0E5E5A] font-bold bg-[#0E5E5A]/5 px-2.5 py-0.5 rounded-md uppercase tracking-wider">{obs.type}</span>
-                            </div>
-                            <span className="text-[9px] text-slate-450 font-light font-mono">
-                              {new Date(obs.timestamp).toLocaleDateString()} at {new Date(obs.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </span>
-                          </div>
-                          
-                          <p className="text-slate-700 text-sm font-light leading-relaxed mt-3 font-[family-name:var(--font-inter)]">
-                            {obs.note}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* CLINICAL DOCTOR CONSULTATIONS PANEL */}
-                <div className="lg:col-span-1 glass-card p-8 rounded-[2.5rem] border-[#e2ded5] shadow-sm flex flex-col justify-between">
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A]">
-                          <Calendar size={20} />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-extrabold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tight uppercase">Appointments</h3>
-                          <p className="text-[10px] text-slate-500 font-light mt-0.5 tracking-wider">UPCOMING CLINICAL VISITS & STATS</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {appointments.length === 0 ? (
-                      <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs font-light flex flex-col items-center justify-center">
-                        <Calendar size={24} strokeWidth={1} className="text-slate-300 mb-2" />
-                        No consultations scheduled. Use the Action Button to record upcoming doctor appointments.
-                      </div>
-                    ) : (
-                      <div className="space-y-3.5 max-h-[22rem] overflow-y-auto pr-1">
-                        {appointments.slice(0, 3).map(app => (
-                          <div key={app.id} className="p-4 rounded-2xl bg-white border border-[#e2ded5] hover:border-teal-50 transition-all space-y-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <h4 className="font-bold text-sm text-slate-800 font-[family-name:var(--font-outfit)] uppercase tracking-tight">
-                                  Dr. {app.doctorName}
-                                </h4>
-                                <p className="text-[10px] text-slate-500 font-semibold uppercase">{app.specialty}</p>
-                              </div>
-                              <span className={`text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-widest ${
-                                app.status === "completed" 
-                                  ? "bg-slate-100 text-slate-600 border border-slate-200" 
-                                  : "bg-teal-50 text-[#0E5E5A] border border-teal-100"
-                              }`}>
-                                {app.status}
-                              </span>
-                            </div>
-
-                            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[10px] text-slate-600 font-light space-y-1">
-                              <div className="flex justify-between">
-                                <span>Date:</span>
-                                <strong className="font-semibold text-slate-800">{new Date(app.scheduledAt).toLocaleDateString()}</strong>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Time:</span>
-                                <strong className="font-semibold text-slate-800">{new Date(app.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Mode:</span>
-                                <strong className="font-semibold text-slate-800 uppercase">{app.mode}</strong>
-                              </div>
-                              {app.reason && (
-                                <div className="mt-1.5 pt-1.5 border-t border-slate-200 flex justify-between gap-2">
-                                  <span>Reason:</span>
-                                  <strong className="font-semibold text-slate-800 truncate max-w-[120px]">{app.reason}</strong>
-                                </div>
-                              )}
-                            </div>
-
-                            {app.status === "confirmed" && (
-                              <button 
-                                onClick={() => handleUpdateAppointment(app.id, "completed")}
-                                className="w-full py-2 rounded-xl text-[9px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50 hover:bg-teal-100 transition-all text-center flex items-center justify-center gap-1 border border-teal-100"
-                              >
-                                <Check size={11} className="stroke-[3]" /> Mark Completed
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <button 
-                    onClick={() => setShowAppointmentModal(true)}
-                    className="w-full mt-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-[#0E5E5A]/5 hover:bg-[#0E5E5A]/10 text-[#0E5E5A] border border-[#0E5E5A]/10 transition-all text-center flex items-center justify-center gap-2"
-                  >
-                    <PlusCircle size={13} />
-                    Schedule New Consult
-                  </button>
-                </div>
-
-              </div>
-
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
+        </div>
+      </header>
 
-          {activeView === "smart-reports" && <SmartReport onNavigate={() => setActiveView("clinical")} />}
-          {activeView === "clinical" && <ClinicalEngine />}
-          {activeView === "medicines" && <MedicationTracker onNavigate={setActiveView} />}
-          {activeView === "care-team" && <CareTeam />}
-          {activeView === "clinic-hub" && <ClinicHub />}
-          {activeView === "intake" && <FamilyIntake />}
-          {activeView === "camp" && <BaselineCamp />}
-          {activeView === "coordinator" && <CoordinatorBoard />}
-          {activeView === "settings" && <SettingsAndBackup />}
-
-          {/* FOOTER */}
-          <footer className="mt-20 md:mt-32 py-12 md:py-16 border-t border-[#e2ded5] flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10 text-center md:text-left">
-            <div className="data-label !text-slate-400 text-[9px] md:text-[10px] !tracking-[0.2em]">
-              PARENTS HEALTH OS // REMOTE ELDER-CARE SYSTEM
-            </div>
-            <div className="flex items-center gap-6 md:gap-12">
-              <span className="data-label !text-slate-400 text-[9px] !tracking-[0.1em]">SECURE CHANNEL</span>
-              <span className="data-label !text-slate-400 text-[9px] !tracking-[0.1em]">PARENTS-HEALTH-2026</span>
-              <div className="h-1.5 w-1.5 rounded-full bg-[#e2ded5] hidden md:block" />
-            </div>
-          </footer>
-        </main>
-
-        {showVitalsModal && (
-          <div className="fixed inset-0 z-50 bg-[#122321]/60 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-[2.5rem] border border-[#e2ded5] p-8 md:p-10 w-full max-w-lg shadow-2xl relative"
-            >
-              <button 
-                onClick={() => setShowVitalsModal(false)}
-                className="absolute top-6 right-6 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
-              >
-                <X size={20} />
-              </button>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#E05E1B]">
-                  <Activity size={20} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-extrabold text-slate-800 uppercase tracking-tight font-[family-name:var(--font-outfit)]">Log Physiological Vitals</h3>
-                  <p className="text-[10px] text-slate-500 font-light mt-0.5 uppercase tracking-wider">Active Parent Profile: {activeParent?.name || primaryParentName}</p>
-                </div>
-              </div>
-
-              <form onSubmit={handleSaveVital} className="space-y-4 font-[family-name:var(--font-inter)]">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Systolic BP (mmHg)</label>
-                    <input 
-                      type="number" 
-                      placeholder="e.g. 120"
-                      value={vitalInput.bpSys}
-                      onChange={e => setVitalInput({...vitalInput, bpSys: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Diastolic BP (mmHg)</label>
-                    <input 
-                      type="number" 
-                      placeholder="e.g. 80"
-                      value={vitalInput.bpDia}
-                      onChange={e => setVitalInput({...vitalInput, bpDia: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Blood Glucose (mg/dL)</label>
-                    <input 
-                      type="number" 
-                      placeholder="e.g. 95"
-                      value={vitalInput.sugar}
-                      onChange={e => setVitalInput({...vitalInput, sugar: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Weight (kg)</label>
-                    <input 
-                      type="number" 
-                      placeholder="e.g. 68"
-                      value={vitalInput.weight}
-                      onChange={e => setVitalInput({...vitalInput, weight: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Contextual / Notes</label>
-                  <textarea 
-                    placeholder="Describe context (e.g. post-breakfast, felt slightly dizzy, etc.)"
-                    rows={2}
-                    value={vitalInput.notes}
-                    onChange={e => setVitalInput({...vitalInput, notes: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50 resize-none"
-                  />
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <button 
-                    type="button"
-                    onClick={() => setShowVitalsModal(false)}
-                    className="w-1/2 py-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="w-1/2 py-3.5 bg-[#0E5E5A] hover:bg-[#0c4e4b] text-white font-bold rounded-xl text-[10px] uppercase tracking-wider shadow-lg transition-all"
-                  >
-                    Save Measurements
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
+      {/* Surface Router */}
+      <main className="max-w-md md:max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
+        {activeTab === "home" && (
+          <HomeView
+            firstName={firstName}
+            timeGreeting={timeGreeting}
+            currentRecipient={currentRecipient}
+            medications={medications}
+            medicationEvents={medicationEvents}
+            careRoutines={careRoutines}
+            careRoutineEvents={careRoutineEvents}
+            healthObservations={healthObservations}
+            onAddFamily={() => setShowAddFamilyModal(true)}
+            onNavigate={(tab) => setActiveTab(tab)}
+            onAddMedication={() => setShowAddMedModal(true)}
+            onAddRoutine={() => setShowAddRoutineModal(true)}
+            onAddObservation={() => setShowAddObsModal(true)}
+          />
         )}
 
-        {showObservationModal && (
-          <div className="fixed inset-0 z-50 bg-[#122321]/60 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-[2.5rem] border border-[#e2ded5] p-8 md:p-10 w-full max-w-lg shadow-2xl relative"
+        {activeTab === "family" && (
+          <FamilyView
+            careRecipients={careRecipients}
+            currentRecipient={currentRecipient}
+            onSelectRecipient={(id) => selectActiveParent(id)}
+            onAddFamily={() => setShowAddFamilyModal(true)}
+          />
+        )}
+
+        {activeTab === "care" && (
+          <CareView
+            careRecipients={careRecipients}
+            currentRecipient={currentRecipient}
+            onSelectRecipient={(id) => selectActiveParent(id)}
+            medications={medications}
+            medicationEvents={medicationEvents}
+            careRoutines={careRoutines}
+            careRoutineEvents={careRoutineEvents}
+            onAddMedication={() => setShowAddMedModal(true)}
+            onAddRoutine={() => setShowAddRoutineModal(true)}
+            onDeactivateMedication={async (id) => {
+              const res = await deactivateMedication(id);
+              if (res.success) showToast("Medication deactivated.", "success");
+              else showToast(res.error?.message || "Failed to deactivate.", "error");
+            }}
+            onDeactivateRoutine={async (id) => {
+              const res = await deactivateCareRoutine(id);
+              if (res.success) showToast("Care routine deactivated.", "success");
+              else showToast(res.error?.message || "Failed to deactivate.", "error");
+            }}
+            onRespondMedication={async (eventId, status) => {
+              const res = await respondToMedicationEvent(eventId, status);
+              if (res.success) showToast(`Medication status recorded: ${status}`, "success");
+              else showToast(res.error?.message || "Failed to record response.", "error");
+            }}
+            onRespondRoutine={async (eventId, status) => {
+              const res = await respondToCareRoutineEvent(eventId, status);
+              if (res.success) showToast(`Routine status recorded: ${status}`, "success");
+              else showToast(res.error?.message || "Failed to record response.", "error");
+            }}
+          />
+        )}
+
+        {activeTab === "records" && (
+          <RecordsView
+            careRecipients={careRecipients}
+            currentRecipient={currentRecipient}
+            onSelectRecipient={(id) => selectActiveParent(id)}
+            healthObservations={healthObservations}
+            healthDocuments={healthDocuments}
+            healthConditions={healthConditions}
+            onAddObservation={() => setShowAddObsModal(true)}
+          />
+        )}
+
+        {activeTab === "profile" && (
+          <ProfileView
+            profile={profile}
+            user={user}
+            family={family}
+            careRecipientsCount={careRecipients.length}
+            onSignOut={signOut}
+          />
+        )}
+      </main>
+
+      {/* Docked Pixel-Perfect Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-[#EFECE6] px-2 pt-2 pb-3 shadow-[0_-4px_24px_rgba(14,94,90,0.05)]">
+        <div className="max-w-md md:max-w-xl mx-auto flex items-center justify-between">
+          <NavItem
+            icon={<HomeIcon size={18} />}
+            label="Home"
+            isActive={activeTab === "home"}
+            onClick={() => setActiveTab("home")}
+          />
+          <NavItem
+            icon={<Users size={18} />}
+            label="Family"
+            isActive={activeTab === "family"}
+            onClick={() => setActiveTab("family")}
+          />
+          <NavItem
+            icon={<Activity size={18} />}
+            label="Care"
+            isActive={activeTab === "care"}
+            onClick={() => setActiveTab("care")}
+          />
+          <NavItem
+            icon={<FileText size={18} />}
+            label="Records"
+            isActive={activeTab === "records"}
+            onClick={() => setActiveTab("records")}
+          />
+          <NavItem
+            icon={<User size={18} />}
+            label="Profile"
+            isActive={activeTab === "profile"}
+            onClick={() => setActiveTab("profile")}
+          />
+        </div>
+      </nav>
+
+      {/* Modal: Add Family Member */}
+      <AnimatePresence>
+        {showAddFamilyModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-md bg-white rounded-[2.5rem] p-6 sm:p-7 shadow-2xl border border-[#EFECE6] space-y-5"
             >
-              <button 
-                onClick={() => setShowObservationModal(false)}
-                className="absolute top-6 right-6 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
-              >
-                <X size={20} />
-              </button>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A]">
-                  <Smile size={20} />
-                </div>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
-                  <h3 className="text-xl font-extrabold text-slate-800 uppercase tracking-tight font-[family-name:var(--font-outfit)]">Log Caregiver Observation</h3>
-                  <p className="text-[10px] text-slate-500 font-light mt-0.5 uppercase tracking-wider">Active Parent Profile: {activeParent?.name || primaryParentName}</p>
+                  <h3 className="text-base font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+                    Add Family Member
+                  </h3>
+                  <p className="text-xs text-slate-500 font-light mt-0.5">Register a care recipient for your family</p>
                 </div>
+                <button
+                  onClick={() => setShowAddFamilyModal(false)}
+                  className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              <form onSubmit={handleSaveObservation} className="space-y-4 font-[family-name:var(--font-inter)]">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Observation Type</label>
-                    <select 
-                      value={observationInput.type}
-                      onChange={e => setObservationInput({...observationInput, type: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                    >
-                      <option value="General">General Behavior</option>
-                      <option value="Symptom">Symptom Watch</option>
-                      <option value="Cognitive">Cognitive State</option>
-                      <option value="Nutrition">Dietary Intake</option>
-                      <option value="Mobility">Mobility & Exercise</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Severity Indicator</label>
-                    <select 
-                      value={observationInput.severity}
-                      onChange={e => setObservationInput({...observationInput, severity: e.target.value as any})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                    >
-                      <option value="Low">Low (Informational)</option>
-                      <option value="Medium">Medium (Keep Watch)</option>
-                      <option value="High">High (Immediate Action)</option>
-                    </select>
-                  </div>
+              {familyError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700">
+                  {familyError}
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Observational Journal Entry</label>
-                  <textarea 
-                    placeholder="Enter detailed observation log. Be specific about behavior, energy levels, complaints, or cognitive response..."
-                    rows={4}
-                    value={observationInput.note}
-                    onChange={e => setObservationInput({...observationInput, note: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50 resize-none"
+              )}
+
+              <form onSubmit={handleAddFamilySubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Display Name *
+                  </label>
+                  <input
+                    type="text"
                     required
+                    placeholder="e.g. Amma or Chandrakala"
+                    value={familyForm.display_name}
+                    onChange={(e) => setFamilyForm({ ...familyForm, display_name: e.target.value })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
                   />
                 </div>
-                <div className="flex gap-3 pt-2">
-                  <button 
-                    type="button"
-                    onClick={() => setShowObservationModal(false)}
-                    className="w-1/2 py-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="w-1/2 py-3.5 bg-[#0E5E5A] hover:bg-[#0c4e4b] text-white font-bold rounded-xl text-[10px] uppercase tracking-wider shadow-lg transition-all"
-                  >
-                    Log Daily Record
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
 
-        {showAppointmentModal && (
-          <div className="fixed inset-0 z-50 bg-[#122321]/60 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-[2.5rem] border border-[#e2ded5] p-8 md:p-10 w-full max-w-lg shadow-2xl relative"
-            >
-              <button 
-                onClick={() => setShowAppointmentModal(false)}
-                className="absolute top-6 right-6 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
-              >
-                <X size={20} />
-              </button>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A]">
-                  <Calendar size={20} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-extrabold text-slate-800 uppercase tracking-tight font-[family-name:var(--font-outfit)]">Schedule Doctor Consult</h3>
-                  <p className="text-[10px] text-slate-500 font-light mt-0.5 uppercase tracking-wider">Active Parent Profile: {activeParent?.name || primaryParentName}</p>
-                </div>
-              </div>
-
-              <form onSubmit={handleSaveAppointment} className="space-y-4 font-[family-name:var(--font-inter)]">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Doctor Name</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Dr. K. Sharma"
-                      value={appointmentInput.doctorName}
-                      onChange={e => setAppointmentInput({...appointmentInput, doctorName: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Specialty</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Cardiologist"
-                      value={appointmentInput.specialty}
-                      onChange={e => setAppointmentInput({...appointmentInput, specialty: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Date</label>
-                    <input 
-                      type="date" 
-                      value={appointmentInput.date}
-                      onChange={e => setAppointmentInput({...appointmentInput, date: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Time</label>
-                    <input 
-                      type="time" 
-                      value={appointmentInput.time}
-                      onChange={e => setAppointmentInput({...appointmentInput, time: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1 col-span-2">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mode of Consultation</label>
-                    <select 
-                      value={appointmentInput.mode}
-                      onChange={e => setAppointmentInput({...appointmentInput, mode: e.target.value as any})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Relationship *
+                    </label>
+                    <select
+                      value={familyForm.relationship}
+                      onChange={(e) => setFamilyForm({ ...familyForm, relationship: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs"
                     >
-                      <option value="in-person">In-Person Clinical Visit</option>
-                      <option value="video">Telehealth / Video Call</option>
-                      <option value="phone">Telehealth / Voice Call</option>
-                      <option value="whatsapp">WhatsApp / Messaging</option>
+                      <option value="Mother">Mother</option>
+                      <option value="Father">Father</option>
+                      <option value="Grandmother">Grandmother</option>
+                      <option value="Grandfather">Grandfather</option>
+                      <option value="Spouse">Spouse</option>
+                      <option value="Other">Other Recipient</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Primary Language *
+                    </label>
+                    <select
+                      value={familyForm.primary_language}
+                      onChange={(e) => setFamilyForm({ ...familyForm, primary_language: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs"
+                    >
+                      <option value="English">English</option>
+                      <option value="Telugu">Telugu (తెలుగు)</option>
+                      <option value="Hindi">Hindi (हिन्दी)</option>
+                      <option value="Tamil">Tamil (தமிழ்)</option>
+                      <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+                      <option value="Malayalam">Malayalam (മലയാളം)</option>
+                      <option value="Marathi">Marathi (मराठी)</option>
                     </select>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Reason / Target Symptoms</label>
-                  <textarea 
-                    placeholder="Enter reason for scheduling (e.g. chronic hypertension review, cardiac follow-up, general diabetic blood work discussion...)"
-                    rows={2}
-                    value={appointmentInput.reason}
-                    onChange={e => setAppointmentInput({...appointmentInput, reason: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50 resize-none"
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Phone Number (Optional)
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. +91 98480 22338"
+                    value={familyForm.phone}
+                    onChange={(e) => setFamilyForm({ ...familyForm, phone: e.target.value })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
                   />
                 </div>
-                <div className="flex gap-3 pt-2">
-                  <button 
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Timezone
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value="Asia/Kolkata"
+                    className="w-full px-3.5 py-3 quiet-input text-xs text-slate-500 cursor-not-allowed bg-slate-100/60"
+                  />
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-3">
+                  <button
                     type="button"
-                    onClick={() => setShowAppointmentModal(false)}
-                    className="w-1/2 py-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all"
+                    onClick={() => setShowAddFamilyModal(false)}
+                    className="px-4 py-3 rounded-2xl border border-[#EFECE6] text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     type="submit"
-                    className="w-1/2 py-3.5 bg-[#0E5E5A] hover:bg-[#0c4e4b] text-white font-bold rounded-xl text-[10px] uppercase tracking-wider shadow-lg transition-all"
+                    disabled={isSubmittingFamily}
+                    className="px-6 py-3 rounded-2xl bg-[#0E5E5A] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#0C4E4B] flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
                   >
-                    Schedule Consult
+                    {isSubmittingFamily ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <>
+                        <Plus size={14} /> Add Care Recipient
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
 
-        {showMedicationModal && (
-          <div className="fixed inset-0 z-50 bg-[#122321]/60 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-[2.5rem] border border-[#e2ded5] p-8 md:p-10 w-full max-w-lg shadow-2xl relative"
+      {/* Modal: Add Medication */}
+      <AnimatePresence>
+        {showAddMedModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-md bg-white rounded-[2.5rem] p-6 sm:p-7 shadow-2xl border border-[#EFECE6] space-y-5"
             >
-              <button 
-                onClick={() => setShowMedicationModal(false)}
-                className="absolute top-6 right-6 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
-              >
-                <X size={20} />
-              </button>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A]">
-                  <Pill size={20} />
-                </div>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
-                  <h3 className="text-xl font-extrabold text-slate-800 uppercase tracking-tight font-[family-name:var(--font-outfit)]">Add Routine Medication</h3>
-                  <p className="text-[10px] text-slate-500 font-light mt-0.5 uppercase tracking-wider">Active Parent Profile: {activeParent?.name || primaryParentName}</p>
+                  <h3 className="text-base font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+                    Add Medication
+                  </h3>
+                  <p className="text-xs text-slate-500 font-light mt-0.5">
+                    Schedule a medication for {formatName(currentRecipient?.display_name)}
+                  </p>
                 </div>
+                <button
+                  onClick={() => setShowAddMedModal(false)}
+                  className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              <form onSubmit={handleSaveMedication} className="space-y-4 font-[family-name:var(--font-inter)]">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Medication Name</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Telmisartan 40mg"
-                      value={medicationInput.name}
-                      onChange={e => setMedicationInput({...medicationInput, name: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
+              {medError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700">
+                  {medError}
+                </div>
+              )}
+
+              <form onSubmit={handleAddMedSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Medication Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Metformin or Amlodipine"
+                    value={medForm.name}
+                    onChange={(e) => setMedForm({ ...medForm, name: e.target.value })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Dosage / Strength *
+                    </label>
+                    <input
+                      type="text"
                       required
+                      placeholder="e.g. 500mg or 1 tablet"
+                      value={medForm.dosage}
+                      onChange={(e) => setMedForm({ ...medForm, dosage: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Dosage Structure</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. 1 Tablet"
-                      value={medicationInput.dosage}
-                      onChange={e => setMedicationInput({...medicationInput, dosage: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Scheduled Time *
+                    </label>
+                    <input
+                      type="time"
                       required
+                      value={medForm.local_time}
+                      onChange={(e) => setMedForm({ ...medForm, local_time: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs"
                     />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Default Slot Scheduled</label>
-                  <select 
-                    value={medicationInput.timing}
-                    onChange={e => setMedicationInput({...medicationInput, timing: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Instructions (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Take after breakfast with warm water"
+                    value={medForm.instructions}
+                    onChange={(e) => setMedForm({ ...medForm, instructions: e.target.value })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={medForm.start_date}
+                    onChange={(e) => setMedForm({ ...medForm, start_date: e.target.value })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
+                  />
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddMedModal(false)}
+                    className="px-4 py-3 rounded-2xl border border-[#EFECE6] text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                   >
-                    <option value="Morning">Morning (Breakfast Slot)</option>
-                    <option value="Noon">Noon (Lunch Slot)</option>
-                    <option value="Evening">Evening (Tea/Sunset Slot)</option>
-                    <option value="Night">Night (Dinner/Bedtime Slot)</option>
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingMed}
+                    className="px-6 py-3 rounded-2xl bg-[#0E5E5A] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#0C4E4B] flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    {isSubmittingMed ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <>
+                        <Plus size={14} /> Save Medication
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: Add Care Routine */}
+      <AnimatePresence>
+        {showAddRoutineModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-md bg-white rounded-[2.5rem] p-6 sm:p-7 shadow-2xl border border-[#EFECE6] space-y-5"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+                    Add Care Routine
+                  </h3>
+                  <p className="text-xs text-slate-500 font-light mt-0.5">
+                    Schedule a care activity for {formatName(currentRecipient?.display_name)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddRoutineModal(false)}
+                  className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {routineError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700">
+                  {routineError}
+                </div>
+              )}
+
+              <form onSubmit={handleAddRoutineSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Routine Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Morning Walk or Physiotherapy"
+                    value={routineForm.name}
+                    onChange={(e) => setRoutineForm({ ...routineForm, name: e.target.value })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Category *
+                    </label>
+                    <select
+                      value={routineForm.category}
+                      onChange={(e) => setRoutineForm({ ...routineForm, category: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs capitalize"
+                    >
+                      <option value="exercise">Exercise / Walking</option>
+                      <option value="physiotherapy">Physiotherapy</option>
+                      <option value="hydration">Hydration</option>
+                      <option value="dietary">Dietary Check-in</option>
+                      <option value="respiratory">Breathing Exercises</option>
+                      <option value="sleep">Sleep Routine</option>
+                      <option value="hygiene">Hygiene</option>
+                      <option value="other">Other Activity</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Scheduled Time *
+                    </label>
+                    <input
+                      type="time"
+                      required
+                      value={routineForm.local_time}
+                      onChange={(e) => setRoutineForm({ ...routineForm, local_time: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Description / Instructions (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 15 minutes gentle walking in park"
+                    value={routineForm.description}
+                    onChange={(e) => setRoutineForm({ ...routineForm, description: e.target.value })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={routineForm.start_date}
+                    onChange={(e) => setRoutineForm({ ...routineForm, start_date: e.target.value })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
+                  />
+                </div>
+
+                <div className="pt-3 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddRoutineModal(false)}
+                    className="px-4 py-3 rounded-2xl border border-[#EFECE6] text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingRoutine}
+                    className="px-6 py-3 rounded-2xl bg-[#0E5E5A] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#0C4E4B] flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
+                  >
+                    {isSubmittingRoutine ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <>
+                        <Plus size={14} /> Save Care Routine
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: Add Health Observation */}
+      <AnimatePresence>
+        {showAddObsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="w-full max-w-md bg-white rounded-[2.5rem] p-6 sm:p-7 shadow-2xl border border-[#EFECE6] space-y-5"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h3 className="text-base font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+                    Log Health Observation
+                  </h3>
+                  <p className="text-xs text-slate-500 font-light mt-0.5">
+                    Record health observation for {formatName(currentRecipient?.display_name)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddObsModal(false)}
+                  className="p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {obsError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700">
+                  {obsError}
+                </div>
+              )}
+
+              <form onSubmit={handleAddObsSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Observation Type *
+                  </label>
+                  <select
+                    value={obsForm.category}
+                    onChange={(e) => setObsForm({ ...obsForm, category: e.target.value as any })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs font-semibold text-[#0E5E5A]"
+                  >
+                    <option value="blood_pressure">Blood Pressure (mmHg)</option>
+                    <option value="blood_glucose">Blood Glucose (mg/dL)</option>
+                    <option value="weight">Weight (kg)</option>
+                    <option value="body_temperature">Body Temperature (°F)</option>
+                    <option value="pulse_oximetry">Pulse Oximetry / SpO2 (%)</option>
+                    <option value="heart_rate">Heart Rate (bpm)</option>
+                    <option value="symptom_notes">Symptom / Health Note</option>
                   </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Intake Instructions</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Take post breakfast with warm water"
-                    value={medicationInput.instructions}
-                    onChange={e => setMedicationInput({...medicationInput, instructions: e.target.value})}
-                    className="w-full px-4 py-3 rounded-xl border border-[#e2ded5] focus:outline-none focus:border-[#0E5E5A] text-sm text-slate-800 bg-slate-50/50"
+
+                {/* Conditional Fields based on observation category */}
+                {obsForm.category === "blood_pressure" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Systolic (mmHg) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="128"
+                        value={obsForm.value_sys}
+                        onChange={(e) => setObsForm({ ...obsForm, value_sys: e.target.value })}
+                        className="w-full px-3.5 py-3 quiet-input text-xs font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        Diastolic (mmHg) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="82"
+                        value={obsForm.value_dia}
+                        onChange={(e) => setObsForm({ ...obsForm, value_dia: e.target.value })}
+                        className="w-full px-3.5 py-3 quiet-input text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {obsForm.category === "blood_glucose" && (
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Blood Glucose Value (mg/dL) *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      placeholder="e.g. 112"
+                      value={obsForm.value_numeric}
+                      onChange={(e) => setObsForm({ ...obsForm, value_numeric: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs font-bold"
+                    />
+                  </div>
+                )}
+
+                {obsForm.category === "weight" && (
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Weight (kg) *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      placeholder="e.g. 71.4"
+                      value={obsForm.value_numeric}
+                      onChange={(e) => setObsForm({ ...obsForm, value_numeric: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs font-bold"
+                    />
+                  </div>
+                )}
+
+                {obsForm.category === "body_temperature" && (
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Body Temperature (°F) *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      placeholder="e.g. 98.6"
+                      value={obsForm.value_numeric}
+                      onChange={(e) => setObsForm({ ...obsForm, value_numeric: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs font-bold"
+                    />
+                  </div>
+                )}
+
+                {obsForm.category === "pulse_oximetry" && (
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      SpO2 (%) *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      placeholder="e.g. 98"
+                      value={obsForm.value_numeric}
+                      onChange={(e) => setObsForm({ ...obsForm, value_numeric: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs font-bold"
+                    />
+                  </div>
+                )}
+
+                {obsForm.category === "heart_rate" && (
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Heart Rate (bpm) *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      placeholder="e.g. 72"
+                      value={obsForm.value_numeric}
+                      onChange={(e) => setObsForm({ ...obsForm, value_numeric: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs font-bold"
+                    />
+                  </div>
+                )}
+
+                {obsForm.category === "symptom_notes" && (
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      What did you notice? *
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      placeholder="e.g. Slight dizziness after afternoon walk"
+                      value={obsForm.value_text}
+                      onChange={(e) => setObsForm({ ...obsForm, value_text: e.target.value })}
+                      className="w-full px-3.5 py-3 quiet-input text-xs"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Notes (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Measured before morning breakfast"
+                    value={obsForm.notes}
+                    onChange={(e) => setObsForm({ ...obsForm, notes: e.target.value })}
+                    className="w-full px-3.5 py-3 quiet-input text-xs"
                   />
                 </div>
-                <div className="flex gap-3 pt-2">
-                  <button 
+
+                <div className="pt-3 flex items-center justify-end gap-3">
+                  <button
                     type="button"
-                    onClick={() => setShowMedicationModal(false)}
-                    className="w-1/2 py-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all"
+                    onClick={() => setShowAddObsModal(false)}
+                    className="px-4 py-3 rounded-2xl border border-[#EFECE6] text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     type="submit"
-                    className="w-1/2 py-3.5 bg-[#0E5E5A] hover:bg-[#0c4e4b] text-white font-bold rounded-xl text-[10px] uppercase tracking-wider shadow-lg transition-all"
+                    disabled={isSubmittingObs}
+                    className="px-6 py-3 rounded-2xl bg-[#0E5E5A] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#0C4E4B] flex items-center gap-2 shadow-sm transition-all disabled:opacity-50"
                   >
-                    Add Active Routine
+                    {isSubmittingObs ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <>
+                        <Plus size={14} /> Save Observation
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
             </motion.div>
           </div>
         )}
-
-        {showDoctorBriefModal && (
-          <div className="fixed inset-0 z-50 bg-[#122321]/60 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-[2.5rem] border border-[#e2ded5] p-8 md:p-10 w-full max-w-2xl shadow-2xl relative max-h-[85vh] flex flex-col justify-between"
-            >
-              <button 
-                onClick={() => setShowDoctorBriefModal(false)}
-                className="absolute top-6 right-6 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
-              >
-                <X size={20} />
-              </button>
-              
-              <div className="flex items-center gap-3 mb-4 shrink-0">
-                <div className="h-10 w-10 rounded-2xl bg-[#E05E1B]/10 border border-[#E05E1B]/20 flex items-center justify-center text-[#E05E1B]">
-                  <Printer size={20} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-extrabold text-slate-800 uppercase tracking-tight font-[family-name:var(--font-outfit)]">Doctor Brief</h3>
-                  <p className="text-[10px] text-slate-500 font-light mt-0.5 uppercase tracking-wider">PREVIEW Doctor Brief — ready to print or share</p>
-                </div>
-              </div>
-
-              {/* Doctor Brief Content Container */}
-              <div className="flex-1 overflow-y-auto p-6 bg-slate-50 rounded-2xl border border-slate-200 my-4 text-xs font-[family-name:var(--font-inter)] leading-relaxed space-y-4 select-text">
-                <div className="text-slate-700 whitespace-pre-wrap font-mono select-all">
-                  {generatedBrief}
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-2 shrink-0">
-                <button 
-                  type="button"
-                  onClick={() => setShowDoctorBriefModal(false)}
-                  className="w-1/2 py-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl text-[10px] uppercase tracking-wider transition-all"
-                >
-                  Close Preview
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    const printWindow = window.open("", "_blank");
-                    if (printWindow) {
-                      printWindow.document.write(`
-                        <html>
-                          <head>
-                            <title>Parents Health OS - Doctor Brief</title>
-                            <style>
-                              body { font-family: monospace; padding: 40px; color: #333; line-height: 1.5; white-space: pre-wrap; font-size: 13px; }
-                              hr { border: 0; border-top: 1px dashed #ccc; margin: 20px 0; }
-                            </style>
-                          </head>
-                          <body>
-                            <h2>Parents Health OS — Doctor Brief</h2>
-                            <hr />
-                            \${generatedBrief ? generatedBrief.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ""}
-                            <hr />
-                            <script>window.print();<\/script>
-                          </body>
-                        </html>
-                      `);
-                      printWindow.document.close();
-                    }
-                  }}
-                  className="w-1/2 py-3.5 bg-[#E05E1B] hover:bg-[#c94e14] text-white font-bold rounded-xl text-[10px] uppercase tracking-wider shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <Printer size={13} />
-                  Print / Save PDF
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-      </ToastProvider >
-    </div >
+      </AnimatePresence>
+    </div>
   );
 }
 
-function PillarCard({ type, activeView, setActiveView }: { type: string, activeView: string, setActiveView: (v: string) => void }) {
+function NavItem({ icon, label, isActive, onClick }: { icon: React.ReactNode; label: string; isActive: boolean; onClick: () => void }) {
   return (
-    <div 
-      onClick={() => setActiveView(type === 'clinical' ? 'clinical' : type === 'wellness' ? 'medicines' : 'smart-reports')}
-      className="glass-card p-6 md:p-10 rounded-[2.5rem] min-h-[14rem] md:h-72 flex flex-col justify-between group cursor-pointer hover:bg-white border-[#e2ded5] hover:border-[#0E5E5A]/20"
+    <button
+      onClick={onClick}
+      className="flex-1 flex flex-col items-center justify-center min-h-[48px] py-1 transition-all group select-none"
     >
-      <div className="flex items-center justify-between">
-        <div className="h-11 w-11 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-[#0E5E5A] group-hover:scale-110 transition-transform">
-          {type === 'clinical' ? <Stethoscope size={22} strokeWidth={1.5} /> : type === 'wellness' ? <BookOpen size={22} strokeWidth={1.5} /> : <FileText size={22} strokeWidth={1.5} />}
-        </div>
-        <div className="data-label !text-[8px] text-[#0E5E5A]/70 uppercase tracking-widest bg-teal-50 px-2 py-0.5 rounded">READY</div>
+      <div
+        className={`px-3.5 py-1 rounded-full transition-all duration-200 ${
+          isActive
+            ? "bg-[#0E5E5A] text-white shadow-sm"
+            : "text-slate-400 group-hover:text-slate-600 group-hover:bg-slate-100/60"
+        }`}
+      >
+        {icon}
       </div>
+      <span
+        className={`text-[10px] mt-1 tracking-tight transition-colors font-medium ${
+          isActive ? "text-[#0E5E5A] font-bold" : "text-slate-500"
+        }`}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function HomeView({
+  firstName,
+  timeGreeting,
+  currentRecipient,
+  medications,
+  medicationEvents,
+  careRoutines,
+  careRoutineEvents,
+  healthObservations,
+  onAddFamily,
+  onNavigate,
+  onAddMedication,
+  onAddRoutine,
+  onAddObservation
+}: {
+  firstName: string;
+  timeGreeting: string;
+  currentRecipient: any;
+  medications: any[];
+  medicationEvents: any[];
+  careRoutines: any[];
+  careRoutineEvents: any[];
+  healthObservations: any[];
+  onAddFamily: () => void;
+  onNavigate: (tab: "home" | "family" | "care" | "records" | "profile") => void;
+  onAddMedication: () => void;
+  onAddRoutine: () => void;
+  onAddObservation: () => void;
+}) {
+  const rawName = currentRecipient?.display_name || "Papa";
+  const recipientName = formatName(rawName);
+  const relationship = currentRecipient?.relationship || "Father";
+  const avatarInitial = recipientName.charAt(0);
+
+  const medsTakenCount = medicationEvents.filter((e) => e.status === "taken").length;
+  const routinesCompletedCount = careRoutineEvents.filter((e) => e.status === "completed").length;
+
+  const pendingMeds = medicationEvents.filter((e) => e.status === "pending" || e.status === "snoozed");
+  const pendingRoutines = careRoutineEvents.filter((e) => e.status === "pending" || e.status === "snoozed");
+  const hasAttentionItems = pendingMeds.length > 0 || pendingRoutines.length > 0;
+
+  const latestObservation = healthObservations.length > 0 ? healthObservations[0] : null;
+
+  return (
+    <div className="space-y-6">
+      {/* Greeting Banner */}
       <div>
-        <h4 className="data-label mb-3 !text-slate-500 uppercase tracking-wider text-[9px]">
-          {type === 'clinical' ? 'Care Scorecard' : type === 'wellness' ? 'Adherence Rate' : 'Health Analytics'}
-        </h4>
-        <h3 className="text-2xl md:text-3xl font-bold text-slate-800 font-[family-name:var(--font-outfit)] tracking-tighter uppercase">
-          {type === 'clinical' ? 'Profile' : type === 'wellness' ? '98.2%' : 'Reports'}
-        </h3>
+        <h2 className="text-2xl font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+          {timeGreeting}, {firstName}
+        </h2>
+        <p className="text-xs text-slate-500 font-light mt-0.5">
+          Quiet family care home
+        </p>
       </div>
-      <div className="data-label text-[#0E5E5A] flex items-center gap-3 group-hover:translate-x-1 transition-transform cursor-pointer">
-        View Hub <ArrowRight size={12} strokeWidth={3} className="opacity-70 text-[#E05E1B]" />
+
+      {/* Active Parent Hero Card */}
+      <div className="quiet-card p-6 space-y-5">
+        <div className="flex items-center justify-between border-b border-[#EFECE6] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-teal-50 border border-teal-100 text-[#0E5E5A] font-bold text-base flex items-center justify-center shrink-0 shadow-inner">
+              {avatarInitial}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-bold text-[#1C2826] font-[family-name:var(--font-outfit)]">
+                  {recipientName}
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-[#0E5E5A] font-semibold text-[10px]">
+                  {relationship}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-light mt-0.5">
+                Primary Language: {currentRecipient?.primary_language || "English"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Status Rows */}
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F7F5F0]">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-xl bg-white text-[#0E5E5A] flex items-center justify-center shrink-0 border border-[#EAE6DF]">
+                <Pill size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-800 block">Medicines Today</span>
+                <span className="text-[11px] text-slate-500 font-light">
+                  {medicationEvents.length === 0
+                    ? "No medicines scheduled today"
+                    : `${medicationEvents.length} scheduled today • ${medsTakenCount} taken`}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onAddMedication}
+              className="text-[11px] font-semibold text-[#0E5E5A] hover:underline px-2 py-1"
+            >
+              + Add
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F7F5F0]">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-xl bg-white text-[#0E5E5A] flex items-center justify-center shrink-0 border border-[#EAE6DF]">
+                <Calendar size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-800 block">Routines Today</span>
+                <span className="text-[11px] text-slate-500 font-light">
+                  {careRoutineEvents.length === 0
+                    ? "No routines scheduled today"
+                    : `${careRoutineEvents.length} scheduled today • ${routinesCompletedCount} completed`}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onAddRoutine}
+              className="text-[11px] font-semibold text-[#0E5E5A] hover:underline px-2 py-1"
+            >
+              + Add
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F7F5F0]">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-xl bg-white text-[#0E5E5A] flex items-center justify-center shrink-0 border border-[#EAE6DF]">
+                <Activity size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-slate-800 block">Latest Observation</span>
+                <span className="text-[11px] text-slate-500 font-light">
+                  {!latestObservation
+                    ? "None yet"
+                    : `${formatObservationCategoryLabel(latestObservation.category)}: ${formatObservationValue(latestObservation)} • ${formatObservedTime(latestObservation.observed_at)}`}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onAddObservation}
+              className="text-[11px] font-semibold text-[#0E5E5A] hover:underline px-2 py-1"
+            >
+              + Log
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Needs your attention card */}
+      <div className="quiet-card p-5 space-y-2">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-[family-name:var(--font-outfit)]">
+          Needs your attention
+        </h3>
+        {!hasAttentionItems ? (
+          <div className="flex items-center gap-2 text-xs text-slate-600 font-light pt-1">
+            <CheckCircle2 size={16} className="text-[#0E5E5A] shrink-0" />
+            <span>All clear — No pending items requiring attention.</span>
+          </div>
+        ) : (
+          <div className="space-y-2 pt-1">
+            {pendingMeds.map((ev) => (
+              <div key={ev.id} className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70 border border-amber-100 text-xs">
+                <div className="flex items-center gap-2">
+                  <Pill size={14} className="text-[#D95D28]" />
+                  <span className="font-semibold text-slate-800">{ev.medication_name} ({ev.dosage})</span>
+                  <span className="text-[10px] text-slate-500">at {formatTime12(ev.local_time)}</span>
+                </div>
+                <button
+                  onClick={() => onNavigate("care")}
+                  className="text-[10px] font-bold text-[#0E5E5A] hover:underline"
+                >
+                  Respond
+                </button>
+              </div>
+            ))}
+            {pendingRoutines.map((ev) => (
+              <div key={ev.id} className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/70 border border-amber-100 text-xs">
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-[#D95D28]" />
+                  <span className="font-semibold text-slate-800">{ev.routine_name}</span>
+                  <span className="text-[10px] text-slate-500">at {formatTime12(ev.local_time)}</span>
+                </div>
+                <button
+                  onClick={() => onNavigate("care")}
+                  className="text-[10px] font-bold text-[#0E5E5A] hover:underline"
+                >
+                  Respond
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quick Care Actions */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-[family-name:var(--font-outfit)] px-1">
+          Quick actions
+        </h3>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={onAddMedication}
+            className="quiet-card p-4 text-left flex items-center gap-3 hover:border-[#0E5E5A]/30 transition-all group"
+          >
+            <div className="h-9 w-9 rounded-2xl bg-teal-50 text-[#0E5E5A] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Pill size={18} />
+            </div>
+            <span className="text-xs font-semibold text-slate-800">Add medicine</span>
+          </button>
+
+          <button
+            onClick={onAddRoutine}
+            className="quiet-card p-4 text-left flex items-center gap-3 hover:border-[#0E5E5A]/30 transition-all group"
+          >
+            <div className="h-9 w-9 rounded-2xl bg-teal-50 text-[#0E5E5A] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Calendar size={18} />
+            </div>
+            <span className="text-xs font-semibold text-slate-800">Add routine</span>
+          </button>
+
+          <button
+            onClick={onAddObservation}
+            className="quiet-card p-4 text-left flex items-center gap-3 hover:border-[#0E5E5A]/30 transition-all group"
+          >
+            <div className="h-9 w-9 rounded-2xl bg-teal-50 text-[#0E5E5A] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Activity size={18} />
+            </div>
+            <span className="text-xs font-semibold text-slate-800">Log health</span>
+          </button>
+
+          <button
+            onClick={onAddFamily}
+            className="quiet-card p-4 text-left flex items-center gap-3 hover:border-[#0E5E5A]/30 transition-all group"
+          >
+            <div className="h-9 w-9 rounded-2xl bg-teal-50 text-[#0E5E5A] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Plus size={18} />
+            </div>
+            <span className="text-xs font-semibold text-slate-800">Add family member</span>
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function NavItem({ icon, label, active = false, isNew = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; isNew?: boolean; onClick?: () => void }) {
+function FamilyView({
+  careRecipients,
+  currentRecipient,
+  onSelectRecipient,
+  onAddFamily
+}: {
+  careRecipients: any[];
+  currentRecipient: any;
+  onSelectRecipient: (id: string) => void;
+  onAddFamily: () => void;
+}) {
   return (
-    <button
-      onClick={onClick}
-      className={`group flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-[10px] font-bold transition-all relative overflow-hidden font-[family-name:var(--font-outfit)] uppercase tracking-wider ${active
-        ? "text-white bg-white/10 shadow-inner border border-white/10"
-        : "text-teal-150 hover:text-white hover:bg-white/[0.04]"
-        }`}
-    >
-      {active && (
-        <motion.div 
-          layoutId="activeNav"
-          className="absolute left-0 top-0 bottom-0 w-1 bg-[#E05E1B] shadow-[0_0_15px_rgba(224,94,27,0.8)]"
-        />
-      )}
-      <div className="flex items-center gap-4 min-w-0">
-        <span className={`${active ? "text-[#E05E1B]" : "text-teal-200/70 group-hover:text-white"} transition-colors shrink-0`}>{icon}</span>
-        <span className="tracking-tight whitespace-nowrap truncate">{label}</span>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+            Family Circle
+          </h2>
+          <p className="text-xs text-slate-500 font-light mt-0.5">
+            Care recipients in your family
+          </p>
+        </div>
+        <button
+          onClick={onAddFamily}
+          className="px-4 py-2.5 rounded-2xl bg-[#0E5E5A] text-white text-xs font-semibold uppercase tracking-wider hover:bg-[#0C4E4B] flex items-center gap-1.5 shadow-sm transition-all"
+        >
+          <Plus size={14} /> Add Member
+        </button>
       </div>
-      {isNew && !active && (
-        <span className="h-1.5 w-1.5 rounded-full bg-[#E05E1B] shadow-[0_0_10px_rgba(224,94,27,0.8)] animate-pulse shrink-0 ml-2" />
+
+      <div className="space-y-3">
+        {careRecipients.length === 0 ? (
+          <div className="quiet-card p-8 text-center space-y-3">
+            <p className="text-xs text-slate-500 font-light">No family care recipients registered yet.</p>
+            <button
+              onClick={onAddFamily}
+              className="px-4 py-2 rounded-2xl bg-[#0E5E5A] text-white text-xs font-semibold"
+            >
+              + Add family member
+            </button>
+          </div>
+        ) : (
+          careRecipients.map((recipient) => {
+            const isSelected = recipient.id === currentRecipient?.id;
+            const formattedName = formatName(recipient.display_name);
+            return (
+              <div
+                key={recipient.id}
+                className={`quiet-card p-5 transition-all ${
+                  isSelected ? "border-[#0E5E5A] ring-1 ring-[#0E5E5A]/20" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3.5">
+                    <div className={`h-11 w-11 rounded-2xl font-bold text-base flex items-center justify-center shrink-0 ${
+                      isSelected ? "bg-[#0E5E5A] text-white shadow-sm" : "bg-teal-50 text-[#0E5E5A]"
+                    }`}>
+                      {formattedName.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-base font-bold text-[#1C2826] font-[family-name:var(--font-outfit)]">
+                          {formattedName}
+                        </h3>
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold text-[10px]">
+                          {recipient.relationship}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 text-xs text-slate-500 font-light">
+                        <p className="flex items-center gap-1.5">
+                          <Globe size={12} className="text-slate-400" />
+                          <span>Language: <strong className="font-semibold text-slate-700">{recipient.primary_language}</strong></span>
+                        </p>
+                        {recipient.phone && (
+                          <p className="flex items-center gap-1.5">
+                            <PhoneCall size={12} className="text-slate-400" />
+                            <span>Phone: <strong className="font-semibold text-slate-700">{recipient.phone}</strong></span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {isSelected ? (
+                    <span className="px-3 py-1 rounded-full bg-teal-50 text-[#0E5E5A] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+                      <Check size={12} /> Active
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => onSelectRecipient(recipient.id)}
+                      className="px-3.5 py-1.5 rounded-xl border border-[#EFECE6] text-slate-700 hover:border-[#0E5E5A] text-xs font-semibold transition-colors"
+                    >
+                      Select
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CareView({
+  careRecipients,
+  currentRecipient,
+  onSelectRecipient,
+  medications,
+  medicationEvents,
+  careRoutines,
+  careRoutineEvents,
+  onAddMedication,
+  onAddRoutine,
+  onDeactivateMedication,
+  onDeactivateRoutine,
+  onRespondMedication,
+  onRespondRoutine
+}: {
+  careRecipients: any[];
+  currentRecipient: any;
+  onSelectRecipient: (id: string) => void;
+  medications: any[];
+  medicationEvents: any[];
+  careRoutines: any[];
+  careRoutineEvents: any[];
+  onAddMedication: () => void;
+  onAddRoutine: () => void;
+  onDeactivateMedication: (id: string) => void;
+  onDeactivateRoutine: (id: string) => void;
+  onRespondMedication: (eventId: string, status: "taken" | "skipped" | "snoozed") => void;
+  onRespondRoutine: (eventId: string, status: "completed" | "partial" | "skipped" | "snoozed") => void;
+}) {
+  const name = formatName(currentRecipient?.display_name) || "Care Recipient";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+          Care Plan
+        </h2>
+        <p className="text-xs text-slate-500 font-light mt-0.5">
+          Care activities and medications for <span className="font-semibold text-slate-800">{name}</span>
+        </p>
+      </div>
+
+      {/* Recipient Context Pills */}
+      {careRecipients.length > 1 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {careRecipients.map((rec) => {
+            const isSel = rec.id === currentRecipient?.id;
+            return (
+              <button
+                key={rec.id}
+                onClick={() => onSelectRecipient(rec.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                  isSel ? "bg-[#0E5E5A] text-white" : "bg-white border border-[#EFECE6] text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {formatName(rec.display_name)} ({rec.relationship})
+              </button>
+            );
+          })}
+        </div>
       )}
-    </button>
+
+      {/* Section 1: TODAY'S SCHEDULED ACTIVITIES */}
+      <div className="quiet-card p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#EFECE6] pb-3">
+          <div className="flex items-center gap-2">
+            <Clock size={18} className="text-[#0E5E5A]" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#1C2826] font-[family-name:var(--font-outfit)]">
+              Today's Schedule
+            </h3>
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            {new Date().toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}
+          </span>
+        </div>
+
+        {medicationEvents.length === 0 && careRoutineEvents.length === 0 ? (
+          <p className="text-xs text-slate-500 font-light py-2">
+            No care activities scheduled for today. Add a medication or routine below to build {name}'s care schedule.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {/* Today's Medications */}
+            {medicationEvents.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Medication Times
+                </span>
+                {medicationEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="p-3.5 rounded-2xl bg-[#F7F5F0] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Pill size={14} className="text-[#0E5E5A]" />
+                        <span className="font-semibold text-slate-800">{ev.medication_name}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-white text-slate-600 font-medium text-[10px] border border-[#EAE6DF]">
+                          {ev.dosage}
+                        </span>
+                      </div>
+                      <p className="text-slate-500 text-[11px] mt-0.5">
+                        Scheduled at <strong className="font-semibold text-slate-700">{formatTime12(ev.local_time)}</strong>
+                        {ev.instructions ? ` • ${ev.instructions}` : ""}
+                      </p>
+                    </div>
+
+                    {/* Action Buttons / Response Badges */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {ev.status === "pending" ? (
+                        <>
+                          <button
+                            onClick={() => onRespondMedication(ev.id, "taken")}
+                            className="px-3 py-1.5 rounded-xl bg-[#0E5E5A] text-white font-semibold text-[11px] hover:bg-[#0C4E4B] transition-colors"
+                          >
+                            ✓ Taken
+                          </button>
+                          <button
+                            onClick={() => onRespondMedication(ev.id, "skipped")}
+                            className="px-2.5 py-1.5 rounded-xl bg-white border border-[#EFECE6] text-slate-600 font-medium text-[11px] hover:bg-slate-50 transition-colors"
+                          >
+                            Skip
+                          </button>
+                          <button
+                            onClick={() => onRespondMedication(ev.id, "snoozed")}
+                            className="px-2.5 py-1.5 rounded-xl bg-amber-50 text-[#D95D28] font-medium text-[11px] border border-amber-100 hover:bg-amber-100 transition-colors"
+                          >
+                            Snooze
+                          </button>
+                        </>
+                      ) : ev.status === "taken" ? (
+                        <span className="px-3 py-1 rounded-full bg-teal-50 text-[#0E5E5A] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+                          <Check size={12} /> Taken
+                        </span>
+                      ) : ev.status === "skipped" ? (
+                        <span className="px-3 py-1 rounded-full bg-slate-200/80 text-slate-600 font-bold text-[10px] uppercase tracking-wider">
+                          Skipped
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full bg-amber-100 text-[#D95D28] font-bold text-[10px] uppercase tracking-wider">
+                          Snoozed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Today's Routines */}
+            {careRoutineEvents.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Routine Activities
+                </span>
+                {careRoutineEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="p-3.5 rounded-2xl bg-[#F7F5F0] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-[#0E5E5A]" />
+                        <span className="font-semibold text-slate-800">{ev.routine_name}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-white text-slate-600 font-medium text-[10px] border border-[#EAE6DF] capitalize">
+                          {ev.category}
+                        </span>
+                      </div>
+                      <p className="text-slate-500 text-[11px] mt-0.5">
+                        Scheduled at <strong className="font-semibold text-slate-700">{formatTime12(ev.local_time)}</strong>
+                        {ev.description ? ` • ${ev.description}` : ""}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {ev.status === "pending" ? (
+                        <>
+                          <button
+                            onClick={() => onRespondRoutine(ev.id, "completed")}
+                            className="px-3 py-1.5 rounded-xl bg-[#0E5E5A] text-white font-semibold text-[11px] hover:bg-[#0C4E4B] transition-colors"
+                          >
+                            ✓ Completed
+                          </button>
+                          <button
+                            onClick={() => onRespondRoutine(ev.id, "skipped")}
+                            className="px-2.5 py-1.5 rounded-xl bg-white border border-[#EFECE6] text-slate-600 font-medium text-[11px] hover:bg-slate-50 transition-colors"
+                          >
+                            Skip
+                          </button>
+                          <button
+                            onClick={() => onRespondRoutine(ev.id, "snoozed")}
+                            className="px-2.5 py-1.5 rounded-xl bg-amber-50 text-[#D95D28] font-medium text-[11px] border border-amber-100 hover:bg-amber-100 transition-colors"
+                          >
+                            Snooze
+                          </button>
+                        </>
+                      ) : ev.status === "completed" ? (
+                        <span className="px-3 py-1 rounded-full bg-teal-50 text-[#0E5E5A] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+                          <Check size={12} /> Completed
+                        </span>
+                      ) : ev.status === "skipped" ? (
+                        <span className="px-3 py-1 rounded-full bg-slate-200/80 text-slate-600 font-bold text-[10px] uppercase tracking-wider">
+                          Skipped
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 rounded-full bg-amber-100 text-[#D95D28] font-bold text-[10px] uppercase tracking-wider">
+                          Snoozed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Section 2: ACTIVE MEDICATIONS LIST */}
+      <div className="quiet-card p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#EFECE6] pb-3">
+          <div className="flex items-center gap-2">
+            <Pill size={18} className="text-[#0E5E5A]" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#1C2826] font-[family-name:var(--font-outfit)]">
+              Active Medications
+            </h3>
+          </div>
+          <button
+            onClick={onAddMedication}
+            className="px-3.5 py-1.5 rounded-2xl bg-[#0E5E5A] text-white font-semibold text-xs hover:bg-[#0C4E4B] transition-colors flex items-center gap-1 shadow-sm"
+          >
+            <Plus size={14} /> Add medication
+          </button>
+        </div>
+
+        {medications.length === 0 ? (
+          <div className="p-6 text-center space-y-2">
+            <p className="text-xs text-slate-500 font-light">No medications logged for {name}.</p>
+            <button
+              onClick={onAddMedication}
+              className="text-xs font-semibold text-[#0E5E5A] hover:underline"
+            >
+              + Add first medication
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {medications.map((m) => (
+              <div key={m.id} className="p-4 rounded-2xl bg-[#F7F5F0] text-xs flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800 text-sm">{m.name}</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-white text-[#0E5E5A] font-semibold text-[10px] border border-[#EAE6DF]">
+                      {m.dosage}
+                    </span>
+                  </div>
+                  {m.instructions && (
+                    <p className="text-slate-500 text-[11px] font-light">{m.instructions}</p>
+                  )}
+                  <p className="text-[10px] text-slate-400 pt-0.5">
+                    Source: <span className="font-semibold capitalize">{m.provenance.replace("_", " ")}</span>
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => onDeactivateMedication(m.id)}
+                  className="px-2.5 py-1 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-[10px] font-semibold transition-colors shrink-0"
+                >
+                  Deactivate
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Section 3: ACTIVE ROUTINES LIST */}
+      <div className="quiet-card p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#EFECE6] pb-3">
+          <div className="flex items-center gap-2">
+            <Calendar size={18} className="text-[#0E5E5A]" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#1C2826] font-[family-name:var(--font-outfit)]">
+              Active Care Routines
+            </h3>
+          </div>
+          <button
+            onClick={onAddRoutine}
+            className="px-3.5 py-1.5 rounded-2xl bg-[#0E5E5A] text-white font-semibold text-xs hover:bg-[#0C4E4B] transition-colors flex items-center gap-1 shadow-sm"
+          >
+            <Plus size={14} /> Add routine
+          </button>
+        </div>
+
+        {careRoutines.length === 0 ? (
+          <div className="p-6 text-center space-y-2">
+            <p className="text-xs text-slate-500 font-light">No care routines logged for {name}.</p>
+            <button
+              onClick={onAddRoutine}
+              className="text-xs font-semibold text-[#0E5E5A] hover:underline"
+            >
+              + Add first care routine
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {careRoutines.map((r) => (
+              <div key={r.id} className="p-4 rounded-2xl bg-[#F7F5F0] text-xs flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800 text-sm">{r.name}</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-white text-[#0E5E5A] font-semibold text-[10px] border border-[#EAE6DF] capitalize">
+                      {r.category}
+                    </span>
+                  </div>
+                  {r.description && (
+                    <p className="text-slate-500 text-[11px] font-light">{r.description}</p>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => onDeactivateRoutine(r.id)}
+                  className="px-2.5 py-1 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-[10px] font-semibold transition-colors shrink-0"
+                >
+                  Deactivate
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RecordsView({
+  careRecipients,
+  currentRecipient,
+  onSelectRecipient,
+  healthObservations,
+  healthDocuments,
+  healthConditions,
+  onAddObservation
+}: {
+  careRecipients: any[];
+  currentRecipient: any;
+  onSelectRecipient: (id: string) => void;
+  healthObservations: any[];
+  healthDocuments: any[];
+  healthConditions: any[];
+  onAddObservation: () => void;
+}) {
+  const name = formatName(currentRecipient?.display_name) || "Care Recipient";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+          Health Records
+        </h2>
+        <p className="text-xs text-slate-500 font-light mt-0.5">
+          Health history and documents for <span className="font-semibold text-slate-800">{name}</span>
+        </p>
+      </div>
+
+      {/* Recipient Context Pills */}
+      {careRecipients.length > 1 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {careRecipients.map((rec) => {
+            const isSel = rec.id === currentRecipient?.id;
+            return (
+              <button
+                key={rec.id}
+                onClick={() => onSelectRecipient(rec.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                  isSel ? "bg-[#0E5E5A] text-white" : "bg-white border border-[#EFECE6] text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {formatName(rec.display_name)} ({rec.relationship})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Health observations Timeline */}
+      <div className="quiet-card p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#EFECE6] pb-3">
+          <div className="flex items-center gap-2">
+            <Activity size={18} className="text-[#0E5E5A]" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[#1C2826] font-[family-name:var(--font-outfit)]">
+              Health Observations Timeline
+            </h3>
+          </div>
+          <button
+            onClick={onAddObservation}
+            className="px-3.5 py-1.5 rounded-2xl bg-[#0E5E5A] text-white font-semibold text-xs hover:bg-[#0C4E4B] transition-colors flex items-center gap-1 shadow-sm"
+          >
+            <Plus size={14} /> Log health
+          </button>
+        </div>
+
+        {healthObservations.length === 0 ? (
+          <div className="p-6 text-center space-y-2">
+            <p className="text-xs text-slate-500 font-light">No health observations recorded for {name}.</p>
+            <button
+              onClick={onAddObservation}
+              className="text-xs font-semibold text-[#0E5E5A] hover:underline"
+            >
+              + Log first observation
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {healthObservations.map((obs) => (
+              <div key={obs.id} className="p-4 rounded-2xl bg-[#F7F5F0] text-xs flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800 text-sm">
+                      {formatObservationCategoryLabel(obs.category)}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-[#0E5E5A]">
+                    {formatObservationValue(obs)}
+                  </p>
+                  {obs.notes && (
+                    <p className="text-[11px] text-slate-500 font-light pt-0.5">
+                      Note: {obs.notes}
+                    </p>
+                  )}
+                </div>
+                <span className="text-[11px] font-medium text-slate-400 shrink-0">
+                  {formatObservedTime(obs.observed_at)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Documents */}
+      <div className="quiet-card p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#EFECE6] pb-3">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[#1C2826] font-[family-name:var(--font-outfit)]">
+            Documents
+          </h3>
+          <button className="px-3 py-1.5 rounded-2xl border border-[#EFECE6] text-[#0E5E5A] font-semibold text-xs hover:bg-teal-50 transition-colors">
+            + Upload document
+          </button>
+        </div>
+
+        {healthDocuments.length === 0 ? (
+          <p className="text-xs text-slate-500 font-light py-2">
+            No documents uploaded yet.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {healthDocuments.map((doc) => (
+              <div key={doc.id} className="p-3.5 rounded-2xl bg-[#F7F5F0] text-xs flex justify-between items-center">
+                <div>
+                  <p className="font-semibold text-slate-800">{doc.filename}</p>
+                  <p className="text-slate-500 text-[11px]">{doc.document_type}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Conditions */}
+      <div className="quiet-card p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#EFECE6] pb-3">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[#1C2826] font-[family-name:var(--font-outfit)]">
+            Health Conditions
+          </h3>
+        </div>
+
+        {healthConditions.length === 0 ? (
+          <p className="text-xs text-slate-500 font-light py-2">
+            No conditions recorded yet.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {healthConditions.map((cond) => (
+              <div key={cond.id} className="p-3.5 rounded-2xl bg-[#F7F5F0] text-xs flex justify-between items-center">
+                <div>
+                  <p className="font-semibold text-slate-800">{cond.name}</p>
+                  <p className="text-slate-500 text-[11px]">{cond.status}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProfileView({
+  profile,
+  user,
+  family,
+  careRecipientsCount,
+  onSignOut
+}: {
+  profile: any;
+  user: any;
+  family: any;
+  careRecipientsCount: number;
+  onSignOut: () => void;
+}) {
+  const caregiverName = formatName(profile?.full_name) || "Caregiver";
+  const familyNameFormatted = family?.name ? `${formatName(family.name)} Family Circle` : "Family Network";
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold font-[family-name:var(--font-outfit)] text-[#1C2826]">
+          Profile & Settings
+        </h2>
+        <p className="text-xs text-slate-500 font-light mt-0.5">
+          Caregiver account & family settings
+        </p>
+      </div>
+
+      <div className="quiet-card p-5 space-y-4">
+        <div className="flex items-center gap-3 border-b border-[#EFECE6] pb-4">
+          <div className="h-12 w-12 rounded-2xl bg-teal-50 text-[#0E5E5A] font-bold text-lg flex items-center justify-center">
+            {caregiverName.charAt(0)}
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-[#1C2826] font-[family-name:var(--font-outfit)]">
+              {caregiverName}
+            </h3>
+            <p className="text-xs text-slate-500 font-light">{user?.email}</p>
+          </div>
+        </div>
+
+        <div className="space-y-3 text-xs pt-1">
+          {profile?.phone && (
+            <div>
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Phone Number</span>
+              <span className="font-medium text-slate-800">{profile.phone}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="quiet-card p-5 space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-[family-name:var(--font-outfit)]">
+          Family Network
+        </h3>
+
+        <div className="space-y-3 text-xs">
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold uppercase block">Family Circle</span>
+            <span className="font-semibold text-slate-800">{familyNameFormatted}</span>
+          </div>
+
+          <div>
+            <span className="text-[10px] text-slate-400 font-bold uppercase block">Registered Care Recipients</span>
+            <span className="font-semibold text-slate-800">{careRecipientsCount} recipient(s) registered</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-2">
+        <button
+          onClick={onSignOut}
+          className="w-full py-3.5 rounded-2xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+        >
+          <LogOut size={16} /> Sign Out of Account
+        </button>
+      </div>
+    </div>
   );
 }

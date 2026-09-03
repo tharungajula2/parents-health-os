@@ -105,7 +105,7 @@ export function FamilyIntake() {
         </div>
         <div className="flex items-center gap-4 data-label !text-[#0E5E5A] bg-[#0E5E5A]/5 px-6 py-4 rounded-2xl border border-[#0E5E5A]/10 shadow-sm font-[family-name:var(--font-outfit)]">
           <ShieldCheck size={20} className="text-[#0E5E5A]" />
-          <span>Local Sandbox Encryption Active</span>
+          <span>Family Care Security Active</span>
         </div>
       </div>
 
