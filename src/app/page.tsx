@@ -747,7 +747,7 @@ function DashboardContent() {
       if (!res.success) {
         setDocError(res.error?.message || "Failed to upload health document.");
       } else {
-        showToast(`✅ Document uploaded & analyzed with Gemini 3.8 Flash.`, "success");
+        showToast(`✅ Document uploaded & analyzed with AI.`, "success");
         setDocFile(null);
         setDocType("Lab Report");
         setShowUploadDocModal(false);
@@ -934,9 +934,9 @@ function DashboardContent() {
             onAddObservation={() => setShowAddObsModal(true)}
             onUploadDocument={() => setShowUploadDocModal(true)}
             onAnalyzeDocument={async (docId) => {
-              showToast("⚡ Triggering Gemini 3.8 Flash analysis...", "info");
+              showToast("⚡ Triggering document analysis...", "info");
               const res = await analyzeDocument(docId);
-              if (res.success) showToast("✅ Gemini 3.8 Flash analysis complete.", "success");
+              if (res.success) showToast("✅ Document analysis complete.", "success");
               else showToast(res.error?.message || "Analysis failed.", "error");
             }}
             onReviewExtraction={async (extractionId, status) => {
@@ -1624,7 +1624,7 @@ function DashboardContent() {
         )}
       </AnimatePresence>
 
-      {/* Modal: Upload Document & Gemini 3.8 Flash Intelligence */}
+      {/* Modal: Upload Document & Gemini 3.5 Flash-Lite Intelligence */}
       <AnimatePresence>
         {showUploadDocModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-sm">
@@ -1691,10 +1691,10 @@ function DashboardContent() {
                 <div className="p-3.5 rounded-2xl bg-teal-50/60 border border-teal-100 text-xs space-y-1">
                   <div className="flex items-center gap-2 text-[#0E5E5A] font-semibold">
                     <Sparkles size={14} />
-                    <span>Gemini 3.8 Flash Intelligence</span>
+                    <span>Gemini 3.5 Flash-Lite Intelligence</span>
                   </div>
                   <p className="text-[11px] text-slate-500 font-light">
-                    Documents are stored in private encrypted storage. Gemini 3.8 Flash will extract structured facts for caregiver review.
+                    Documents are stored in private encrypted storage. Gemini 3.5 Flash-Lite will extract structured facts for caregiver review.
                   </p>
                 </div>
 
@@ -2610,7 +2610,7 @@ function RecordsView({
                         onClick={() => onAnalyzeDocument(doc.id)}
                         className="px-3 py-1.5 rounded-xl bg-teal-50 text-[#0E5E5A] hover:bg-teal-100 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-teal-200"
                       >
-                        <Sparkles size={14} /> Analyze (Gemini 3.8 Flash)
+                        <Sparkles size={14} /> Analyze with AI
                       </button>
                     )}
                   </div>

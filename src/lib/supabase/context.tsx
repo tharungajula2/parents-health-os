@@ -826,7 +826,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         return { success: false, error: docErr };
       }
 
-      // Trigger Gemini 3.8 Flash extraction via /api/analyze
+      // Trigger Gemini 3.5 Flash-Lite extraction via /api/analyze
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

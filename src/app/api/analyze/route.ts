@@ -108,7 +108,7 @@ export async function POST(req: Request) {
     const base64Data = buffer.toString("base64");
     const mimeType = document.mime_type || "application/pdf";
 
-    // 5. Initialize Official @google/genai SDK & Model Contract: gemini-3.8-flash
+    // 5. Initialize Official @google/genai SDK & Model Contract: gemini-3.5-flash-lite
     const ai = new GoogleGenAI({ apiKey });
 
     const extractionSchema = {
@@ -202,7 +202,7 @@ CLINICAL SAFETY & EXTRACTION MANDATE:
 4. Keep the summary objective, calm, and reassuring. No alarmist language.`;
 
     const geminiResponse = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
+      model: "gemini-3.5-flash-lite",
       contents: [
         {
           role: "user",
@@ -218,9 +218,6 @@ CLINICAL SAFETY & EXTRACTION MANDATE:
         },
       ],
       config: {
-        thinkingConfig: {
-          thinkingLevel: "medium" as any,
-        },
         responseMimeType: "application/json",
         responseSchema: extractionSchema,
       },
@@ -250,7 +247,7 @@ CLINICAL SAFETY & EXTRACTION MANDATE:
       .insert({
         health_document_id: document.id,
         ai_provider: "Google Gemini",
-        model_version: "gemini-3.8-flash",
+        model_version: "gemini-3.5-flash-lite",
         extracted_data: extractedData,
         review_status: "pending_review",
         extracted_at: new Date().toISOString(),
@@ -267,7 +264,7 @@ CLINICAL SAFETY & EXTRACTION MANDATE:
       success: true,
       extractionId: extraction.id,
       extraction: extraction,
-      modelUsed: "gemini-3.8-flash",
+      modelUsed: "gemini-3.5-flash-lite",
     });
   } catch (err: any) {
     console.error("Parents Health AI Route Exception:", err);
