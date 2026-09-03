@@ -1,12 +1,15 @@
 -- ============================================================
 -- Parents Health OS — Real V1 Database Schema Migration
 -- Migration Name: 20260903120000_create_v1_schema.sql
--- Description: Hardened 10-Table Canonical Relational Schema
---              - Private Schema Authorization Helpers (SET search_path = '')
---              - Role-Aware RLS (owner/caregiver/viewer)
---              - Immutable Consent & AI Extraction Triggers
---              - Strict Idempotency, Provenance & Lineage Constraints
---              - Automatic updated_at Trigger & Minimal Explicit Grants
+-- Description: Canonical 15-Table Relational Schema
+--              - Strict FK Creation Dependency Order
+--              - Profiles, Families, Members, Care Recipients, Consents
+--              - Health Documents & Untrusted AI Extractions (Server-Created)
+--              - Health Conditions, Longitudinal Observations (Nullable Actor for WhatsApp)
+--              - Care Routines, Routine Schedules & Routine Events
+--              - Medications, Medication Schedules & Medication Events
+--              - Private Schema Helpers (SET search_path = '')
+--              - Role-Aware RLS (owner/caregiver/viewer) & Minimal Grants
 -- ============================================================
 
 -- CREATE PRIVATE AUTHORIZATION & TRIGGER SCHEMA
@@ -82,7 +85,7 @@ CREATE TABLE IF NOT EXISTS public.health_documents (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- 7. DOCUMENT_EXTRACTIONS TABLE (Untrusted AI Extractions)
+-- 7. DOCUMENT_EXTRACTIONS TABLE (Untrusted AI Extractions - Server Created)
 CREATE TABLE IF NOT EXISTS public.document_extractions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   health_document_id uuid NOT NULL REFERENCES public.health_documents(id) ON DELETE CASCADE,
@@ -102,7 +105,98 @@ CREATE TABLE IF NOT EXISTS public.document_extractions (
   )
 );
 
--- 8. MEDICATIONS TABLE (Human Verified Truth + Strict AI Lineage)
+-- 8. HEALTH_CONDITIONS TABLE (Confirmed Diagnosis Lineage)
+CREATE TABLE IF NOT EXISTS public.health_conditions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  care_recipient_id uuid NOT NULL REFERENCES public.care_recipients(id) ON DELETE CASCADE,
+  name text NOT NULL CHECK (char_length(trim(name)) > 0),
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'resolved', 'managed', 'archived')),
+  notes text,
+  provenance text NOT NULL DEFAULT 'manual_entry' CHECK (provenance IN ('manual_entry', 'ai_extracted', 'doctor_diagnosed')),
+  source_extraction_id uuid REFERENCES public.document_extractions(id) ON DELETE RESTRICT,
+  verified_by uuid REFERENCES public.profiles(id) ON DELETE SET NULL,
+  verified_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT health_conditions_provenance_check CHECK (
+    (provenance = 'ai_extracted' AND source_extraction_id IS NOT NULL AND verified_by IS NOT NULL AND verified_at IS NOT NULL) OR
+    (provenance != 'ai_extracted' AND source_extraction_id IS NULL)
+  ),
+  CONSTRAINT health_conditions_verification_check CHECK (
+    (verified_by IS NULL AND verified_at IS NULL) OR
+    (verified_by IS NOT NULL AND verified_at IS NOT NULL)
+  )
+);
+
+-- 9. HEALTH_OBSERVATIONS TABLE (Longitudinal Vitals & Symptom Logs - Nullable Actor for Server/WhatsApp)
+CREATE TABLE IF NOT EXISTS public.health_observations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  care_recipient_id uuid NOT NULL REFERENCES public.care_recipients(id) ON DELETE CASCADE,
+  category text NOT NULL CHECK (category IN ('blood_pressure', 'blood_glucose', 'weight', 'body_temperature', 'pulse_oximetry', 'heart_rate', 'symptom_notes', 'other')),
+  observed_at timestamptz NOT NULL DEFAULT now(),
+  value_numeric numeric,
+  value_sys numeric,
+  value_dia numeric,
+  value_text text,
+  unit text,
+  source text NOT NULL DEFAULT 'caregiver' CHECK (source IN ('app', 'whatsapp', 'caregiver', 'document', 'device')),
+  source_document_id uuid REFERENCES public.health_documents(id) ON DELETE SET NULL,
+  recorded_by uuid REFERENCES public.profiles(id) ON DELETE RESTRICT,
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT health_observations_bp_check CHECK (
+    (category = 'blood_pressure' AND value_sys IS NOT NULL AND value_dia IS NOT NULL) OR
+    (category != 'blood_pressure' AND value_sys IS NULL AND value_dia IS NULL)
+  )
+);
+
+-- 10. CARE_ROUTINES TABLE (Non-Medication Care Activities)
+CREATE TABLE IF NOT EXISTS public.care_routines (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  care_recipient_id uuid NOT NULL REFERENCES public.care_recipients(id) ON DELETE CASCADE,
+  name text NOT NULL CHECK (char_length(trim(name)) > 0),
+  description text,
+  category text NOT NULL CHECK (category IN ('exercise', 'physiotherapy', 'hydration', 'dietary', 'respiratory', 'sleep', 'hygiene', 'other')),
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 11. CARE_ROUTINE_SCHEDULES TABLE
+CREATE TABLE IF NOT EXISTS public.care_routine_schedules (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  routine_id uuid NOT NULL REFERENCES public.care_routines(id) ON DELETE RESTRICT,
+  local_time time NOT NULL,
+  timezone text NOT NULL DEFAULT 'Asia/Kolkata',
+  applicable_days text[] NOT NULL DEFAULT '{"monday","tuesday","wednesday","thursday","friday","saturday","sunday"}',
+  start_date date NOT NULL DEFAULT CURRENT_DATE,
+  end_date date,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT care_routine_schedules_date_check CHECK (end_date IS NULL OR end_date >= start_date),
+  CONSTRAINT care_routine_schedules_applicable_days_check CHECK (
+    cardinality(applicable_days) > 0 AND
+    applicable_days <@ ARRAY['monday','tuesday','wednesday','thursday','friday','saturday','sunday']::text[]
+  )
+);
+
+-- 12. CARE_ROUTINE_EVENTS TABLE (Idempotent Routine Adherence Events)
+CREATE TABLE IF NOT EXISTS public.care_routine_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  schedule_id uuid NOT NULL REFERENCES public.care_routine_schedules(id) ON DELETE RESTRICT,
+  due_at timestamptz NOT NULL,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'partial', 'skipped', 'missed', 'snoozed')),
+  responded_at timestamptz,
+  response_source text CHECK (response_source IN ('app', 'whatsapp', 'caregiver')),
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT care_routine_events_schedule_due_unique UNIQUE (schedule_id, due_at)
+);
+
+-- 13. MEDICATIONS TABLE (Human Verified Truth + Strict AI Lineage)
 CREATE TABLE IF NOT EXISTS public.medications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   care_recipient_id uuid NOT NULL REFERENCES public.care_recipients(id) ON DELETE CASCADE,
@@ -126,7 +220,7 @@ CREATE TABLE IF NOT EXISTS public.medications (
   )
 );
 
--- 9. MEDICATION_SCHEDULES TABLE (Restricted FK to preserve history)
+-- 14. MEDICATION_SCHEDULES TABLE (Restricted FK to preserve history)
 CREATE TABLE IF NOT EXISTS public.medication_schedules (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   medication_id uuid NOT NULL REFERENCES public.medications(id) ON DELETE RESTRICT,
@@ -145,7 +239,7 @@ CREATE TABLE IF NOT EXISTS public.medication_schedules (
   )
 );
 
--- 10. MEDICATION_EVENTS TABLE (Idempotent Adherence Events via Schedule)
+-- 15. MEDICATION_EVENTS TABLE (Idempotent Adherence Events via Schedule)
 CREATE TABLE IF NOT EXISTS public.medication_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   schedule_id uuid NOT NULL REFERENCES public.medication_schedules(id) ON DELETE RESTRICT,
@@ -164,12 +258,18 @@ CREATE INDEX IF NOT EXISTS idx_family_members_user_id ON public.family_members(u
 CREATE INDEX IF NOT EXISTS idx_family_members_family_id ON public.family_members(family_id);
 CREATE INDEX IF NOT EXISTS idx_care_recipients_family_id ON public.care_recipients(family_id);
 CREATE INDEX IF NOT EXISTS idx_consents_care_recipient_id ON public.consents(care_recipient_id);
+CREATE INDEX IF NOT EXISTS idx_health_documents_care_recipient_id ON public.health_documents(care_recipient_id);
+CREATE INDEX IF NOT EXISTS idx_document_extractions_health_document_id ON public.document_extractions(health_document_id);
+CREATE INDEX IF NOT EXISTS idx_health_conditions_care_recipient_id ON public.health_conditions(care_recipient_id);
+CREATE INDEX IF NOT EXISTS idx_health_conditions_source_extraction_id ON public.health_conditions(source_extraction_id);
+CREATE INDEX IF NOT EXISTS idx_health_observations_care_recipient_observed ON public.health_observations(care_recipient_id, observed_at);
+CREATE INDEX IF NOT EXISTS idx_care_routines_care_recipient_id ON public.care_routines(care_recipient_id);
+CREATE INDEX IF NOT EXISTS idx_care_routine_schedules_routine_id ON public.care_routine_schedules(routine_id);
+CREATE INDEX IF NOT EXISTS idx_care_routine_events_schedule_due ON public.care_routine_events(schedule_id, due_at);
 CREATE INDEX IF NOT EXISTS idx_medications_care_recipient_id ON public.medications(care_recipient_id);
 CREATE INDEX IF NOT EXISTS idx_medications_source_extraction_id ON public.medications(source_extraction_id);
 CREATE INDEX IF NOT EXISTS idx_medication_schedules_medication_id ON public.medication_schedules(medication_id);
 CREATE INDEX IF NOT EXISTS idx_medication_events_schedule_due ON public.medication_events(schedule_id, due_at);
-CREATE INDEX IF NOT EXISTS idx_health_documents_care_recipient_id ON public.health_documents(care_recipient_id);
-CREATE INDEX IF NOT EXISTS idx_document_extractions_health_document_id ON public.document_extractions(health_document_id);
 
 -- PRIVATE AUTHORIZATION SECURITY DEFINER FUNCTIONS
 
@@ -225,15 +325,20 @@ BEGIN
 END;
 $$;
 
--- APPLY UPDATED_AT TRIGGERS TO MUTABLE TABLES
+-- APPLY UPDATED_AT TRIGGERS TO ALL MUTABLE TABLES
 CREATE TRIGGER tr_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
 CREATE TRIGGER tr_families_updated_at BEFORE UPDATE ON public.families FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
 CREATE TRIGGER tr_family_members_updated_at BEFORE UPDATE ON public.family_members FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
 CREATE TRIGGER tr_care_recipients_updated_at BEFORE UPDATE ON public.care_recipients FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
+CREATE TRIGGER tr_health_conditions_updated_at BEFORE UPDATE ON public.health_conditions FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
+CREATE TRIGGER tr_health_observations_updated_at BEFORE UPDATE ON public.health_observations FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
+CREATE TRIGGER tr_care_routines_updated_at BEFORE UPDATE ON public.care_routines FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
+CREATE TRIGGER tr_care_routine_schedules_updated_at BEFORE UPDATE ON public.care_routine_schedules FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
+CREATE TRIGGER tr_care_routine_events_updated_at BEFORE UPDATE ON public.care_routine_events FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
+CREATE TRIGGER tr_document_extractions_updated_at BEFORE UPDATE ON public.document_extractions FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
 CREATE TRIGGER tr_medications_updated_at BEFORE UPDATE ON public.medications FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
 CREATE TRIGGER tr_medication_schedules_updated_at BEFORE UPDATE ON public.medication_schedules FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
 CREATE TRIGGER tr_medication_events_updated_at BEFORE UPDATE ON public.medication_events FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
-CREATE TRIGGER tr_document_extractions_updated_at BEFORE UPDATE ON public.document_extractions FOR EACH ROW EXECUTE FUNCTION private.set_updated_at();
 
 -- PRIVATE AI EXTRACTION IMMUTABILITY ENFORCEMENT TRIGGER
 CREATE OR REPLACE FUNCTION private.enforce_extraction_immutability()
@@ -272,11 +377,16 @@ ALTER TABLE public.families ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.care_recipients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.consents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.health_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.document_extractions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.health_conditions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.health_observations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.care_routines ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.care_routine_schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.care_routine_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.medications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.medication_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.medication_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.health_documents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.document_extractions ENABLE ROW LEVEL SECURITY;
 
 -- ROLE-AWARE RLS POLICIES
 
@@ -348,6 +458,186 @@ CREATE POLICY "Owners and caregivers can insert consent records" ON public.conse
     recorded_by = auth.uid() AND EXISTS (
       SELECT 1 FROM public.care_recipients cr
       WHERE cr.id = public.consents.care_recipient_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+-- HEALTH_DOCUMENTS (ACTOR IDENTITY ENFORCED)
+CREATE POLICY "Family members can view health documents" ON public.health_documents
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.health_documents.care_recipient_id AND private.is_family_member(cr.family_id)
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can upload health documents" ON public.health_documents
+  FOR INSERT WITH CHECK (
+    uploaded_by = auth.uid() AND EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.health_documents.care_recipient_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+-- DOCUMENT_EXTRACTIONS (SERVER CREATED, HUMAN REVIEWABLE ONLY)
+CREATE POLICY "Family members can view document extractions" ON public.document_extractions
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.health_documents hd
+      JOIN public.care_recipients cr ON cr.id = hd.care_recipient_id
+      WHERE hd.id = public.document_extractions.health_document_id AND private.is_family_member(cr.family_id)
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can review extractions" ON public.document_extractions
+  FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.health_documents hd
+      JOIN public.care_recipients cr ON cr.id = hd.care_recipient_id
+      WHERE hd.id = public.document_extractions.health_document_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  )
+  WITH CHECK (
+    reviewed_by = auth.uid() AND EXISTS (
+      SELECT 1 FROM public.health_documents hd
+      JOIN public.care_recipients cr ON cr.id = hd.care_recipient_id
+      WHERE hd.id = public.document_extractions.health_document_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+-- HEALTH_CONDITIONS (CLIENT INSERT RESTRICTED TO NON-AI PROVENANCE)
+CREATE POLICY "Family members can view health conditions" ON public.health_conditions
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.health_conditions.care_recipient_id AND private.is_family_member(cr.family_id)
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can insert non-AI health conditions" ON public.health_conditions
+  FOR INSERT WITH CHECK (
+    provenance IN ('manual_entry', 'doctor_diagnosed') AND
+    source_extraction_id IS NULL AND
+    EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.health_conditions.care_recipient_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can update health conditions" ON public.health_conditions
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.health_conditions.care_recipient_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+-- HEALTH_OBSERVATIONS (CLIENT INSERT REQUIRES RECORDED_BY = AUTH.UID())
+CREATE POLICY "Family members can view health observations" ON public.health_observations
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.health_observations.care_recipient_id AND private.is_family_member(cr.family_id)
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can insert health observations" ON public.health_observations
+  FOR INSERT WITH CHECK (
+    recorded_by = auth.uid() AND EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.health_observations.care_recipient_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can update health observations" ON public.health_observations
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.health_observations.care_recipient_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+-- CARE_ROUTINES
+CREATE POLICY "Family members can view care routines" ON public.care_routines
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.care_routines.care_recipient_id AND private.is_family_member(cr.family_id)
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can insert care routines" ON public.care_routines
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.care_routines.care_recipient_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can update care routines" ON public.care_routines
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.care_recipients cr
+      WHERE cr.id = public.care_routines.care_recipient_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+-- CARE_ROUTINE_SCHEDULES
+CREATE POLICY "Family members can view care routine schedules" ON public.care_routine_schedules
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.care_routines r
+      JOIN public.care_recipients cr ON cr.id = r.care_recipient_id
+      WHERE r.id = public.care_routine_schedules.routine_id AND private.is_family_member(cr.family_id)
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can insert care routine schedules" ON public.care_routine_schedules
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.care_routines r
+      JOIN public.care_recipients cr ON cr.id = r.care_recipient_id
+      WHERE r.id = public.care_routine_schedules.routine_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can update care routine schedules" ON public.care_routine_schedules
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.care_routines r
+      JOIN public.care_recipients cr ON cr.id = r.care_recipient_id
+      WHERE r.id = public.care_routine_schedules.routine_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+-- CARE_ROUTINE_EVENTS
+CREATE POLICY "Family members can view care routine events" ON public.care_routine_events
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.care_routine_schedules rs
+      JOIN public.care_routines r ON r.id = rs.routine_id
+      JOIN public.care_recipients cr ON cr.id = r.care_recipient_id
+      WHERE rs.id = public.care_routine_events.schedule_id AND private.is_family_member(cr.family_id)
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can insert care routine events" ON public.care_routine_events
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.care_routine_schedules rs
+      JOIN public.care_routines r ON r.id = rs.routine_id
+      JOIN public.care_recipients cr ON cr.id = r.care_recipient_id
+      WHERE rs.id = public.care_routine_events.schedule_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
+    )
+  );
+
+CREATE POLICY "Owners and caregivers can update care routine events" ON public.care_routine_events
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM public.care_routine_schedules rs
+      JOIN public.care_routines r ON r.id = rs.routine_id
+      JOIN public.care_recipients cr ON cr.id = r.care_recipient_id
+      WHERE rs.id = public.care_routine_events.schedule_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
     )
   );
 
@@ -437,50 +727,6 @@ CREATE POLICY "Owners and caregivers can update medication events" ON public.med
     )
   );
 
--- HEALTH_DOCUMENTS (ACTOR IDENTITY ENFORCED)
-CREATE POLICY "Family members can view health documents" ON public.health_documents
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.care_recipients cr
-      WHERE cr.id = public.health_documents.care_recipient_id AND private.is_family_member(cr.family_id)
-    )
-  );
-
-CREATE POLICY "Owners and caregivers can upload health documents" ON public.health_documents
-  FOR INSERT WITH CHECK (
-    uploaded_by = auth.uid() AND EXISTS (
-      SELECT 1 FROM public.care_recipients cr
-      WHERE cr.id = public.health_documents.care_recipient_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
-    )
-  );
-
--- DOCUMENT_EXTRACTIONS (SERVER CREATED, HUMAN REVIEWABLE ONLY)
-CREATE POLICY "Family members can view document extractions" ON public.document_extractions
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.health_documents hd
-      JOIN public.care_recipients cr ON cr.id = hd.care_recipient_id
-      WHERE hd.id = public.document_extractions.health_document_id AND private.is_family_member(cr.family_id)
-    )
-  );
-
-CREATE POLICY "Owners and caregivers can review extractions" ON public.document_extractions
-  FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.health_documents hd
-      JOIN public.care_recipients cr ON cr.id = hd.care_recipient_id
-      WHERE hd.id = public.document_extractions.health_document_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
-    )
-  )
-  WITH CHECK (
-    reviewed_by = auth.uid() AND EXISTS (
-      SELECT 1 FROM public.health_documents hd
-      JOIN public.care_recipients cr ON cr.id = hd.care_recipient_id
-      WHERE hd.id = public.document_extractions.health_document_id AND private.has_family_role(cr.family_id, ARRAY['owner', 'caregiver'])
-    )
-  );
-
 -- EXPLICIT GRANTS FOR AUTHENTICATED USERS
 REVOKE ALL ON SCHEMA public FROM PUBLIC, anon;
 GRANT USAGE ON SCHEMA public TO authenticated;
@@ -491,6 +737,16 @@ GRANT SELECT, INSERT, UPDATE ON public.families TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.family_members TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.care_recipients TO authenticated;
 GRANT SELECT, INSERT ON public.consents TO authenticated; -- Append-only
+GRANT SELECT, INSERT ON public.health_conditions TO authenticated;
+GRANT UPDATE (name, status, notes, verified_by, verified_at, updated_at) ON public.health_conditions TO authenticated;
+GRANT SELECT, INSERT ON public.health_observations TO authenticated;
+GRANT UPDATE (notes, updated_at) ON public.health_observations TO authenticated;
+GRANT SELECT, INSERT ON public.care_routines TO authenticated;
+GRANT UPDATE (name, description, category, is_active, updated_at) ON public.care_routines TO authenticated;
+GRANT SELECT, INSERT ON public.care_routine_schedules TO authenticated;
+GRANT UPDATE (local_time, timezone, applicable_days, start_date, end_date, is_active, updated_at) ON public.care_routine_schedules TO authenticated;
+GRANT SELECT, INSERT ON public.care_routine_events TO authenticated;
+GRANT UPDATE (status, responded_at, response_source, notes, updated_at) ON public.care_routine_events TO authenticated;
 GRANT SELECT, INSERT ON public.medications TO authenticated;
 GRANT UPDATE (name, dosage, instructions, is_active, verified_by, verified_at, updated_at) ON public.medications TO authenticated;
 GRANT SELECT, INSERT ON public.medication_schedules TO authenticated;
