@@ -1,20 +1,18 @@
-const CACHE_NAME = 'parents-health-os-shell-v1';
+const CACHE_NAME = 'parents-health-os-static-v1';
 
 const PRECACHE_ASSETS = [
-  '/',
-  '/file.svg',
-  '/globe.svg',
-  '/next.svg',
-  '/vercel.svg',
-  '/window.svg'
+  '/manifest.json',
+  '/icon.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Pre-caching offline app shell');
       return cache.addAll(PRECACHE_ASSETS).catch((err) => {
-        console.warn('[Service Worker] Pre-caching warning (some files might be missing in dev):', err);
+        console.warn('[Service Worker] Static pre-caching warning:', err);
       });
     })
   );
@@ -41,32 +39,40 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // CRITICAL BOUNDARIES: Explicitly AVOID caching dynamic operations, API endpoints, uploaded files, or local storage.
-  // Bypass cache for:
-  // 1. Non-GET requests (e.g. POST requests for Gemini API analyze, Webhooks)
-  // 2. API endpoints (/api/*)
-  // 3. Dynamic clinical paths, query strings, or mock WhatsApp triggers
+  // PRIVACY BOUNDARIES:
+  // 1. ALL navigation and document requests are NETWORK ONLY (never cached).
+  // 2. All API endpoints (/api/*) are NETWORK ONLY.
+  // 3. All Supabase calls (*.supabase.co) and Storage files (/storage/*) are NETWORK ONLY.
+  // 4. All PDFs (*.pdf) and health records are NETWORK ONLY.
+  // 5. Non-GET requests are NETWORK ONLY.
   if (
+    request.mode === 'navigate' ||
+    request.destination === 'document' ||
     request.method !== 'GET' ||
     url.pathname.startsWith('/api/') ||
     url.pathname.includes('whatsapp') ||
+    url.pathname.includes('/storage/') ||
+    url.pathname.endsWith('.pdf') ||
+    url.hostname.includes('supabase') ||
     request.url.startsWith('chrome-extension:')
   ) {
-    return; // Let the browser handle standard network flow directly
+    return; // Bypass Service Worker: browser handles request via network directly
   }
 
-  // Caching Strategy:
-  // - Dynamic runtime assets (static JS/CSS, images, fonts) -> Cache First
-  // - HTML Document navigation requests -> Network First, falling back to cache
-  
-  const isStaticAsset = 
-    url.pathname.endsWith('.js') || 
-    url.pathname.endsWith('.css') || 
-    url.pathname.endsWith('.png') || 
-    url.pathname.endsWith('.svg') || 
-    url.pathname.endsWith('.woff') || 
-    url.pathname.endsWith('.woff2') || 
-    url.pathname.endsWith('.pdf');
+  // Only safe immutable static assets (CSS, JS, icons, webfonts) may be served from cache
+  const isStaticAsset =
+    request.destination === 'style' ||
+    request.destination === 'script' ||
+    request.destination === 'image' ||
+    request.destination === 'font' ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.svg') ||
+    url.pathname.endsWith('.woff') ||
+    url.pathname.endsWith('.woff2') ||
+    url.pathname.endsWith('.json') ||
+    url.pathname.endsWith('.ico');
 
   if (isStaticAsset) {
     event.respondWith(
@@ -75,41 +81,18 @@ self.addEventListener('fetch', (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          return fetch(request).then((networkResponse) => {
-            // Only cache valid GET responses
-            if (networkResponse.status === 200) {
-              cache.put(request, networkResponse.clone());
-            }
-            return networkResponse;
-          }).catch(() => {
-            // Fallback gracefully on network failure
-            return new Response('Asset not found offline', { status: 404 });
-          });
+          return fetch(request)
+            .then((networkResponse) => {
+              if (networkResponse.status === 200 && networkResponse.type === 'basic') {
+                cache.put(request, networkResponse.clone());
+              }
+              return networkResponse;
+            })
+            .catch(() => {
+              return new Response('Static asset unavailable offline', { status: 404 });
+            });
         });
       })
-    );
-  } else {
-    // Navigation / page requests: Network First, Fallback to Cache
-    event.respondWith(
-      fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // Return root offline shell fallback
-            return caches.match('/');
-          });
-        })
     );
   }
 });

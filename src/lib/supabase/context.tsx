@@ -65,6 +65,7 @@ interface ParentsAuthContextType {
   uploadHealthDocument: (file: File, documentType: string) => Promise<{ success: boolean; document?: any; extraction?: any; error?: any }>;
   analyzeDocument: (documentId: string) => Promise<{ success: boolean; extraction?: any; error?: any }>;
   reviewDocumentExtraction: (extractionId: string, status: "approved" | "rejected", reviewNotes?: string) => Promise<{ success: boolean; error?: any }>;
+  removeDocument: (documentId: string) => Promise<{ success: boolean; error?: any }>;
 
   // V1 Medication & Routine Workflows
   addRealMedication: (data: {
@@ -897,6 +898,36 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
     }
   };
 
+  const removeDocument = async (documentId: string) => {
+    if (!supabase || !activeCareRecipient) {
+      return { success: false, error: { message: "No active care recipient selected." } };
+    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const res = await fetch("/api/documents/remove", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ documentId }),
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        return { success: false, error: { message: result.error || "Failed to remove document." } };
+      }
+
+      await fetchParentRecords(activeCareRecipient.id);
+      return { success: true };
+    } catch (err: any) {
+      console.error("Exception removing health document:", err);
+      return { success: false, error: err };
+    }
+  };
+
   // --- AUTH ACTIONS ---
   const signIn = async (email: string, password: string) => {
     if (isSupabaseEnabled && supabase) {
@@ -1324,6 +1355,7 @@ export function ParentsAuthProvider({ children }: { children: React.ReactNode })
         uploadHealthDocument,
         analyzeDocument,
         reviewDocumentExtraction,
+        removeDocument,
 
         addRealMedication,
         deactivateMedication,

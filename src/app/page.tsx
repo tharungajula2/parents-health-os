@@ -28,6 +28,7 @@ import {
   Clock,
   FileUp,
   BrainCircuit,
+  Trash2,
   ThumbsUp,
   ThumbsDown,
   AlertCircle,
@@ -493,6 +494,7 @@ function DashboardContent() {
     uploadHealthDocument,
     analyzeDocument,
     reviewDocumentExtraction,
+    removeDocument,
     signOut
   } = useParentsAuth();
   const { showToast } = useToast();
@@ -944,6 +946,11 @@ function DashboardContent() {
               const res = await reviewDocumentExtraction(extractionId, status);
               if (res.success) showToast(`✅ Review status updated to: ${status}`, "success");
               else showToast(res.error?.message || "Failed to update review status.", "error");
+            }}
+            onRemoveDocument={async (docId) => {
+              const res = await removeDocument(docId);
+              if (res.success) showToast("✅ Document removed successfully.", "success");
+              else showToast(res.error?.message || "Failed to remove document.", "error");
             }}
           />
         )}
@@ -2548,7 +2555,8 @@ function RecordsView({
   onAddObservation,
   onUploadDocument,
   onAnalyzeDocument,
-  onReviewExtraction
+  onReviewExtraction,
+  onRemoveDocument
 }: {
   careRecipients: any[];
   currentRecipient: any;
@@ -2561,8 +2569,11 @@ function RecordsView({
   onUploadDocument: () => void;
   onAnalyzeDocument: (docId: string) => void;
   onReviewExtraction: (extractionId: string, status: "approved" | "rejected") => void;
+  onRemoveDocument: (docId: string) => Promise<void>;
 }) {
   const name = formatName(currentRecipient?.display_name) || "Care Recipient";
+  const [deleteConfirmDoc, setDeleteConfirmDoc] = useState<{ id: string; filename: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -2699,14 +2710,24 @@ function RecordsView({
                       </p>
                     </div>
 
-                    {!extraction && (
+                    <div className="flex items-center gap-2">
+                      {!extraction && (
+                        <button
+                          onClick={() => onAnalyzeDocument(doc.id)}
+                          className="px-3 py-1.5 rounded-xl bg-teal-50 text-[#0E5E5A] hover:bg-teal-100 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-teal-200"
+                        >
+                          <Sparkles size={14} /> Analyze with AI
+                        </button>
+                      )}
                       <button
-                        onClick={() => onAnalyzeDocument(doc.id)}
-                        className="px-3 py-1.5 rounded-xl bg-teal-50 text-[#0E5E5A] hover:bg-teal-100 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-teal-200"
+                        onClick={() => setDeleteConfirmDoc({ id: doc.id, filename: doc.filename })}
+                        className="px-2.5 py-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 text-xs font-medium flex items-center gap-1 transition-colors border border-transparent hover:border-red-100"
+                        title="Remove document"
                       >
-                        <Sparkles size={14} /> Analyze with AI
+                        <Trash2 size={14} />
+                        <span>Remove</span>
                       </button>
-                    )}
+                    </div>
                   </div>
 
                   {/* AI Extraction Section */}
@@ -2855,6 +2876,52 @@ function RecordsView({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirmDoc && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+            <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100">
+              <div className="flex items-center gap-3 text-red-600">
+                <div className="p-2.5 rounded-2xl bg-red-50">
+                  <Trash2 size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Remove Health Document</h3>
+                  <p className="text-xs text-slate-500 font-light">Confirm document deletion</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/60 text-xs text-slate-700 space-y-1">
+                <p className="font-semibold text-slate-900">Are you sure you want to remove this document?</p>
+                <p className="text-slate-600 font-light">
+                  <span className="font-medium text-slate-800">{deleteConfirmDoc.filename}</span> will be permanently deleted from private storage along with any AI extractions.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  disabled={isDeleting}
+                  onClick={() => setDeleteConfirmDoc(null)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    await onRemoveDocument(deleteConfirmDoc.id);
+                    setIsDeleting(false);
+                    setDeleteConfirmDoc(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isDeleting ? "Removing..." : "Permanently Remove"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
