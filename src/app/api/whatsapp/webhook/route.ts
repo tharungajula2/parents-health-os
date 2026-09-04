@@ -1,10 +1,33 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { getWhatsAppConfig } from "@/lib/whatsapp/config";
-import { formatIndianPhoneNumber, recordMessage, createDirectServerClient } from "@/lib/whatsapp/service";
+import { createServiceRoleClient } from "@/lib/whatsapp/service";
+import { maskPhoneNumber } from "@/lib/whatsapp/client";
+import { handleWhatsAppDeliveryStatusUpdate } from "@/lib/whatsapp/status";
 
 export const dynamic = 'force-dynamic';
 
-// 1. Meta Webhook Verification Handshake
+/**
+ * Verifies HMAC SHA-256 signature from Meta (x-hub-signature-256 header).
+ */
+function verifyMetaSignature(rawBody: string, signatureHeader: string | null, appSecret: string): boolean {
+  if (!signatureHeader || !signatureHeader.startsWith("sha256=")) {
+    return false;
+  }
+  const signature = signatureHeader.substring(7);
+  const expectedHash = crypto
+    .createHmac("sha256", appSecret)
+    .update(rawBody, "utf8")
+    .digest("hex");
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(expectedHash, "hex"));
+  } catch {
+    return false;
+  }
+}
+
+// 1. Meta Webhook Verification Handshake (GET)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get("hub.mode");
@@ -13,21 +36,39 @@ export async function GET(req: Request) {
 
   const config = getWhatsAppConfig();
 
-  if (mode === "subscribe" && token === config.verifyToken) {
-    console.log("[WhatsApp Webhook] Handshake verified successfully.");
+  if (mode === "subscribe" && token && config.verifyToken && token === config.verifyToken) {
+    console.log("[WhatsApp Webhook] Verification handshake successful.");
     return new Response(challenge, { status: 200 });
   }
 
-  console.warn("[WhatsApp Webhook] Handshake authentication failed.");
+  console.warn("[WhatsApp Webhook] Verification handshake failed. Invalid verify_token.");
   return new Response("Forbidden", { status: 403 });
 }
 
-// 2. Incoming Messages & Status Updates Hook
+// 2. Inbound WhatsApp Event Handler (POST)
 export async function POST(req: Request) {
   try {
-    const payload = await req.json();
+    const rawBody = await req.text();
+    const config = getWhatsAppConfig();
 
-    // Check if it is a WhatsApp object event
+    // Verify Meta request signature using WHATSAPP_APP_SECRET
+    if (config.appSecret) {
+      const signatureHeader = req.headers.get("x-hub-signature-256");
+      const isValid = verifyMetaSignature(rawBody, signatureHeader, config.appSecret);
+
+      if (!isValid) {
+        console.warn("[WhatsApp Webhook] Invalid request signature rejected.");
+        return new Response("Unauthorized signature", { status: 401 });
+      }
+    }
+
+    let payload: any;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid JSON payload" }, { status: 400 });
+    }
+
     if (payload.object !== "whatsapp_business_account") {
       return NextResponse.json({ success: true, message: "Ignored non-whatsapp event." });
     }
@@ -36,194 +77,102 @@ export async function POST(req: Request) {
     const change = entry?.changes?.[0];
     const value = change?.value;
     const message = value?.messages?.[0];
+    const statuses = value?.statuses;
 
-    if (!message) {
-      // Could be a status update event (sent/delivered/read)
-      const statusObj = value?.statuses?.[0];
-      if (statusObj) {
-        const msgSid = statusObj.id;
-        const status = statusObj.status;
-        
-        const supabase = createDirectServerClient() as any;
-        if (supabase) {
-          await supabase
-            .from("whatsapp_messages")
-            .update({ status })
-            .eq("message_sid", msgSid);
+    // Process Meta delivery status receipts (sent / delivered / read / failed)
+    if (Array.isArray(statuses) && statuses.length > 0) {
+      const serviceClient = createServiceRoleClient();
+      for (const statusObj of statuses) {
+        const statusId = statusObj?.id;
+        const incomingStatus = statusObj?.status;
+        if (statusId && incomingStatus) {
+          await handleWhatsAppDeliveryStatusUpdate(serviceClient, statusId, incomingStatus);
         }
       }
+    }
+
+    if (!message) {
       return NextResponse.json({ success: true });
     }
 
-    const rawFrom = message.from;
-    const cleanedPhone = formatIndianPhoneNumber(rawFrom);
-    const body = message.text?.body || "";
-    const messageSid = message.id;
+    // Extract quick-reply button payload if present
+    let buttonPayload: string | null = null;
 
-    console.log(`[WhatsApp Webhook] Inbound from ${cleanedPhone}: "${body}"`);
-
-    const supabase = createDirectServerClient() as any;
-    if (!supabase) {
-      return NextResponse.json({ success: false, error: "Database client offline." }, { status: 500 });
+    if (message.type === "interactive" && message.interactive?.type === "button_reply") {
+      buttonPayload = message.interactive.button_reply?.id || null;
+    } else if (message.type === "button") {
+      buttonPayload = message.button?.payload || null;
     }
 
-    // Match sender to an active parent profile
-    const { data: parentData, error: parentErr } = await supabase
-      .from("parents")
-      .select("*")
-      .or(`phone.eq.${cleanedPhone},phone.eq.${cleanedPhone.replace("+", "")},phone.eq.${cleanedPhone.slice(3)}`)
-      .limit(1)
-      .maybeSingle();
-
-    const parent = parentData as any;
-
-    if (!parent) {
-      console.warn(`[WhatsApp Webhook] Unmapped sender phone: ${cleanedPhone}`);
-      return NextResponse.json({ success: true, warning: "Sender number not mapped to any family parent profile." });
+    // Free-text or unhandled message handling (NO AI CHATBOT)
+    if (!buttonPayload) {
+      const maskedSender = maskPhoneNumber(message.from);
+      console.log(`[WhatsApp Webhook] Received free-text message from ${maskedSender}. Logged safely without AI response.`);
+      return NextResponse.json({ success: true, status: "ignored_free_text" });
     }
 
-    // 1. Log inbound message in the messages table
-    await recordMessage({
-      parentId: parent.id,
-      direction: "incoming",
-      body,
-      messageSid,
-      status: "received",
-    });
+    // Controlled payload formats:
+    // med:<medication_event_uuid>:taken|skipped|snoozed
+    // routine:<care_routine_event_uuid>:completed|skipped|snoozed
+    const medMatch = buttonPayload.match(/^med:([0-9a-fA-F-]{36}):(taken|skipped|snoozed)$/);
+    const routineMatch = buttonPayload.match(/^routine:([0-9a-fA-F-]{36}):(completed|skipped|snoozed)$/);
 
-    // 2. Compliance Keyword processing
-    const lowercaseBody = body.toLowerCase().trim();
-    let replyText = "";
-
-    // Keyword: Consent Opt-in
-    if (lowercaseBody === "yes") {
-      // Upsert consent record
-      await supabase
-        .from("consents")
-        .upsert({
-          parent_id: parent.id,
-          granted_by_profile_id: parent.family_id, // link to family context
-          consent_type: "geriatric_health_data_processing",
-          consent_version: "PHOS_v1.0_WhatsApp",
-          ip_address: "whatsapp_webhook",
-          is_granted: true
-        });
-
-      replyText = `Namaste ${parent.name}! 🙏 Your digital consent under the DPDP Act 2023 has been safely registered. Anaya is honored to guide your daily routine.`;
-    }
-    // Keyword: Consent Opt-out
-    else if (lowercaseBody === "no" || lowercaseBody === "stop") {
-      await supabase
-        .from("consents")
-        .update({ is_granted: false })
-        .eq("parent_id", parent.id)
-        .eq("consent_type", "geriatric_health_data_processing");
-
-      replyText = `Understood. 🛡️ I have disabled WhatsApp alerts for ${parent.name}. You can opt-in anytime by replying 'YES'.`;
-    }
-    // Keyword: Medication taken logging
-    else if (lowercaseBody === "taken" || lowercaseBody === "done") {
-      const { data: activeMeds } = await supabase
-        .from("medications")
-        .eq("parent_id", parent.id)
-        .eq("is_active", true);
-
-      if (activeMeds && activeMeds.length > 0) {
-        const todayStr = new Date().toISOString().split("T")[0];
-        for (const med of activeMeds) {
-          // Check if there is an option like Morning/Evening matching
-          await supabase
-            .from("medication_logs")
-            .upsert({
-              parent_id: parent.id,
-              medication_id: med.id,
-              log_date: todayStr,
-              taken: true,
-              taken_at: new Date().toISOString(),
-              source: "whatsapp_companion"
-            });
-        }
-      }
-
-      replyText = `Dhanyavad! 🙏 I have marked your medications as TAKEN for today. Keep up the excellent routine!`;
-    }
-    // Keyword: Blood Pressure readings log
-    else if (lowercaseBody.match(/(\d{2,3})\s*[\/\-]\s*(\d{2,3})/)) {
-      const match = body.match(/(\d{2,3})\s*[\/\-]\s*(\d{2,3})/);
-      if (match) {
-        const sys = parseInt(match[1]);
-        const dia = parseInt(match[2]);
-
-        await supabase
-          .from("vitals")
-          .insert({
-            parent_id: parent.id,
-            bp_sys: sys,
-            bp_dia: dia,
-            source: "whatsapp",
-            measured_at: new Date().toISOString()
-          });
-
-        replyText = `Thank you for taking care! 🩺 I have logged your Blood Pressure of ${sys}/${dia} mmHg. Let's keep it healthy!`;
-      }
-    }
-    // Default reply text (Anaya AI dialogue simulator reply)
-    else {
-      replyText = `Namaste ${parent.name}! 🙏 This is Anaya care automation. I have logged your message: "${body}". Have a peaceful day!`;
+    if (!medMatch && !routineMatch) {
+      console.warn(`[WhatsApp Webhook] Rejected unauthorized/malformed button payload: "${buttonPayload}"`);
+      return NextResponse.json({ success: true, status: "ignored_malformed_payload" });
     }
 
-    // 3. Dispatch automated reply from Anaya back to parent
-    if (replyText) {
-      const config = getWhatsAppConfig();
-      const formattedPhone = formatIndianPhoneNumber(rawFrom);
-      
-      // Send message
-      if (config.isDryRun || !config.isConfigured) {
-        console.log(`[WhatsApp Dry Run Outbound] ${formattedPhone}: "${replyText}"`);
-        await recordMessage({
-          parentId: parent.id,
-          direction: "outgoing",
-          body: replyText,
-          messageSid: `auto-reply-${Date.now()}`,
-          status: "dry_run",
-        });
+    const serviceClient = createServiceRoleClient() as any;
+    if (!serviceClient) {
+      console.error("[WhatsApp Webhook] Service-role database client offline.");
+      return NextResponse.json({ success: false, error: "Database offline" }, { status: 500 });
+    }
+
+    const nowIso = new Date().toISOString();
+
+    if (medMatch) {
+      const eventId = medMatch[1];
+      const newStatus = medMatch[2]; // taken | skipped | snoozed
+
+      // Idempotent update on medication_events
+      const { error: updateErr } = await serviceClient
+        .from("medication_events")
+        .update({
+          status: newStatus,
+          responded_at: nowIso,
+          response_source: "whatsapp",
+          updated_at: nowIso,
+        })
+        .eq("id", eventId);
+
+      if (updateErr) {
+        console.error(`[WhatsApp Webhook] Failed to update medication_event ${eventId}:`, updateErr.message);
       } else {
-        // Live send
-        try {
-          const url = `https://graph.facebook.com/v19.0/${config.phoneNumberId}/messages`;
-          const response = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${config.accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              messaging_product: "whatsapp",
-              recipient_type: "individual",
-              to: rawFrom.replace("+", ""),
-              type: "text",
-              text: { body: replyText }
-            })
-          });
-          
-          const resData = await response.json();
-          if (response.ok) {
-            await recordMessage({
-              parentId: parent.id,
-              direction: "outgoing",
-              body: replyText,
-              messageSid: resData.messages?.[0]?.id,
-              status: "sent",
-            });
-          }
-        } catch (err) {
-          console.error("[WhatsApp Webhook] Automated response failed:", err);
-        }
+        console.log(`[WhatsApp Webhook] Updated medication_event ${eventId} status -> ${newStatus} via WhatsApp button`);
+      }
+    } else if (routineMatch) {
+      const eventId = routineMatch[1];
+      const newStatus = routineMatch[2]; // completed | skipped | snoozed
+
+      // Idempotent update on care_routine_events
+      const { error: updateErr } = await serviceClient
+        .from("care_routine_events")
+        .update({
+          status: newStatus,
+          responded_at: nowIso,
+          response_source: "whatsapp",
+          updated_at: nowIso,
+        })
+        .eq("id", eventId);
+
+      if (updateErr) {
+        console.error(`[WhatsApp Webhook] Failed to update care_routine_event ${eventId}:`, updateErr.message);
+      } else {
+        console.log(`[WhatsApp Webhook] Updated care_routine_event ${eventId} status -> ${newStatus} via WhatsApp button`);
       }
     }
 
     return NextResponse.json({ success: true });
-
   } catch (err: any) {
     console.error("[WhatsApp Webhook POST] Error:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

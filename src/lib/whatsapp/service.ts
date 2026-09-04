@@ -1,17 +1,18 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { Database } from '../supabase/types';
-import { getWhatsAppConfig } from './config';
 import { assertNotForbiddenProject, assertServerOnly } from '../supabase/safety';
+import { sendMetaWhatsAppMessage, formatIndianPhoneNumber, maskPhoneNumber } from './client';
+import { getWhatsAppConfig } from './config';
 
-export function createDirectServerClient() {
+export function createServiceRoleClient() {
   assertServerOnly('whatsapp/service');
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SECRET_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) return null;
+  const serviceKey = process.env.SUPABASE_SECRET_KEY;
+  if (!url || !serviceKey) return null;
 
   assertNotForbiddenProject(url);
-  return createSupabaseClient<Database>(url, key, {
+  return createSupabaseClient<Database>(url, serviceKey, {
     auth: {
       persistSession: false,
     },
@@ -19,150 +20,214 @@ export function createDirectServerClient() {
 }
 
 /**
- * Standardizes Indian phone numbers to clean E.164 style (e.g. +919848022338)
+  Dispatches a deterministic medication reminder for a specific medication_event.
+  Payload format: med:<medication_event_uuid>:[taken|skipped|snoozed]
  */
-export const formatIndianPhoneNumber = (phone: string): string => {
-  // Remove all non-numeric characters
-  const cleaned = phone.replace(/\D/g, "");
-  
-  if (cleaned.length === 11 && cleaned.startsWith("0")) {
-    return `+91${cleaned.slice(1)}`;
-  }
-  
-  if (cleaned.length === 10) {
-    return `+91${cleaned}`;
-  }
-  
-  if (cleaned.length === 12 && cleaned.startsWith("91")) {
-    return `+${cleaned}`;
-  }
-  
-  if (phone.trim().startsWith("+")) {
-    return `+${cleaned}`;
-  }
-  
-  return `+${cleaned}`;
-};
+export async function sendMedicationReminder(params: {
+  eventId: string;
+  medicationName: string;
+  dosage: string;
+  localTime: string;
+  recipientName: string;
+  recipientPhone: string;
+}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  assertServerOnly('whatsapp/service');
 
-/**
- * Records a message event (incoming/outgoing) directly in Supabase
- */
-export const recordMessage = async (params: {
-  parentId: string;
-  direction: "incoming" | "outgoing";
-  body: string;
-  mediaUrl?: string | null;
-  messageType?: string;
-  messageSid?: string | null;
-  status: string;
-}) => {
-  const supabase = createDirectServerClient() as any;
-  if (!supabase) {
-    console.warn("[WhatsApp Service] Supabase not connected. Skipping DB logging.");
-    return null;
-  }
-  
-  const { data, error } = await supabase
-    .from("whatsapp_messages")
-    .insert({
-      parent_id: params.parentId,
-      direction: params.direction,
-      body: params.body,
-      media_url: params.mediaUrl || null,
-      message_type: params.messageType || (params.mediaUrl ? "media" : "text"),
-      message_sid: params.messageSid || null,
-      status: params.status,
-    })
-    .select()
-    .single();
-    
-  if (error) {
-    console.error("[WhatsApp Service] Error inserting message to database:", error);
-  }
-  return data;
-};
-
-/**
- * Sends a WhatsApp message via Meta Cloud API, or performs a safe dry-run write
- */
-export const sendWhatsAppMessage = async (
-  parentId: string,
-  phone: string,
-  body: string,
-  templateName?: string
-) => {
-  const config = getWhatsAppConfig();
-  const formattedPhone = formatIndianPhoneNumber(phone);
-  
-  if (config.isDryRun || !config.isConfigured) {
-    console.log(`[WhatsApp Dry Run] Outbound message to ${formattedPhone}: "${body}"`);
-    const dbRecord = await recordMessage({
-      parentId,
-      direction: "outgoing",
-      body,
-      messageSid: `dry-run-${Date.now()}`,
-      status: "dry_run",
-    });
-    return { success: true, dryRun: true, data: dbRecord };
-  }
-
-  // Real Meta Cloud API Call
-  try {
-    const url = `https://graph.facebook.com/v19.0/${config.phoneNumberId}/messages`;
-    
-    // Meta requires phone numbers without a leading plus sign
-    const cleanToPhone = formattedPhone.replace("+", "");
-    
-    let payload: any = {
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to: cleanToPhone,
+  const formattedPhone = formatIndianPhoneNumber(params.recipientPhone);
+  if (!formattedPhone) {
+    return {
+      success: false,
+      error: `Care recipient ${params.recipientName} does not have a valid E.164 phone number configured.`,
     };
-
-    if (templateName) {
-      payload.type = "template";
-      payload.template = {
-        name: templateName,
-        language: { code: "en" }
-      };
-    } else {
-      payload.type = "text";
-      payload.text = { body };
-    }
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${config.accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const resData = await response.json();
-    if (!response.ok) {
-      throw new Error(resData.error?.message || "WhatsApp Meta API rejected request");
-    }
-
-    const waMessageId = resData.messages?.[0]?.id;
-    const dbRecord = await recordMessage({
-      parentId,
-      direction: "outgoing",
-      body,
-      messageSid: waMessageId,
-      status: "sent",
-    });
-
-    return { success: true, dryRun: false, data: dbRecord };
-  } catch (err: any) {
-    console.error("[WhatsApp Service] Real send attempt failed:", err);
-    // Fallback log of failed record to DB
-    const dbRecord = await recordMessage({
-      parentId,
-      direction: "outgoing",
-      body,
-      status: "failed",
-    });
-    return { success: false, error: err.message, data: dbRecord };
   }
-};
+
+  const dosageStr = params.dosage ? ` ${params.dosage}` : "";
+  const bodyText = `Hi ${params.recipientName} 👋\nIt's time for ${params.medicationName}${dosageStr}.\nScheduled: ${params.localTime}\n\nPlease confirm below.`;
+
+  const buttons = [
+    { id: `med:${params.eventId}:taken`, title: "TAKEN" },
+    { id: `med:${params.eventId}:skipped`, title: "SKIP" },
+    { id: `med:${params.eventId}:snoozed`, title: "SNOOZE" },
+  ];
+
+  const config = getWhatsAppConfig();
+  const templateName = config.medicationTemplate;
+
+  return await sendMetaWhatsAppMessage({
+    toPhone: formattedPhone,
+    bodyText,
+    buttons,
+    templateName,
+    templateParameters: [params.recipientName, `${params.medicationName}${dosageStr}`, params.localTime],
+  });
+}
+
+/**
+  Dispatches a deterministic care routine reminder for a specific care_routine_event.
+  Payload format: routine:<care_routine_event_uuid>:[completed|skipped|snoozed]
+ */
+export async function sendCareRoutineReminder(params: {
+  eventId: string;
+  routineName: string;
+  localTime: string;
+  recipientName: string;
+  recipientPhone: string;
+}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  assertServerOnly('whatsapp/service');
+
+  const formattedPhone = formatIndianPhoneNumber(params.recipientPhone);
+  if (!formattedPhone) {
+    return {
+      success: false,
+      error: `Care recipient ${params.recipientName} does not have a valid E.164 phone number configured.`,
+    };
+  }
+
+  const bodyText = `Hi ${params.recipientName} 👋\n${params.routineName} is scheduled for ${params.localTime}.\n\nPlease confirm below.`;
+
+  const buttons = [
+    { id: `routine:${params.eventId}:completed`, title: "DONE" },
+    { id: `routine:${params.eventId}:skipped`, title: "SKIP" },
+    { id: `routine:${params.eventId}:snoozed`, title: "SNOOZE" },
+  ];
+
+  const config = getWhatsAppConfig();
+  const templateName = config.routineTemplate;
+
+  return await sendMetaWhatsAppMessage({
+    toPhone: formattedPhone,
+    bodyText,
+    buttons,
+    templateName,
+    templateParameters: [params.recipientName, params.routineName, params.localTime],
+  });
+}
+
+/**
+ * Atomically attempts to claim an event for reminder dispatch before calling Meta API.
+ * Claim succeeds only when:
+ * 1. event status = 'pending'
+ * 2. reminder_sent_at IS NULL
+ * 3. reminder_delivery_status IS NULL OR (reminder_delivery_status = 'pending' AND updated_at <= staleThresholdIso)
+ * Returns the persisted database updated_at timestamp as a Compare-And-Swap (CAS) leaseToken.
+ */
+export async function claimReminderEvent(
+  serviceClient: any,
+  tableName: 'medication_events' | 'care_routine_events',
+  eventId: string,
+  nowIso: string,
+  staleThresholdIso: string
+): Promise<{ success: boolean; leaseToken?: string }> {
+  assertServerOnly('whatsapp/service');
+
+  if (!serviceClient) return { success: false };
+
+  const filterString = `reminder_delivery_status.is.null,and(reminder_delivery_status.eq.pending,updated_at.lte.${staleThresholdIso})`;
+
+  const { data, error } = await serviceClient
+    .from(tableName)
+    .update({
+      reminder_delivery_status: 'pending',
+      updated_at: nowIso,
+    })
+    .eq('id', eventId)
+    .eq('status', 'pending')
+    .is('reminder_sent_at', null)
+    .or(filterString)
+    .select('id, updated_at');
+
+  if (error) {
+    console.error(`[WhatsApp Scheduler Claim] Error claiming ${tableName} event ${eventId}:`, error.message);
+    return { success: false };
+  }
+
+  if (Array.isArray(data) && data.length > 0 && data[0].updated_at) {
+    return { success: true, leaseToken: data[0].updated_at };
+  }
+
+  return { success: false };
+}
+
+/**
+ * Releases an active claim on pre-acceptance Meta API dispatch failure, restoring
+ * reminder_delivery_status to null so subsequent scheduler runs can retry delivery.
+ * Requires exact leaseToken CAS match to prevent stale workers from mutating newer leases.
+ */
+export async function releaseReminderEventClaim(
+  serviceClient: any,
+  tableName: 'medication_events' | 'care_routine_events',
+  eventId: string,
+  leaseToken: string
+): Promise<{ success: boolean; leaseLost?: boolean }> {
+  assertServerOnly('whatsapp/service');
+
+  if (!serviceClient || !leaseToken) return { success: false, leaseLost: true };
+
+  const nowIso = new Date().toISOString();
+  const { data, error } = await serviceClient
+    .from(tableName)
+    .update({
+      reminder_delivery_status: null,
+      updated_at: nowIso,
+    })
+    .eq('id', eventId)
+    .eq('reminder_delivery_status', 'pending')
+    .eq('updated_at', leaseToken)
+    .is('reminder_sent_at', null)
+    .select('id');
+
+  if (error) {
+    console.error(`[WhatsApp Scheduler Release] Error releasing claim on ${tableName} event ${eventId}:`, error.message);
+    return { success: false };
+  }
+
+  if (!data || data.length === 0) {
+    console.warn(`[WhatsApp Scheduler Release] Lease lost for ${tableName} event ${eventId} (leaseToken ${leaseToken} superseded). Release skipped.`);
+    return { success: true, leaseLost: true };
+  }
+
+  return { success: true, leaseLost: false };
+}
+
+/**
+ * Marks an event as successfully sent after receiving HTTP acceptance & messageId from Meta API.
+ * Requires exact leaseToken CAS match to prevent stale workers from overwriting newer leases.
+ */
+export async function markReminderEventSent(
+  serviceClient: any,
+  tableName: 'medication_events' | 'care_routine_events',
+  eventId: string,
+  messageId: string,
+  leaseToken: string
+): Promise<{ success: boolean; leaseLost?: boolean }> {
+  assertServerOnly('whatsapp/service');
+
+  if (!serviceClient || !leaseToken) return { success: false, leaseLost: true };
+
+  const nowIso = new Date().toISOString();
+  const { data, error } = await serviceClient
+    .from(tableName)
+    .update({
+      reminder_sent_at: nowIso,
+      reminder_message_id: messageId,
+      reminder_delivery_status: 'sent',
+      updated_at: nowIso,
+    })
+    .eq('id', eventId)
+    .eq('reminder_delivery_status', 'pending')
+    .eq('updated_at', leaseToken)
+    .is('reminder_sent_at', null)
+    .select('id');
+
+  if (error) {
+    console.error(`[WhatsApp Scheduler Sent] Error marking ${tableName} event ${eventId} sent:`, error.message);
+    return { success: false };
+  }
+
+  if (!data || data.length === 0) {
+    console.warn(`[WhatsApp Scheduler Sent] Lease lost for ${tableName} event ${eventId} (leaseToken ${leaseToken} superseded by another worker). Sent state update skipped.`);
+    return { success: true, leaseLost: true };
+  }
+
+  return { success: true, leaseLost: false };
+}

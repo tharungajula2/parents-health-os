@@ -533,6 +533,9 @@ export type Database = {
           responded_at: string | null
           response_source: string | null
           notes: string | null
+          reminder_sent_at: string | null
+          reminder_message_id: string | null
+          reminder_delivery_status: string | null
           created_at: string
           updated_at: string
         }
@@ -544,6 +547,9 @@ export type Database = {
           responded_at?: string | null
           response_source?: string | null
           notes?: string | null
+          reminder_sent_at?: string | null
+          reminder_message_id?: string | null
+          reminder_delivery_status?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -555,6 +561,9 @@ export type Database = {
           responded_at?: string | null
           response_source?: string | null
           notes?: string | null
+          reminder_sent_at?: string | null
+          reminder_message_id?: string | null
+          reminder_delivery_status?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -606,6 +615,9 @@ export type Database = {
           responded_at: string | null
           response_source: string | null
           notes: string | null
+          reminder_sent_at: string | null
+          reminder_message_id: string | null
+          reminder_delivery_status: string | null
           created_at: string
           updated_at: string
         }
@@ -617,6 +629,9 @@ export type Database = {
           responded_at?: string | null
           response_source?: string | null
           notes?: string | null
+          reminder_sent_at?: string | null
+          reminder_message_id?: string | null
+          reminder_delivery_status?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -628,6 +643,9 @@ export type Database = {
           responded_at?: string | null
           response_source?: string | null
           notes?: string | null
+          reminder_sent_at?: string | null
+          reminder_message_id?: string | null
+          reminder_delivery_status?: string | null
           created_at?: string
           updated_at?: string
         }

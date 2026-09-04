@@ -30,7 +30,8 @@ import {
   BrainCircuit,
   ThumbsUp,
   ThumbsDown,
-  AlertCircle
+  AlertCircle,
+  Send
 } from "lucide-react";
 import { useParentsAuth } from "../lib/supabase/context";
 import { ToastProvider, useToast } from "../components/ui/Toast";
@@ -2003,6 +2004,90 @@ function HomeView({
   );
 }
 
+function WhatsAppStatusCard({ currentRecipient }: { currentRecipient: any }) {
+  const { showToast } = useToast();
+  const [isSending, setIsSending] = useState(false);
+
+  if (!currentRecipient) return null;
+
+  const rawPhone = currentRecipient.phone;
+  let maskedPhone = "Not configured";
+  let isReady = false;
+
+  if (rawPhone) {
+    const cleaned = rawPhone.replace(/\D/g, "");
+    if (cleaned.length >= 10) {
+      isReady = true;
+      const last4 = cleaned.slice(-4);
+      maskedPhone = `+91••••••${last4}`;
+    }
+  }
+
+  const handleSendTestReminder = async () => {
+    if (!isReady) {
+      showToast("Care recipient phone number is not configured.", "error");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const res = await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ careRecipientId: currentRecipient.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`✅ Test reminder sent to ${data.recipientPhoneMasked || maskedPhone}`, "success");
+      } else {
+        showToast(data.error || "Failed to send WhatsApp test reminder.", "error");
+      }
+    } catch (err: any) {
+      showToast(err.message || "Network error sending test reminder.", "error");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="quiet-card p-4 sm:p-5 space-y-3 border-teal-100 bg-teal-50/20">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-2xl bg-[#0E5E5A] text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
+            WA
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-[#1C2826] font-[family-name:var(--font-outfit)]">
+                WhatsApp Care Loop
+              </span>
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                isReady ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-500"
+              }`}>
+                {isReady ? "Ready" : "Not configured"}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-500 font-medium block mt-0.5">
+              {maskedPhone}
+            </span>
+          </div>
+        </div>
+
+        {isReady && (
+          <button
+            onClick={handleSendTestReminder}
+            disabled={isSending}
+            className="px-3 py-1.5 rounded-xl bg-[#0E5E5A] hover:bg-[#0C4E4B] text-white text-[11px] font-semibold uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 shrink-0"
+          >
+            {isSending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            <span>Send test reminder</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function FamilyView({
   careRecipients,
   currentRecipient,
@@ -2100,6 +2185,12 @@ function FamilyView({
                     </button>
                   )}
                 </div>
+
+                {isSelected && (
+                  <div className="mt-4 pt-3 border-t border-slate-100">
+                    <WhatsAppStatusCard currentRecipient={recipient} />
+                  </div>
+                )}
               </div>
             );
           })
@@ -2170,6 +2261,9 @@ function CareView({
           })}
         </div>
       )}
+
+      {/* WhatsApp Status Card */}
+      <WhatsAppStatusCard currentRecipient={currentRecipient} />
 
       {/* Section 1: TODAY'S SCHEDULED ACTIVITIES */}
       <div className="quiet-card p-5 space-y-4">
