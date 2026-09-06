@@ -1,6 +1,6 @@
 import { assertServerOnly } from '../supabase/safety';
 
-export const GRAPH_API_VERSION = "v26.0";
+export const GRAPH_API_VERSION = "v25.0";
 export const GRAPH_API_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
 export interface WhatsAppConfig {

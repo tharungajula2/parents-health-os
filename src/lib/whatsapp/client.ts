@@ -48,7 +48,7 @@ export interface SendWhatsAppResult {
 }
 
 /**
-  Dispatches an interactive button message or template message via official Meta WhatsApp Cloud API (Graph API v26.0).
+  Dispatches an interactive button message or template message via official Meta WhatsApp Cloud API (Graph API v25.0).
  */
 export const sendMetaWhatsAppMessage = async (params: {
   toPhone: string;
