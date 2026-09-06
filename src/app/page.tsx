@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart,
@@ -248,8 +249,12 @@ export default function AppHome() {
             </motion.div>
           </div>
 
-          <footer className="text-center text-[10px] text-slate-400 font-medium tracking-wider uppercase">
-            Parents Health OS // Real Supabase Persistence
+          <footer className="text-center text-[10px] text-slate-400 font-medium tracking-wider uppercase flex items-center justify-center gap-3">
+            <span>Parents Health OS // Real Supabase Persistence</span>
+            <span>•</span>
+            <Link href="/privacy" className="hover:underline text-slate-500 transition-colors">
+              Privacy Policy
+            </Link>
           </footer>
         </div>
       );
@@ -318,12 +323,17 @@ export default function AppHome() {
             </form>
           </div>
 
-          <button
-            onClick={() => setMode("landing")}
-            className="w-full text-center text-xs text-slate-400 mt-4 hover:text-slate-600"
-          >
-            ← Back to Home
-          </button>
+          <div className="flex items-center justify-between text-xs text-slate-400 mt-4 px-1">
+            <button
+              onClick={() => setMode("landing")}
+              className="hover:text-slate-600 transition-colors"
+            >
+              ← Back to Home
+            </button>
+            <Link href="/privacy" className="hover:text-slate-600 transition-colors">
+              Privacy Policy
+            </Link>
+          </div>
         </motion.div>
       </div>
     );
