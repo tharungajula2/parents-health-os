@@ -20,7 +20,9 @@ export async function POST(req: Request) {
 
     // 2. Parse payload (NO arbitrary recipient phone or arbitrary text body allowed)
     const body = await req.json();
-    const { careRecipientId, eventType, eventId } = body;
+    const { eventType, eventId } = body;
+    const rawRecipientId = body.careRecipientId || body.care_recipient_id || body.recipientId;
+    const careRecipientId = typeof rawRecipientId === "string" ? rawRecipientId.trim() : "";
 
     if (!careRecipientId) {
       return NextResponse.json(
@@ -29,30 +31,40 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Service role client for verified database operations
+    // 3. Service role or user client for verified database operations
     const serviceClient = createServiceRoleClient() as any;
-    if (!serviceClient) {
-      return NextResponse.json(
-        { success: false, error: "Server database client initialization failed." },
-        { status: 500 }
-      );
-    }
+    const dbClient = serviceClient || supabaseUser;
 
     // 4. Verify care recipient exists & user is an active family member
-    const { data: recipient, error: recipErr } = await serviceClient
+    // Query authenticated user client first (evaluates RLS under active user session)
+    let recipient: any = null;
+    const { data: userRecip } = await supabaseUser
       .from("care_recipients")
       .select("id, family_id, display_name, phone, primary_language")
       .eq("id", careRecipientId)
-      .single();
+      .maybeSingle();
 
-    if (recipErr || !recipient) {
+    if (userRecip) {
+      recipient = userRecip;
+    } else if (serviceClient) {
+      const { data: servRecip } = await serviceClient
+        .from("care_recipients")
+        .select("id, family_id, display_name, phone, primary_language")
+        .eq("id", careRecipientId)
+        .maybeSingle();
+      if (servRecip) {
+        recipient = servRecip;
+      }
+    }
+
+    if (!recipient) {
       return NextResponse.json(
         { success: false, error: "Care recipient profile not found." },
         { status: 404 }
       );
     }
 
-    const { data: membership, error: memberErr } = await serviceClient
+    const { data: membership, error: memberErr } = await supabaseUser
       .from("family_members")
       .select("id, role, status")
       .eq("family_id", recipient.family_id)
@@ -87,7 +99,7 @@ export async function POST(req: Request) {
     if (eventId) {
       targetEventId = eventId;
       if (targetCategory === "medication") {
-        const { data: medEvent } = await serviceClient
+        const { data: medEvent } = await dbClient
           .from("medication_events")
           .select("id, due_at, status, schedule:medication_schedules(local_time, medication:medications(name, dosage, care_recipient_id))")
           .eq("id", eventId)
@@ -105,7 +117,7 @@ export async function POST(req: Request) {
           });
         }
       } else {
-        const { data: routineEvent } = await serviceClient
+        const { data: routineEvent } = await dbClient
           .from("care_routine_events")
           .select("id, due_at, status, schedule:care_routine_schedules(local_time, routine:care_routines(name, care_recipient_id))")
           .eq("id", eventId)
@@ -127,7 +139,7 @@ export async function POST(req: Request) {
     // If no specific eventId provided or resolved, query latest pending event for this care recipient
     if (!sendResult) {
       // Try finding pending medication event
-      const { data: pendingMed } = await serviceClient
+      const { data: pendingMed } = await dbClient
         .from("medication_events")
         .select("id, due_at, status, schedule:medication_schedules!inner(local_time, medication:medications!inner(name, dosage, care_recipient_id))")
         .eq("status", "pending")
@@ -150,7 +162,7 @@ export async function POST(req: Request) {
         });
       } else {
         // Try finding pending routine event
-        const { data: pendingRoutine } = await serviceClient
+        const { data: pendingRoutine } = await dbClient
           .from("care_routine_events")
           .select("id, due_at, status, schedule:care_routine_schedules!inner(local_time, routine:care_routines!inner(name, care_recipient_id))")
           .eq("status", "pending")
@@ -197,7 +209,7 @@ export async function POST(req: Request) {
     if (targetEventId && sendResult.messageId) {
       const nowIso = new Date().toISOString();
       if (targetCategory === "medication") {
-        await serviceClient
+        await dbClient
           .from("medication_events")
           .update({
             reminder_sent_at: nowIso,
@@ -206,7 +218,7 @@ export async function POST(req: Request) {
           })
           .eq("id", targetEventId);
       } else {
-        await serviceClient
+        await dbClient
           .from("care_routine_events")
           .update({
             reminder_sent_at: nowIso,

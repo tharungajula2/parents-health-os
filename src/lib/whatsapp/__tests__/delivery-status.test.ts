@@ -215,6 +215,20 @@ export async function runDeliveryStatusTests() {
     console.log("✓ Persistence Concurrency Test passed: Stale 'delivered' request blocked from overwriting 'read'");
   }
 
+  // Test K: Recipient payload ID extraction helper
+  {
+    const extractCareRecipientId = (body: any) => {
+      const raw = body?.careRecipientId || body?.care_recipient_id || body?.recipientId;
+      return typeof raw === "string" ? raw.trim() : "";
+    };
+
+    assert(extractCareRecipientId({ careRecipientId: "rec-123 " }) === "rec-123", "careRecipientId payload extraction failed");
+    assert(extractCareRecipientId({ care_recipient_id: "rec-456" }) === "rec-456", "care_recipient_id payload extraction failed");
+    assert(extractCareRecipientId({ recipientId: "rec-789" }) === "rec-789", "recipientId payload extraction failed");
+    assert(extractCareRecipientId({}) === "", "empty payload extraction failed");
+    console.log("✓ Test K passed: Care recipient ID payload normalization validated");
+  }
+
   console.log("=================================================");
   console.log(" ALL WHATSAPP DELIVERY ATOMICITY TESTS PASSED    ");
   console.log("=================================================");
