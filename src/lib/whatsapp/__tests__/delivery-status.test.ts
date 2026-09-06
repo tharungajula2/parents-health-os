@@ -229,6 +229,21 @@ export async function runDeliveryStatusTests() {
     console.log("✓ Test K passed: Care recipient ID payload normalization validated");
   }
 
+  // Test L: Static Migration Grant Assertions
+  {
+    const fs = require('fs');
+    const path = require('path');
+    const migrationPath = path.join(process.cwd(), 'supabase', 'migrations', '20260906140000_grant_whatsapp_events_service_role.sql');
+    assert(fs.existsSync(migrationPath), "Migration 20260906140000_grant_whatsapp_events_service_role.sql missing");
+
+    const sqlContent = fs.readFileSync(migrationPath, 'utf8');
+    assert(sqlContent.includes('GRANT SELECT, UPDATE'), "Migration missing GRANT SELECT, UPDATE");
+    assert(sqlContent.includes('public.medication_events'), "Migration missing public.medication_events grant target");
+    assert(sqlContent.includes('public.care_routine_events'), "Migration missing public.care_routine_events grant target");
+    assert(sqlContent.includes('TO service_role;'), "Migration missing TO service_role target");
+    console.log("✓ Test L passed: Service-role event grant migration static assertions validated");
+  }
+
   console.log("=================================================");
   console.log(" ALL WHATSAPP DELIVERY ATOMICITY TESTS PASSED    ");
   console.log("=================================================");
